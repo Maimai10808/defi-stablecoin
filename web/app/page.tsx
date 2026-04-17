@@ -5,10 +5,15 @@ import { CombinedFlowSection } from "@/components/protocol/CombinedFlowSection";
 import { CollateralSupportCard } from "@/components/protocol/CollateralSupportCard";
 import { LiquidationCard } from "@/components/protocol/LiquidationCard";
 import { ProtocolOverviewCard } from "@/components/protocol/ProtocolOverviewCard";
+import { WalletConnectCard } from "@/components/wallet/WalletDebugCard";
 
 export default function Home() {
   return (
-    <main className="cyber-page mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:px-8 lg:py-10">
+    <main
+      className="cyber-page mx-auto flex w-full max-w-7xl flex-col
+     gap-6 px-4 py-6 sm:px-6 lg:gap-8 lg:px-8 lg:py-10"
+    >
+      <WalletConnectCard />
       <ProtocolOverviewCard />
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">

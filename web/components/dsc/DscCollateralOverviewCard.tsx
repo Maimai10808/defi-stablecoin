@@ -1,6 +1,5 @@
 "use client";
 
-import { WalletConnectCard } from "../wallet/WalletDebugCard";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
 
 function OverviewRow({
@@ -40,14 +39,10 @@ export function DscCollateralOverviewCard() {
             Read-only collateral state for the connected wallet
           </p>
         </div>
-
-        <WalletConnectCard />
       </div>
 
       {!isConnected ? (
-        <p className="cyber-description mt-5 text-sm">
-          Wallet not connected.
-        </p>
+        <p className="cyber-description mt-5 text-sm">Wallet not connected.</p>
       ) : !isSupportedChain ? (
         <p className="cyber-description mt-5 text-sm">
           Unsupported chain. Current chainId: {chainId ?? "unknown"}
@@ -62,9 +57,7 @@ export function DscCollateralOverviewCard() {
         </p>
       ) : (
         <div className="mt-5 space-y-3">
-          {isFetching ? (
-            <p className="cyber-chip">Refreshing</p>
-          ) : null}
+          {isFetching ? <p className="cyber-chip">Refreshing</p> : null}
 
           <OverviewRow
             label="WETH Address"
