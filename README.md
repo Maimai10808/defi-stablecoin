@@ -8,7 +8,7 @@ anvil
 
 然后另开一个终端，在项目根目录执行：
 
-./tools/reset-local-dev.sh
+./tools/reset-local-dev.sh && source ./.local-dev.env
 
 这个命令现在的含义就是：1. forge build 编译 2. sync-abi.sh 同步 ABI 到前端 3. DeployDSC.s.sol 部署合约 4. 部署脚本自动把最新地址写进 31337.json
 
@@ -18,7 +18,7 @@ anvil
 
 # 2. 部署并同步给前端
 
-./tools/reset-local-dev.sh
+./tools/reset-local-dev.sh && source ./.local-dev.env
 
 # 3. 启动前端
 

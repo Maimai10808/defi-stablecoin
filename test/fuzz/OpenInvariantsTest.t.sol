@@ -8,12 +8,15 @@ import {DSCEngine} from "../../src/DSCEngine.sol";
 import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Handler} from "./Handler.t.sol";
 
 contract OpenInvariantsTest is StdInvariant, Test {
     DeployDSC deployer;
     DSCEngine dsce;
     DecentralizedStableCoin dsc;
     HelperConfig config;
+    Handler handler;
+
     address weth;
     address wbtc;
 
@@ -21,16 +24,27 @@ contract OpenInvariantsTest is StdInvariant, Test {
         deployer = new DeployDSC();
         (dsc, dsce, config) = deployer.run();
         (, , weth, wbtc, , ) = config.activeNetworkConfig();
-        targetContract(address(dsce));
+
+        handler = new Handler(dsce, dsc, weth, wbtc);
+
+        targetContract(address(handler));
     }
 
     function invariant_protocolMustHaveMoreValueThanTotalSupply() public view {
-        uint256 totalSuppy = dsc.totalSupply();
+        uint256 totalSupply = dsc.totalSupply();
         uint256 totalWethDeposited = IERC20(weth).balanceOf(address(dsce));
-        uint256 totalBtcDeposited = IERC20(wbtc).balanceOf(address(dsce));
+        uint256 totalWbtcDeposited = IERC20(wbtc).balanceOf(address(dsce));
 
         uint256 wethValue = dsce.getUsdValue(weth, totalWethDeposited);
-        uint256 wbtcValue = dsce.getUsdValue(wbtc, totalBtcDeposited);
-        assert(wethValue + wbtcValue >= totalSuppy);
+        uint256 wbtcValue = dsce.getUsdValue(wbtc, totalWbtcDeposited);
+
+        assert(wethValue + wbtcValue >= totalSupply);
+    }
+
+    function invariant_gettersShouldNotRevert() public view {
+        dsce.getUsdValue(weth, 1 ether);
+        dsce.getUsdValue(wbtc, 1 ether);
+        dsce.getTokenAmountFromUsd(weth, 1 ether);
+        dsce.getTokenAmountFromUsd(wbtc, 1 ether);
     }
 }
