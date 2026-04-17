@@ -17,10 +17,13 @@ contract HelperConfig is Script {
         address initOwner;
     }
 
-    address public user = makeAddr("user");
     uint8 public constant DECIMALS_8 = 8;
     int256 public constant ETH_USD_PRICE_2000e8 = 2000e8;
     int256 public constant BTC_USD_PRICE_1000e8 = 1000e8;
+
+    uint256 public constant ANVIL_DEFAULT_PRIVATE_KEY =
+        0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+
     NetworkConfig public activeNetworkConfig;
 
     constructor() {
@@ -35,13 +38,14 @@ contract HelperConfig is Script {
 
     function getOrCreateAnvilNetworkConfig()
         internal
-        returns (NetworkConfig memory _anvilNetworkConfig)
+        returns (NetworkConfig memory anvilNetworkConfig)
     {
-        // Check to see if we set an active network config
         if (activeNetworkConfig.ethUsdPriceFeed != address(0)) {
             return activeNetworkConfig;
         }
-        vm.startBroadcast();
+
+        vm.startBroadcast(ANVIL_DEFAULT_PRIVATE_KEY);
+
         MockV3Aggregator ethUsdPriceFeed = new MockV3Aggregator(
             DECIMALS_8,
             ETH_USD_PRICE_2000e8
@@ -53,30 +57,36 @@ contract HelperConfig is Script {
             BTC_USD_PRICE_1000e8
         );
         ERC20Mock wbtcMock = new ERC20Mock();
+
         vm.stopBroadcast();
-        (address anvilAddr, uint256 anvilKey) = makeAddrAndKey("local");
-        _anvilNetworkConfig = NetworkConfig({
-            ethUsdPriceFeed: address(ethUsdPriceFeed), // ETH / USD
-            weth: address(wethMock),
+
+        address anvilOwner = vm.addr(ANVIL_DEFAULT_PRIVATE_KEY);
+
+        anvilNetworkConfig = NetworkConfig({
+            ethUsdPriceFeed: address(ethUsdPriceFeed),
             btcUsdPriceFeed: address(btcUsdPriceFeed),
+            weth: address(wethMock),
             wbtc: address(wbtcMock),
-            deployerKey: anvilKey,
-            initOwner: anvilAddr
+            deployerKey: ANVIL_DEFAULT_PRIVATE_KEY,
+            initOwner: anvilOwner
         });
     }
 
     function getSepoliaNetworkConfig()
         internal
         view
-        returns (NetworkConfig memory _sepoliaNotworkConfig)
+        returns (NetworkConfig memory sepoliaNetworkConfig)
     {
-        _sepoliaNotworkConfig = NetworkConfig({
-            ethUsdPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306, // ETH / USD
+        uint256 deployerKey = vm.envUint("PRIVATE_KEY");
+        address deployerAddr = vm.addr(deployerKey);
+
+        sepoliaNetworkConfig = NetworkConfig({
+            ethUsdPriceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306,
             btcUsdPriceFeed: 0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43,
             weth: 0xdd13E55209Fd76AfE204dBda4007C227904f0a81,
             wbtc: 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063,
-            deployerKey: vm.envUint("PRIVATE_KEY"),
-            initOwner: 0xF42f4b5cb102b3f5A180E08E6BA726c0179D172E
+            deployerKey: deployerKey,
+            initOwner: deployerAddr
         });
     }
 }
