@@ -9,6 +9,10 @@ import { ActionSecondaryButton } from "@/components/dsc/ActionSecondaryButton";
 import { useDscDepositCollateral } from "@/hooks/useDscDepositCollateral";
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
+import {
+  COLLATERAL_OPTIONS,
+  type CollateralSymbol,
+} from "@/lib/protocol/collateral";
 
 function isValidPositiveNumber(value: string) {
   if (!value.trim()) return false;
@@ -17,6 +21,8 @@ function isValidPositiveNumber(value: string) {
 }
 
 export function DepositCollateralCard() {
+  const [collateralSymbol, setCollateralSymbol] =
+    useState<CollateralSymbol>("WETH");
   const [amount, setAmount] = useState("10");
 
   const depositFlow = useDscDepositCollateral();
@@ -33,7 +39,7 @@ export function DepositCollateralCard() {
 
   const handleDeposit = async () => {
     try {
-      await depositFlow.approveAndDeposit(amount);
+      await depositFlow.approveAndDeposit(collateralSymbol, amount);
 
       await Promise.all([
         accountOverview.readResult.refetch(),
@@ -45,13 +51,19 @@ export function DepositCollateralCard() {
   };
 
   const handleReset = () => {
+    setCollateralSymbol("WETH");
     setAmount("10");
   };
+
+  const currentDeposited =
+    collateralSymbol === "WBTC"
+      ? collateralOverview.overview?.formatted?.wbtcDeposited
+      : collateralOverview.overview?.formatted?.wethDeposited;
 
   return (
     <ActionCardShell
       title="Deposit Collateral"
-      description="Minimal WETH-only deposit flow for local protocol testing"
+      description="Deposit either WETH or WBTC to fund the vault"
       status={depositFlow.step}
       errorMessage={depositFlow.error ?? null}
       footer={
@@ -62,7 +74,9 @@ export function DepositCollateralCard() {
             className="flex-1"
             fullWidth={false}
           >
-            {depositFlow.isPending ? "Processing..." : "Approve + Deposit WETH"}
+            {depositFlow.isPending
+              ? "Processing..."
+              : `Approve + Deposit ${collateralSymbol}`}
           </ActionPrimaryButton>
 
           <ActionSecondaryButton
@@ -75,19 +89,43 @@ export function DepositCollateralCard() {
       }
     >
       <div className="space-y-2">
-        <label htmlFor="deposit-amount" className="text-sm font-medium">
-          WETH Amount
+        <label htmlFor="deposit-collateral" className="cyber-label">
+          Collateral
         </label>
-        <input
-          id="deposit-amount"
-          type="number"
-          min="0"
-          step="0.0001"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full rounded-xl border px-3 py-2 outline-none"
-          placeholder="Enter WETH amount"
-        />
+        <div className="cyber-select-wrap">
+          <select
+            id="deposit-collateral"
+            value={collateralSymbol}
+            onChange={(e) =>
+              setCollateralSymbol(e.target.value as CollateralSymbol)
+            }
+            className="cyber-select"
+          >
+            {COLLATERAL_OPTIONS.map((option) => (
+              <option key={option.symbol} value={option.symbol}>
+                {option.symbol}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="deposit-amount" className="cyber-label">
+          {collateralSymbol} Amount
+        </label>
+        <div className="cyber-input-wrap">
+          <input
+            id="deposit-amount"
+            type="number"
+            min="0"
+            step="0.0001"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="cyber-input"
+            placeholder="enter collateral amount"
+          />
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -96,10 +134,8 @@ export function DepositCollateralCard() {
           value={accountOverview.address ?? "Not connected"}
         />
         <ActionInfoRow
-          label="Current WETH Deposited"
-          value={
-            collateralOverview.overview?.formatted?.wethDeposited ?? "0.0000"
-          }
+          label={`Current ${collateralSymbol} Deposited`}
+          value={currentDeposited ?? "0.0000"}
         />
         <ActionInfoRow
           label="Total Collateral Value"

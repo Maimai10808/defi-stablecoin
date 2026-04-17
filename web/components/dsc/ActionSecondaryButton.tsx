@@ -19,8 +19,7 @@ export function ActionSecondaryButton({
       type={type}
       className={[
         fullWidth ? "w-full" : "",
-        "rounded-xl border px-4 py-2 font-medium text-muted-foreground transition-opacity",
-        "disabled:cursor-not-allowed disabled:opacity-50",
+        "cyber-button cyber-button-ghost",
         className,
       ]
         .filter(Boolean)

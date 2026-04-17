@@ -12,9 +12,9 @@ function OverviewRow({
   value: string | number | null | undefined;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium break-all">{value ?? "--"}</span>
+    <div className="cyber-row">
+      <span className="cyber-row-label">{label}</span>
+      <span className="cyber-row-value break-all">{value ?? "--"}</span>
     </div>
   );
 }
@@ -34,12 +34,12 @@ export function DscAccountOverviewCard() {
 
   if (!isConnected) {
     return (
-      <section className="rounded-2xl border p-4">
+      <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Account Overview</h2>
+          <h2 className="cyber-title">Account Overview</h2>
         </div>
 
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="cyber-description mt-3 text-sm">
           Wallet not connected.
         </p>
 
@@ -52,10 +52,10 @@ export function DscAccountOverviewCard() {
 
   if (!isSupportedChain) {
     return (
-      <section className="rounded-2xl border p-4">
-        <h2 className="text-lg font-semibold">Account Overview</h2>
+      <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
+        <h2 className="cyber-title">Account Overview</h2>
 
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="cyber-description mt-3 text-sm">
           Unsupported chain. Current chainId: {chainId ?? "unknown"}
         </p>
 
@@ -68,9 +68,9 @@ export function DscAccountOverviewCard() {
 
   if (isLoading) {
     return (
-      <section className="rounded-2xl border p-4">
-        <h2 className="text-lg font-semibold">Account Overview</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+      <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
+        <h2 className="cyber-title">Account Overview</h2>
+        <p className="cyber-description mt-3 text-sm">
           Loading account data...
         </p>
       </section>
@@ -79,9 +79,9 @@ export function DscAccountOverviewCard() {
 
   if (isError) {
     return (
-      <section className="rounded-2xl border p-4">
-        <h2 className="text-lg font-semibold">Account Overview</h2>
-        <p className="mt-2 text-sm text-red-500">
+      <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
+        <h2 className="cyber-title">Account Overview</h2>
+        <p className="mt-3 text-sm text-[var(--destructive)]">
           Failed to load account data: {error?.message ?? "Unknown error"}
         </p>
       </section>
@@ -89,21 +89,22 @@ export function DscAccountOverviewCard() {
   }
 
   return (
-    <section className="rounded-2xl border p-4">
+    <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Account Overview</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <div className="cyber-kicker">Vault State</div>
+          <h2 className="cyber-title mt-3">Account Overview</h2>
+          <p className="cyber-description mt-2 text-sm">
             Read-only protocol state for the connected wallet
           </p>
         </div>
 
         {isFetching ? (
-          <span className="text-xs text-muted-foreground">Refreshing...</span>
+          <span className="cyber-chip">Refreshing</span>
         ) : null}
       </div>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-5 space-y-3">
         <OverviewRow label="Wallet Address" value={address} />
         <OverviewRow
           label="Collateral Value (USD)"

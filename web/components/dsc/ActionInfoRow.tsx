@@ -10,9 +10,9 @@ export function ActionInfoRow({
   valueClassName,
 }: ActionInfoRowProps) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className={`break-all text-sm font-medium ${valueClassName ?? ""}`}>
+    <div className="cyber-row">
+      <span className="cyber-row-label">{label}</span>
+      <span className={`cyber-row-value break-all ${valueClassName ?? ""}`}>
         {value ?? "--"}
       </span>
     </div>

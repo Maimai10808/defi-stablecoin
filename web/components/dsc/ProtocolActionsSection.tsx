@@ -7,15 +7,16 @@ import { BurnDscCard } from "../protocol/BurnDscCard";
 
 export function ProtocolActionsSection() {
   return (
-    <section className="rounded-2xl border p-4">
+    <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
       <div>
-        <h2 className="text-lg font-semibold">Protocol Actions</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <div className="cyber-kicker">Manual Control</div>
+        <h2 className="cyber-title mt-3">Protocol Actions</h2>
+        <p className="cyber-description mt-2 text-sm">
           Local protocol write flows for deposit, mint, burn, and redeem
         </p>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
         <DepositCollateralCard />
         <MintDscCard />
         <BurnDscCard />

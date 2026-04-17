@@ -11,6 +11,10 @@ import {
 
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
 import { dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
+import {
+  type CollateralSymbol,
+  getAddressKeyForSymbol,
+} from "@/lib/protocol/collateral";
 
 type DepositStep = "idle" | "approving" | "depositing" | "success" | "error";
 
@@ -42,8 +46,11 @@ export function useDscDepositCollateral() {
   );
 
   const approve = useCallback(
-    async (amount: string) => {
-      if (!enabled || !contracts?.weth || !contracts?.dscEngine) {
+    async (collateralSymbol: CollateralSymbol, amount: string) => {
+      const addressKey = getAddressKeyForSymbol(collateralSymbol);
+      const collateralAddress = addressKey ? contracts?.[addressKey] : undefined;
+
+      if (!enabled || !collateralAddress || !contracts?.dscEngine) {
         throw new Error("Contracts not ready");
       }
 
@@ -53,7 +60,7 @@ export function useDscDepositCollateral() {
       setStep("approving");
 
       const hash = await writeContractAsync({
-        address: contracts.weth as `0x${string}`,
+        address: collateralAddress as `0x${string}`,
         abi: erc20Abi,
         functionName: "approve",
         args: [contracts.dscEngine as `0x${string}`, parsedAmount],
@@ -73,8 +80,11 @@ export function useDscDepositCollateral() {
   );
 
   const deposit = useCallback(
-    async (amount: string) => {
-      if (!enabled || !contracts?.weth || !contracts?.dscEngine) {
+    async (collateralSymbol: CollateralSymbol, amount: string) => {
+      const addressKey = getAddressKeyForSymbol(collateralSymbol);
+      const collateralAddress = addressKey ? contracts?.[addressKey] : undefined;
+
+      if (!enabled || !collateralAddress || !contracts?.dscEngine) {
         throw new Error("Contracts not ready");
       }
 
@@ -87,7 +97,7 @@ export function useDscDepositCollateral() {
         address: contracts.dscEngine as `0x${string}`,
         abi: dscEngineAbi,
         functionName: "depositCollateral",
-        args: [contracts.weth as `0x${string}`, parsedAmount],
+        args: [collateralAddress as `0x${string}`, parsedAmount],
       });
 
       setPendingHash(hash);
@@ -104,13 +114,13 @@ export function useDscDepositCollateral() {
   );
 
   const approveAndDeposit = useCallback(
-    async (amount: string) => {
+    async (collateralSymbol: CollateralSymbol, amount: string) => {
       try {
         setStep("idle");
         setError(null);
 
-        await approve(amount);
-        await deposit(amount);
+        await approve(collateralSymbol, amount);
+        await deposit(collateralSymbol, amount);
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Transaction failed";

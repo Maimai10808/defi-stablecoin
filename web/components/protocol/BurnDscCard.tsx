@@ -2,24 +2,12 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
+import { ActionInfoRow } from "@/components/dsc/ActionInfoRow";
+import { ActionPrimaryButton } from "@/components/dsc/ActionPrimaryButton";
+import { ActionSecondaryButton } from "@/components/dsc/ActionSecondaryButton";
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscBurnDsc } from "@/hooks/useDscBurnDsc";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="break-all text-sm font-medium">{value ?? "--"}</span>
-    </div>
-  );
-}
 
 export function BurnDscCard() {
   const [amount, setAmount] = useState("100");
@@ -70,69 +58,77 @@ export function BurnDscCard() {
   }, [burnFlow.status, burnFlow.error]);
 
   return (
-    <section className="rounded-2xl border p-4">
+    <section className="cyber-panel cyber-panel-hover cyber-panel-terminal p-5 md:p-6">
       <div>
-        <h2 className="text-lg font-semibold">Burn DSC</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <div className="cyber-terminal-bar">
+          <span className="cyber-terminal-dot text-[var(--destructive)]" />
+          <span className="cyber-terminal-dot text-[var(--accent-secondary)]" />
+          <span className="cyber-terminal-dot text-[var(--accent)]" />
+          protocol/burn
+        </div>
+        <h2 className="cyber-title mt-4">Burn DSC</h2>
+        <p className="cyber-description mt-2 text-sm">
           Minimal burn flow for local protocol testing
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <div className="space-y-2">
-          <label htmlFor="burn-dsc-amount" className="text-sm font-medium">
+          <label htmlFor="burn-dsc-amount" className="cyber-label">
             DSC Amount
           </label>
-          <input
-            id="burn-dsc-amount"
-            type="number"
-            min="0"
-            step="any"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-            placeholder="100"
-          />
+          <div className="cyber-input-wrap">
+            <input
+              id="burn-dsc-amount"
+              type="number"
+              min="0"
+              step="any"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className="cyber-input"
+              placeholder="100"
+            />
+          </div>
         </div>
 
-        <InfoRow label="Status" value={currentStatus} />
-        <InfoRow label="Wallet" value={burnFlow.address ?? "--"} />
-        <InfoRow
+        <ActionInfoRow label="Status" value={currentStatus} />
+        <ActionInfoRow label="Wallet" value={burnFlow.address ?? "--"} />
+        <ActionInfoRow
           label="Current Total DSC Minted"
           value={accountOverview.overview.formatted.totalDscMinted ?? "--"}
         />
-        <InfoRow
+        <ActionInfoRow
           label="Current DSC Balance"
           value={accountOverview.overview.formatted.dscBalance ?? "--"}
         />
-        <InfoRow
+        <ActionInfoRow
           label="Current Collateral Value"
           value={
             accountOverview.overview.formatted.collateralValueInUsd ?? "--"
           }
         />
-        <InfoRow
+        <ActionInfoRow
           label="Current Health Factor"
           value={accountOverview.overview.formatted.healthFactor ?? "--"}
         />
 
         <div className="flex gap-3">
-          <button
+          <ActionPrimaryButton
             type="submit"
             disabled={isDisabled}
-            className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+            fullWidth={false}
+            className="flex-1"
           >
             {burnFlow.status.isPending ? "Processing..." : "Approve + Burn DSC"}
-          </button>
+          </ActionPrimaryButton>
 
-          <button
+          <ActionSecondaryButton
             type="button"
             onClick={burnFlow.reset}
             disabled={burnFlow.status.isPending}
-            className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset
-          </button>
+          </ActionSecondaryButton>
         </div>
       </form>
     </section>

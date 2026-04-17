@@ -2,26 +2,20 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
+import { ActionInfoRow } from "@/components/dsc/ActionInfoRow";
+import { ActionPrimaryButton } from "@/components/dsc/ActionPrimaryButton";
+import { ActionSecondaryButton } from "@/components/dsc/ActionSecondaryButton";
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
 import { useDscRedeemCollateral } from "@/hooks/useDscRedeemCollateral";
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string | null | undefined;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="break-all text-sm font-medium">{value ?? "--"}</span>
-    </div>
-  );
-}
+import {
+  COLLATERAL_OPTIONS,
+  type CollateralSymbol,
+} from "@/lib/protocol/collateral";
 
 export function RedeemCollateralCard() {
+  const [collateralSymbol, setCollateralSymbol] =
+    useState<CollateralSymbol>("WETH");
   const [amount, setAmount] = useState("1");
 
   const accountOverview = useDscAccountOverview();
@@ -44,7 +38,7 @@ export function RedeemCollateralCard() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await redeemFlow.redeemWeth(amount);
+    await redeemFlow.redeemCollateral(collateralSymbol, amount);
   };
 
   const currentStatus = useMemo(() => {
@@ -66,70 +60,107 @@ export function RedeemCollateralCard() {
     }
   }, [redeemFlow.status, redeemFlow.error]);
 
+  const currentDeposited =
+    collateralSymbol === "WBTC"
+      ? collateralOverview.overview.formatted.wbtcDeposited
+      : collateralOverview.overview.formatted.wethDeposited;
+
   return (
-    <section className="rounded-2xl border p-4">
+    <section className="cyber-panel cyber-panel-hover cyber-panel-terminal p-5 md:p-6">
       <div>
-        <h2 className="text-lg font-semibold">Redeem Collateral</h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Minimal WETH-only redeem flow for local protocol testing
+        <div className="cyber-terminal-bar">
+          <span className="cyber-terminal-dot text-[var(--destructive)]" />
+          <span className="cyber-terminal-dot text-[var(--accent-secondary)]" />
+          <span className="cyber-terminal-dot text-[var(--accent)]" />
+          protocol/redeem
+        </div>
+        <h2 className="cyber-title mt-4">Redeem Collateral</h2>
+        <p className="cyber-description mt-2 text-sm">
+          Redeem either WETH or WBTC from the vault
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <div className="space-y-2">
-          <label htmlFor="redeem-weth-amount" className="text-sm font-medium">
-            WETH Amount
+          <label htmlFor="redeem-collateral" className="cyber-label">
+            Collateral
           </label>
-          <input
-            id="redeem-weth-amount"
-            type="number"
-            min="0"
-            step="any"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-            className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-            placeholder="1"
-          />
+          <div className="cyber-select-wrap">
+            <select
+              id="redeem-collateral"
+              value={collateralSymbol}
+              onChange={(event) =>
+                setCollateralSymbol(event.target.value as CollateralSymbol)
+              }
+              className="cyber-select"
+            >
+              {COLLATERAL_OPTIONS.map((option) => (
+                <option key={option.symbol} value={option.symbol}>
+                  {option.symbol}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <InfoRow label="Status" value={currentStatus} />
-        <InfoRow label="Wallet" value={redeemFlow.address ?? "--"} />
-        <InfoRow
-          label="Current WETH Deposited"
-          value={collateralOverview.overview.formatted.wethDeposited ?? "--"}
+        <div className="space-y-2">
+          <label htmlFor="redeem-weth-amount" className="cyber-label">
+            {collateralSymbol} Amount
+          </label>
+          <div className="cyber-input-wrap">
+            <input
+              id="redeem-weth-amount"
+              type="number"
+              min="0"
+              step="any"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className="cyber-input"
+              placeholder="1"
+            />
+          </div>
+        </div>
+
+        <ActionInfoRow label="Status" value={currentStatus} />
+        <ActionInfoRow label="Wallet" value={redeemFlow.address ?? "--"} />
+        <ActionInfoRow
+          label={`Current ${collateralSymbol} Deposited`}
+          value={currentDeposited ?? "--"}
         />
-        <InfoRow
+        <ActionInfoRow
           label="Current Total Collateral Value"
           value={
             collateralOverview.overview.formatted.totalCollateralUsd ?? "--"
           }
         />
-        <InfoRow
+        <ActionInfoRow
           label="Current Total DSC Minted"
           value={accountOverview.overview.formatted.totalDscMinted ?? "--"}
         />
-        <InfoRow
+        <ActionInfoRow
           label="Current Health Factor"
           value={accountOverview.overview.formatted.healthFactor ?? "--"}
         />
 
         <div className="flex gap-3">
-          <button
+          <ActionPrimaryButton
             type="submit"
             disabled={isDisabled}
-            className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+            fullWidth={false}
+            className="flex-1"
           >
-            {redeemFlow.status.isPending ? "Processing..." : "Redeem WETH"}
-          </button>
+            {redeemFlow.status.isPending
+              ? "Processing..."
+              : `Redeem ${collateralSymbol}`}
+          </ActionPrimaryButton>
 
-          <button
+          <ActionSecondaryButton
             type="button"
             onClick={redeemFlow.reset}
             disabled={redeemFlow.status.isPending}
-            className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset
-          </button>
+          </ActionSecondaryButton>
         </div>
       </form>
     </section>

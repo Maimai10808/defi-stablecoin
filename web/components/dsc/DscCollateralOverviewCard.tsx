@@ -11,9 +11,9 @@ function OverviewRow({
   value: string | number | null | undefined;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border px-3 py-2">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium break-all">{value ?? "--"}</span>
+    <div className="cyber-row">
+      <span className="cyber-row-label">{label}</span>
+      <span className="cyber-row-value break-all">{value ?? "--"}</span>
     </div>
   );
 }
@@ -31,11 +31,12 @@ export function DscCollateralOverviewCard() {
   } = useDscCollateralOverview();
 
   return (
-    <section className="rounded-2xl border p-4">
+    <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Collateral Overview</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <div className="cyber-kicker">Collateral Ledger</div>
+          <h2 className="cyber-title mt-3">Collateral Overview</h2>
+          <p className="cyber-description mt-2 text-sm">
             Read-only collateral state for the connected wallet
           </p>
         </div>
@@ -44,25 +45,25 @@ export function DscCollateralOverviewCard() {
       </div>
 
       {!isConnected ? (
-        <p className="mt-4 text-sm text-muted-foreground">
+        <p className="cyber-description mt-5 text-sm">
           Wallet not connected.
         </p>
       ) : !isSupportedChain ? (
-        <p className="mt-4 text-sm text-muted-foreground">
+        <p className="cyber-description mt-5 text-sm">
           Unsupported chain. Current chainId: {chainId ?? "unknown"}
         </p>
       ) : isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">
+        <p className="cyber-description mt-5 text-sm">
           Loading collateral data...
         </p>
       ) : isError ? (
-        <p className="mt-4 text-sm text-red-500">
+        <p className="mt-5 text-sm text-[var(--destructive)]">
           Failed to load collateral data: {error?.message ?? "Unknown error"}
         </p>
       ) : (
-        <div className="mt-4 space-y-3">
+        <div className="mt-5 space-y-3">
           {isFetching ? (
-            <p className="text-xs text-muted-foreground">Refreshing...</p>
+            <p className="cyber-chip">Refreshing</p>
           ) : null}
 
           <OverviewRow

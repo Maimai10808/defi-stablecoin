@@ -4,21 +4,23 @@ import { useCallback, useMemo, useState } from "react";
 import { BaseError, parseUnits } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
+import { dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
-import { dscEngineAbi } from "@/lib/contracts/abi";
 import {
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
 
-type RedeemStep =
+type DepositAndMintStep =
   | "idle"
-  | "redeeming"
-  | "redeem-confirming"
+  | "approving"
+  | "approve-confirming"
+  | "depositing-and-minting"
+  | "deposit-mint-confirming"
   | "success"
   | "error";
 
-type UseDscRedeemCollateralOptions = {
+type UseDscDepositAndMintOptions = {
   onSuccess?: () => Promise<void> | void;
 };
 
@@ -29,45 +31,38 @@ function getErrorMessage(error: unknown) {
   return String(error);
 }
 
-export function useDscRedeemCollateral(
-  options?: UseDscRedeemCollateralOptions,
-) {
+export function useDscDepositAndMint(options?: UseDscDepositAndMintOptions) {
   const { address, chainId, isConnected } = useAccount();
   const publicClient = usePublicClient({ chainId });
   const { contracts, isSupportedChain } = useProtocolContracts();
   const { writeContractAsync } = useWriteContract();
 
-  const [step, setStep] = useState<RedeemStep>("idle");
+  const [step, setStep] = useState<DepositAndMintStep>("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   const enabled = Boolean(
     address &&
-    isConnected &&
-    isSupportedChain &&
-    contracts?.dscEngine &&
-    contracts?.weth &&
-    publicClient,
+      isConnected &&
+      isSupportedChain &&
+      contracts?.dscEngine &&
+      publicClient,
   );
 
-  const redeemCollateral = useCallback(
-    async (collateralSymbol: CollateralSymbol, amountInput: string) => {
+  const depositAndMint = useCallback(
+    async (
+      collateralSymbol: CollateralSymbol,
+      collateralAmountInput: string,
+      mintAmountInput: string,
+    ) => {
       const addressKey = getAddressKeyForSymbol(collateralSymbol);
       const collateralAddress = addressKey ? contracts?.[addressKey] : undefined;
 
-      if (!enabled || !contracts || !publicClient) {
+      if (!enabled || !contracts || !publicClient || !collateralAddress) {
         const nextError = new Error(
           "Wallet or contract configuration is not ready.",
         );
-        setError(nextError);
-        setStep("error");
-        setStatusMessage(nextError.message);
-        throw nextError;
-      }
-
-      if (!collateralAddress) {
-        const nextError = new Error("Selected collateral is not available.");
         setError(nextError);
         setStep("error");
         setStatusMessage(nextError.message);
@@ -78,38 +73,57 @@ export function useDscRedeemCollateral(
         setError(null);
         setTxHash(null);
 
-        const amount = parseUnits(amountInput || "0", 18);
-        if (amount <= BigInt(0)) {
-          throw new Error("Amount must be greater than zero.");
+        const collateralAmount = parseUnits(collateralAmountInput || "0", 18);
+        const mintAmount = parseUnits(mintAmountInput || "0", 18);
+
+        if (collateralAmount <= BigInt(0) || mintAmount <= BigInt(0)) {
+          throw new Error("Collateral amount and mint amount must be positive.");
         }
 
-        setStep("redeeming");
-        setStatusMessage("Submitting redeem transaction...");
+        setStep("approving");
+        setStatusMessage(`Approving ${collateralSymbol}...`);
 
-        const hash = await writeContractAsync({
-          address: contracts.dscEngine as `0x${string}`,
-          abi: dscEngineAbi,
-          functionName: "redeemCollateral",
-          args: [collateralAddress as `0x${string}`, amount],
+        const approveHash = await writeContractAsync({
+          address: collateralAddress as `0x${string}`,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [contracts.dscEngine as `0x${string}`, collateralAmount],
         });
 
-        setTxHash(hash);
-        setStep("redeem-confirming");
-        setStatusMessage("Waiting for redeem confirmation...");
+        setTxHash(approveHash);
+        setStep("approve-confirming");
+        setStatusMessage("Waiting for collateral approval...");
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-        await publicClient.waitForTransactionReceipt({ hash });
+        setStep("depositing-and-minting");
+        setStatusMessage("Submitting deposit + mint transaction...");
+
+        const flowHash = await writeContractAsync({
+          address: contracts.dscEngine as `0x${string}`,
+          abi: dscEngineAbi,
+          functionName: "depositCollateralAndMintDsc",
+          args: [
+            collateralAddress as `0x${string}`,
+            collateralAmount,
+            mintAmount,
+          ],
+        });
+
+        setTxHash(flowHash);
+        setStep("deposit-mint-confirming");
+        setStatusMessage("Waiting for protocol confirmation...");
+        await publicClient.waitForTransactionReceipt({ hash: flowHash });
 
         if (options?.onSuccess) {
           await options.onSuccess();
         }
 
         setStep("success");
-        setStatusMessage("Redeem transaction confirmed.");
-        return hash;
+        setStatusMessage("Deposit + mint transaction confirmed.");
+        return flowHash;
       } catch (err) {
         const nextError =
           err instanceof Error ? err : new Error(getErrorMessage(err));
-
         setError(nextError);
         setStep("error");
         setStatusMessage(nextError.message);
@@ -126,7 +140,11 @@ export function useDscRedeemCollateral(
     setError(null);
   }, []);
 
-  const isPending = step === "redeeming" || step === "redeem-confirming";
+  const isPending =
+    step === "approving" ||
+    step === "approve-confirming" ||
+    step === "depositing-and-minting" ||
+    step === "deposit-mint-confirming";
 
   const status = useMemo(
     () => ({
@@ -148,7 +166,7 @@ export function useDscRedeemCollateral(
     isSupportedChain,
     contracts,
     enabled,
-    redeemCollateral,
+    depositAndMint,
     reset,
     status,
     error,

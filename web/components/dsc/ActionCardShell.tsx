@@ -18,26 +18,32 @@ export function ActionCardShell({
   errorMessage,
 }: ActionCardShellProps) {
   return (
-    <section className="rounded-2xl border p-4">
-      <div>
-        <h3 className="text-lg font-semibold">{title}</h3>
-        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+    <section className="cyber-panel cyber-panel-hover cyber-panel-terminal p-5 md:p-6">
+      <div className="cyber-panel-header">
+        <div>
+          <div className="cyber-terminal-bar">
+            <span className="cyber-terminal-dot text-[var(--destructive)]" />
+            <span className="cyber-terminal-dot text-[var(--accent-secondary)]" />
+            <span className="cyber-terminal-dot text-[var(--accent)]" />
+            protocol/action
+          </div>
+          <h3 className="cyber-title mt-4">{title}</h3>
+          <p className="cyber-description mt-2 text-sm">{description}</p>
+        </div>
       </div>
 
       <div className="mt-4 space-y-4">
         {children}
 
         {status ? (
-          <div className="rounded-xl border px-3 py-2">
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-muted-foreground">Status</span>
-              <span className="text-sm font-medium">{status}</span>
-            </div>
+          <div className="cyber-row">
+            <span className="cyber-row-label">Status</span>
+            <span className="cyber-row-value text-[var(--accent)]">{status}</span>
           </div>
         ) : null}
 
         {errorMessage ? (
-          <p className="text-sm text-red-500">{errorMessage}</p>
+          <p className="text-sm text-[var(--destructive)]">{errorMessage}</p>
         ) : null}
 
         {footer ? <div className="flex flex-wrap gap-2">{footer}</div> : null}

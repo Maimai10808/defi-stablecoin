@@ -4,21 +4,23 @@ import { useCallback, useMemo, useState } from "react";
 import { BaseError, parseUnits } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
+import { dscAbi, dscEngineAbi } from "@/lib/contracts/abi";
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
-import { dscEngineAbi } from "@/lib/contracts/abi";
 import {
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
 
-type RedeemStep =
+type LiquidationStep =
   | "idle"
-  | "redeeming"
-  | "redeem-confirming"
+  | "approving"
+  | "approve-confirming"
+  | "liquidating"
+  | "liquidation-confirming"
   | "success"
   | "error";
 
-type UseDscRedeemCollateralOptions = {
+type UseDscLiquidationOptions = {
   onSuccess?: () => Promise<void> | void;
 };
 
@@ -29,45 +31,39 @@ function getErrorMessage(error: unknown) {
   return String(error);
 }
 
-export function useDscRedeemCollateral(
-  options?: UseDscRedeemCollateralOptions,
-) {
+export function useDscLiquidation(options?: UseDscLiquidationOptions) {
   const { address, chainId, isConnected } = useAccount();
   const publicClient = usePublicClient({ chainId });
   const { contracts, isSupportedChain } = useProtocolContracts();
   const { writeContractAsync } = useWriteContract();
 
-  const [step, setStep] = useState<RedeemStep>("idle");
+  const [step, setStep] = useState<LiquidationStep>("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   const enabled = Boolean(
     address &&
-    isConnected &&
-    isSupportedChain &&
-    contracts?.dscEngine &&
-    contracts?.weth &&
-    publicClient,
+      isConnected &&
+      isSupportedChain &&
+      contracts?.dsc &&
+      contracts?.dscEngine &&
+      publicClient,
   );
 
-  const redeemCollateral = useCallback(
-    async (collateralSymbol: CollateralSymbol, amountInput: string) => {
+  const liquidate = useCallback(
+    async (
+      collateralSymbol: CollateralSymbol,
+      targetUser: `0x${string}`,
+      debtToCoverInput: string,
+    ) => {
       const addressKey = getAddressKeyForSymbol(collateralSymbol);
       const collateralAddress = addressKey ? contracts?.[addressKey] : undefined;
 
-      if (!enabled || !contracts || !publicClient) {
+      if (!enabled || !contracts || !publicClient || !collateralAddress) {
         const nextError = new Error(
           "Wallet or contract configuration is not ready.",
         );
-        setError(nextError);
-        setStep("error");
-        setStatusMessage(nextError.message);
-        throw nextError;
-      }
-
-      if (!collateralAddress) {
-        const nextError = new Error("Selected collateral is not available.");
         setError(nextError);
         setStep("error");
         setStatusMessage(nextError.message);
@@ -78,38 +74,55 @@ export function useDscRedeemCollateral(
         setError(null);
         setTxHash(null);
 
-        const amount = parseUnits(amountInput || "0", 18);
-        if (amount <= BigInt(0)) {
-          throw new Error("Amount must be greater than zero.");
+        const debtToCover = parseUnits(debtToCoverInput || "0", 18);
+        if (debtToCover <= BigInt(0)) {
+          throw new Error("Debt to cover must be greater than zero.");
         }
 
-        setStep("redeeming");
-        setStatusMessage("Submitting redeem transaction...");
+        setStep("approving");
+        setStatusMessage("Approving DSC for liquidation...");
 
-        const hash = await writeContractAsync({
-          address: contracts.dscEngine as `0x${string}`,
-          abi: dscEngineAbi,
-          functionName: "redeemCollateral",
-          args: [collateralAddress as `0x${string}`, amount],
+        const approveHash = await writeContractAsync({
+          address: contracts.dsc as `0x${string}`,
+          abi: dscAbi,
+          functionName: "approve",
+          args: [contracts.dscEngine as `0x${string}`, debtToCover],
         });
 
-        setTxHash(hash);
-        setStep("redeem-confirming");
-        setStatusMessage("Waiting for redeem confirmation...");
+        setTxHash(approveHash);
+        setStep("approve-confirming");
+        setStatusMessage("Waiting for DSC approval...");
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-        await publicClient.waitForTransactionReceipt({ hash });
+        setStep("liquidating");
+        setStatusMessage("Submitting liquidation transaction...");
+
+        const liquidationHash = await writeContractAsync({
+          address: contracts.dscEngine as `0x${string}`,
+          abi: dscEngineAbi,
+          functionName: "liquidate",
+          args: [
+            collateralAddress as `0x${string}`,
+            targetUser,
+            debtToCover,
+          ],
+        });
+
+        setTxHash(liquidationHash);
+        setStep("liquidation-confirming");
+        setStatusMessage("Waiting for liquidation confirmation...");
+        await publicClient.waitForTransactionReceipt({ hash: liquidationHash });
 
         if (options?.onSuccess) {
           await options.onSuccess();
         }
 
         setStep("success");
-        setStatusMessage("Redeem transaction confirmed.");
-        return hash;
+        setStatusMessage("Liquidation transaction confirmed.");
+        return liquidationHash;
       } catch (err) {
         const nextError =
           err instanceof Error ? err : new Error(getErrorMessage(err));
-
         setError(nextError);
         setStep("error");
         setStatusMessage(nextError.message);
@@ -126,7 +139,11 @@ export function useDscRedeemCollateral(
     setError(null);
   }, []);
 
-  const isPending = step === "redeeming" || step === "redeem-confirming";
+  const isPending =
+    step === "approving" ||
+    step === "approve-confirming" ||
+    step === "liquidating" ||
+    step === "liquidation-confirming";
 
   const status = useMemo(
     () => ({
@@ -148,7 +165,7 @@ export function useDscRedeemCollateral(
     isSupportedChain,
     contracts,
     enabled,
-    redeemCollateral,
+    liquidate,
     reset,
     status,
     error,

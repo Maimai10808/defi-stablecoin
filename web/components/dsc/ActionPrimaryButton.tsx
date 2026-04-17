@@ -19,8 +19,7 @@ export function ActionPrimaryButton({
       type={type}
       className={[
         fullWidth ? "w-full" : "",
-        "rounded-xl border px-4 py-2 font-medium transition-opacity",
-        "disabled:cursor-not-allowed disabled:opacity-50",
+        "cyber-button",
         className,
       ]
         .filter(Boolean)
