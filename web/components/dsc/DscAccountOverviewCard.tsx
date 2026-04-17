@@ -1,3 +1,4 @@
+// web/components/dsc/DscAccountOverviewCard.tsx
 "use client";
 
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
@@ -31,9 +32,65 @@ export function DscAccountOverviewCard() {
     error,
   } = useDscAccountOverview();
 
+  if (!isConnected) {
+    return (
+      <section className="rounded-2xl border p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Account Overview</h2>
+        </div>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Wallet not connected.
+        </p>
+
+        <div className="mt-4">
+          <WalletConnectCard />
+        </div>
+      </section>
+    );
+  }
+
+  if (!isSupportedChain) {
+    return (
+      <section className="rounded-2xl border p-4">
+        <h2 className="text-lg font-semibold">Account Overview</h2>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Unsupported chain. Current chainId: {chainId ?? "unknown"}
+        </p>
+
+        <div className="mt-4">
+          <WalletConnectCard />
+        </div>
+      </section>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <section className="rounded-2xl border p-4">
+        <h2 className="text-lg font-semibold">Account Overview</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Loading account data...
+        </p>
+      </section>
+    );
+  }
+
+  if (isError) {
+    return (
+      <section className="rounded-2xl border p-4">
+        <h2 className="text-lg font-semibold">Account Overview</h2>
+        <p className="mt-2 text-sm text-red-500">
+          Failed to load account data: {error?.message ?? "Unknown error"}
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-2xl border p-4">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold">Account Overview</h2>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -41,50 +98,30 @@ export function DscAccountOverviewCard() {
           </p>
         </div>
 
-        <WalletConnectCard />
+        {isFetching ? (
+          <span className="text-xs text-muted-foreground">Refreshing...</span>
+        ) : null}
       </div>
 
-      {!isConnected ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          Wallet not connected.
-        </p>
-      ) : !isSupportedChain ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          Unsupported chain. Current chainId: {chainId ?? "unknown"}
-        </p>
-      ) : isLoading ? (
-        <p className="mt-4 text-sm text-muted-foreground">
-          Loading account data...
-        </p>
-      ) : isError ? (
-        <p className="mt-4 text-sm text-red-500">
-          Failed to load account data: {error?.message ?? "Unknown error"}
-        </p>
-      ) : (
-        <div className="mt-4 space-y-3">
-          {isFetching ? (
-            <p className="text-xs text-muted-foreground">Refreshing...</p>
-          ) : null}
-
-          <OverviewRow label="Wallet Address" value={address} />
-          <OverviewRow
-            label="Health Factor"
-            value={overview?.formatted?.healthFactor ?? "--"}
-          />
-          <OverviewRow
-            label="Total DSC Minted"
-            value={overview?.formatted?.totalDscMinted ?? "--"}
-          />
-          <OverviewRow
-            label="Collateral Value (USD)"
-            value={overview?.formatted?.collateralValueInUsd ?? "--"}
-          />
-          <OverviewRow
-            label="DSC Balance"
-            value={overview?.formatted?.dscBalance ?? "--"}
-          />
-        </div>
-      )}
+      <div className="mt-4 space-y-3">
+        <OverviewRow label="Wallet Address" value={address} />
+        <OverviewRow
+          label="Collateral Value (USD)"
+          value={overview?.formatted?.collateralValueInUsd ?? "--"}
+        />
+        <OverviewRow
+          label="DSC Balance"
+          value={overview?.formatted?.dscBalance ?? "--"}
+        />
+        <OverviewRow
+          label="Total DSC Minted"
+          value={overview?.formatted?.totalDscMinted ?? "--"}
+        />
+        <OverviewRow
+          label="Health Factor"
+          value={overview?.formatted?.healthFactor ?? "--"}
+        />
+      </div>
     </section>
   );
 }

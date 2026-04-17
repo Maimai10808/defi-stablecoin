@@ -9,8 +9,11 @@ import { dscAbi, dscEngineAbi } from "@/lib/contracts/abi";
 
 type AccountInfoResult = readonly [bigint, bigint];
 
+const MAX_UINT256 = (BigInt(1) << BigInt(256)) - BigInt(1);
+
 function format18(value: bigint | undefined, digits = 4) {
   if (value === undefined) return null;
+  if (value === MAX_UINT256) return "∞";
   return Number(formatUnits(value, 18)).toFixed(digits);
 }
 

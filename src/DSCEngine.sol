@@ -402,4 +402,11 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
     function getMinHealthFactor() external pure returns (uint256 _minimum) {
         _minimum = MINIMUN_HEALTH_FACTOR_1e18;
     }
+
+    function getCollateralBalanceOfUser(
+        address _user,
+        address _token
+    ) public view returns (uint256 _amount) {
+        _amount = s_collatralDepositedMap[_user][_token];
+    }
 }
