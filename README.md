@@ -1,363 +1,443 @@
-# defi-stablecoin
+# DSCoin
 
-这是我之前做的一个基于 Foundry 的去中心化稳定币项目。这个项目的核心目标，是实现一个最小化的、超额抵押的美元稳定币系统。用户可以把 `WETH` 和 `WBTC` 这类外部资产抵押进协议，然后按抵押品价值铸造稳定币 `DSC`。
-
-先启动本地链：
-
-anvil
-
-然后另开一个终端，在项目根目录执行：
-
-./tools/reset-local-dev.sh && source ./.local-dev.env
-
-这个命令现在的含义就是：1. forge build 编译 2. sync-abi.sh 同步 ABI 到前端 3. DeployDSC.s.sol 部署合约 4. 部署脚本自动把最新地址写进 31337.json
-
-# 1. 开本地链
-
-anvil
-
-# 2. 部署并同步给前端
-
-./tools/reset-local-dev.sh && source ./.local-dev.env
-
-# 3. 启动前端
-
-cd web
-npm run dev
-
-我做这个项目的出发点，不是去复刻一个完整的 MakerDAO，而是自己把稳定币协议里最核心的几个机制真正写一遍、跑一遍、测一遍，包括：
-
-- 抵押品存入
-- 稳定币铸造
-- 健康因子计算
-- 抵押品赎回
-- 稳定币销毁
-- 清算流程
-
-这个 README 我按“面试讲解”的思路来写。你可以把它当成项目介绍、复习笔记和讲稿。
+[中文](#中文说明) | [English](#english)
 
 ---
 
-## 1. 这个项目是干什么的
+## 中文说明
 
-如果我要用一句话介绍这个项目，我会这样说：
+### 项目简介
 
-> 这是我用 Solidity 和 Foundry 写的一个去中心化超额抵押稳定币原型。用户可以抵押 WETH 和 WBTC，协议通过 Chainlink 价格预言机计算抵押品价值，然后允许用户铸造美元锚定的稳定币 DSC。为了控制风险，我在协议里实现了健康因子和清算机制，保证系统整体抵押价值尽量始终高于稳定币总供应量。
+`DSCoin` 是一个基于超额抵押模型实现的去中心化稳定币协议示例项目。  
+项目使用 Solidity + Foundry 编写核心智能合约，接入 Chainlink Price Feeds 获取实时价格数据，并通过健康因子与清算机制管理协议风险。同时提供了一个基于 Next.js 的前端 Demo，用于演示抵押、铸造、赎回、销毁与清算等核心流程。
 
-更通俗一点说，这个项目解决的是一个典型 DeFi 问题：
+### 项目亮点
 
-- 用户想获得稳定币流动性
-- 但协议不能无抵押放贷
-- 所以用户需要先抵押波动资产
-- 协议根据抵押品价值，限制他最多能铸造多少稳定币
-- 如果用户仓位变得不安全，就允许别人来清算
+- 基于 `Foundry` 完成合约开发、部署脚本、单元测试、交互测试和模糊测试
+- 接入 `Chainlink Price Feeds`，将 `WETH`、`WBTC` 等波动资产统一换算为美元价值
+- 实现基于健康因子的清算逻辑，用于管理风险仓位
+- 将稳定币本体与协议引擎拆分为两个核心合约，职责清晰
+- 提供 `Next.js + wagmi + RainbowKit` 前端 Demo，完整演示协议主流程
+- 测试覆盖率达到约 `95%`
 
----
+### 智能合约设计
 
-## 2. 我在面试里会怎么讲这个项目
+协议核心由两个主要合约组成：
 
-### 2.1 30 秒版本
+#### 1. `DecentralizedStableCoin`
 
-如果面试官时间很短，我会这样讲：
+稳定币本体，负责 `DSC` 的发行与销毁。
 
-> 我做了一个 DeFi 稳定币原型项目，核心是一个超额抵押模型。用户可以抵押 WETH 和 WBTC，协议通过 Chainlink Price Feed 计算美元价值，然后铸造稳定币 DSC。为了保证系统安全，我实现了健康因子、抵押率约束和清算逻辑。这个项目主要是为了让我完整走一遍稳定币协议的核心机制，而不是只停留在概念层。
+- 基于 ERC20 实现
+- `mint` / `burn` 权限由协议引擎统一控制
+- 将“代币逻辑”和“协议规则”解耦
 
-### 2.2 1 到 2 分钟版本
+#### 2. `DSCEngine`
 
-如果让我稍微展开一点，我会这样讲：
+协议业务核心，负责管理抵押资产、债务、价格换算和清算逻辑。
 
-> 这个项目本质上是一个简化版的超额抵押稳定币系统，有点类似 MakerDAO 的最小实现。我把系统拆成两个核心合约。
-> 一个是 `DecentralizedStableCoin`，它本身就是稳定币 `DSC`，负责 ERC20 的 mint 和 burn。
-> 另一个是 `DSCEngine`，它是整个协议的业务核心，负责管理抵押品、计算用户仓位价值、控制铸造额度、处理赎回和清算。
->
-> 用户先把 WETH 或 WBTC 存进协议，协议通过 Chainlink 预言机获取价格，把抵押品换算成美元价值，然后根据健康因子判断用户最多能铸造多少 DSC。
->
-> 我这里设定了一个 50% 的 liquidation ratio，本质上对应用户大致需要维持 200% 左右的抵押率，健康因子不能低于 1。如果用户因为市场波动导致健康因子跌破阈值，其他人就可以用 DSC 替他偿还部分债务，并拿走一部分抵押品，同时获得 10% 的 liquidation bonus。
->
-> 除了实现主流程，我还用 Foundry 写了单元测试和 invariant test，重点验证系统总抵押价值不能低于稳定币总供应量。这让我不仅实现了功能，还把协议最关键的安全约束也验证了一遍。
+主要职责包括：
 
-### 2.3 更像“我自己做了什么”的版本
+- 存入抵押品
+- 铸造 DSC
+- 销毁 DSC
+- 赎回抵押品
+- 计算账户总抵押价值
+- 计算健康因子
+- 在健康因子过低时执行清算
 
-如果面试官更关心“你到底做了什么”，我会这样讲：
+### 协议工作流程
 
-> 这个项目里我自己重点做了三件事。
-> 第一，我把稳定币协议的核心状态机写清楚了，也就是抵押、铸造、销毁、赎回和清算之间的关系。
-> 第二，我把价格预言机引进来，做了抵押品美元估值和健康因子计算，让协议能根据风险做约束。
-> 第三，我补了测试，尤其是单元测试和 invariant test，去验证协议在不同操作下仍然保持“抵押价值 >= 稳定币供应量”这个关键安全性质。
->
-> 所以这个项目对我来说不只是写了几个合约，而是把一个典型 DeFi 协议的核心机制真正落到了代码和测试里。
+1. 用户存入 `WETH` 或 `WBTC` 作为抵押品。
+2. 协议通过 Chainlink 价格预言机计算抵押品的美元价值。
+3. 用户在满足抵押率要求的前提下铸造 `DSC`。
+4. 如果市场波动导致仓位风险上升，健康因子下降。
+5. 当健康因子低于阈值时，其他用户可以发起清算，偿还部分债务并获得对应抵押品和清算奖励。
 
----
+### 风险控制机制
 
-## 3. 项目架构
-
-这个项目最核心的代码主要集中在下面几个文件里：
-
-- [src/DSCEngine.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/src/DSCEngine.sol)
-- [src/DecentralizedStableCoin.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/src/DecentralizedStableCoin.sol)
-- [script/DeployDSC.s.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/script/DeployDSC.s.sol)
-- [script/HelperConfig.s.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/script/HelperConfig.s.sol)
-- [test/unit/DSCEngineTest.t.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/test/unit/DSCEngineTest.t.sol)
-- [test/fuzz/OpenInvariantsTest.t.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/test/fuzz/OpenInvariantsTest.t.sol)
-
-### 3.1 `DecentralizedStableCoin.sol`
-
-这个合约是稳定币本体。
-
-我这里让它继承了 OpenZeppelin 的 `ERC20Burnable` 和 `Ownable`，并且只允许 owner 去调用 `mint` 和 `burn`。部署完成后，我会把这个合约的 ownership 转移给 `DSCEngine`，这样稳定币的发行和销毁权就统一由协议引擎控制。
-
-这个设计的好处是职责比较清楚：
-
-- `DSC` 合约只负责“币”
-- `DSCEngine` 负责“规则”
-
-### 3.2 `DSCEngine.sol`
-
-这个合约是整个协议的核心。
-
-我把主要逻辑都放在这里，包括：
-
-- 存抵押品 `depositCollateral`
-- 存抵押品并铸币 `depositCollateralAndMintDsc`
-- 铸造 DSC `mintDsc`
-- 销毁 DSC `burnDsc`
-- 赎回抵押品 `redeemCollateral`
-- 销毁后赎回 `redeemCollateralForDsc`
-- 清算 `liquidate`
-
-这个合约内部维护了几类关键状态：
-
-- 每种抵押品对应的价格预言机地址
-- 每个用户存了多少抵押品
-- 每个用户铸造了多少 DSC
-- 协议支持哪些抵押品
-
----
-
-## 4. 这个协议是怎么跑起来的
-
-如果我要从业务流程角度讲，我会这样说：
-
-### 第一步：用户先存入抵押品
-
-用户先把协议支持的抵押资产，比如 WETH 或 WBTC，转进协议。
-
-协议会记录：
-
-- 谁存的
-- 存的是哪种币
-- 存了多少
-
-### 第二步：协议根据预言机计算抵押品价值
-
-协议接入了 Chainlink Price Feed。
-也就是说，用户虽然存进来的是 ETH 或 BTC 这种波动资产，但协议内部会把它们统一换算成美元价值。
-
-这样后面在判断用户能铸造多少 DSC 时，就有统一计价标准。
-
-### 第三步：用户基于抵押品铸造 DSC
-
-用户可以根据自己当前抵押品的美元价值去铸造 DSC。
-
-但这里不是想铸多少就铸多少，因为协议会检查健康因子。
-
-### 第四步：协议用健康因子限制风险
-
-健康因子本质上是在衡量：
-
-> 这个用户的抵押品，是否足够覆盖他已经铸造出来的稳定币债务。
-
-在这个实现里：
-
-- `LIQUIDATION_RATIO = 50`
-- `MIN_HEALTH_FACTOR = 1e18`
-
-它的含义可以直接讲成：
-
-> 我要求用户整体上大致保持 200% 抵押率，只有这样他的仓位才足够安全。
-
-如果用户铸造太多 DSC，或者抵押品价格下跌，健康因子就会下降。
-一旦健康因子低于最小阈值，这个仓位就会进入可清算状态。
-
-### 第五步：不安全仓位会被清算
-
-当仓位不安全时，其他用户可以发起清算。
-
-清算流程是：
-
-1. 清算人拿自己的 DSC 来偿还一部分坏账
-2. 协议把被清算用户的一部分抵押品给清算人
-3. 清算人还能拿到额外 10% 的 bonus
-
-这样协议就能通过市场机制，把风险仓位逐步修复掉。
-
----
-
-## 5. 这个项目里我想体现的技术点
-
-如果面试官问“你通过这个项目体现了什么能力”，我建议你往这几个方向讲。
-
-### 5.1 我理解了 DeFi 协议的核心状态约束
-
-这不是一个简单 ERC20 项目，而是一个有风险控制的协议。
-
-我在这个项目里真正处理了：
-
-- 抵押资产和债务的关系
-- 铸造上限的约束
-- 健康因子建模
-- 清算激励设计
-
-这说明我不是只会写功能代码，而是能把协议规则抽象成合约逻辑。
-
-### 5.2 我把预言机接进了核心逻辑
-
-这个项目不是纯本地数学游戏，因为稳定币协议一定要知道抵押品现在值多少钱。
-
-所以我把 Chainlink Price Feed 接到了协议里，并做了精度换算，让合约内部可以统一用 18 位精度做价值计算。
-
-这个点面试里很值得讲，因为它体现你知道链上协议不是孤立运行的，很多逻辑都依赖外部数据源。
-
-### 5.3 我考虑了协议安全边界
-
-我在 `DSCEngine` 里加了：
-
-- 白名单抵押品限制
-- `ReentrancyGuard`
-- 健康因子检查
-- 清算后 health factor 必须改善的约束
-
-这说明你不是只考虑 happy path，而是开始考虑协议什么时候应该 revert、什么时候会有风险。
-
-### 5.4 我补了测试而不是只写功能
-
-这个项目有单元测试，也有 invariant test。
-
-我会重点强调这一点：
-
-> 我不是只验证某个函数能不能调用成功，而是去验证协议在一系列操作之后，仍然满足最关键的不变量，比如“总抵押价值 >= 稳定币总供应量”。
-
-这个表达在面试里会比单纯说“我写了测试”更有分量。
-
----
-
-## 6. 面试时可以直接复述的讲稿
-
-下面这段你可以直接背，或者改成你自己的说法。
-
-> 这个项目是我自己写的一个去中心化稳定币协议原型，主要目的是把 DeFi 里超额抵押稳定币的核心机制完整实现一遍。
-> 我把系统拆成两个主要合约，一个是稳定币 `DSC` 本身，另一个是协议引擎 `DSCEngine`。`DSCEngine` 负责管理抵押品、根据 Chainlink 价格预言机计算抵押资产价值、控制用户铸造稳定币的额度，并在用户仓位不安全时触发清算。
->
-> 这个协议支持 WETH 和 WBTC 作为抵押品。用户先存入抵押品，协议把它们转换成美元价值，然后允许用户按一定抵押率去铸造 DSC。我这里实现了 health factor 机制，本质上就是用来判断用户的抵押品是否足够覆盖债务。为了让系统更安全，我设置了较高的超额抵押要求，并且当健康因子跌破阈值时，允许外部清算人偿还债务并拿走一部分抵押品，同时获得清算奖励。
->
-> 这个项目里我觉得比较有价值的部分，不只是把合约功能写出来，而是把协议的核心约束也做了测试验证。我用 Foundry 写了 unit test 和 invariant test，重点去验证系统整体抵押价值不能低于稳定币总供应量。这个过程让我对稳定币协议的核心机制、风险控制和测试方法都有了更具体的理解。
-
----
-
-## 7. 面试官如果继续追问，我可以怎么答
-
-### Q1: 你为什么要把系统拆成两个合约？
-
-我会这样答：
-
-> 因为我想把“资产本体”和“协议规则”分开。`DecentralizedStableCoin` 只负责代币本身的 mint 和 burn，而 `DSCEngine` 负责所有业务规则，比如抵押、赎回、健康因子和清算。这样职责更清楚，也更接近真实协议设计。
-
-### Q2: 健康因子是什么？
-
-我会这样答：
-
-> 健康因子本质上是一个风险指标，用来衡量用户当前抵押品是否足够覆盖他已经铸造出来的稳定币债务。抵押品价值越高，健康因子越高；债务越多，健康因子越低。低于阈值时，这个账户就可以被清算。
-
-### Q3: 为什么要用 Chainlink？
-
-我会这样答：
-
-> 因为协议必须知道抵押品的实时美元价值，否则没法判断用户到底能铸造多少稳定币，也没法判断仓位是否需要清算。Chainlink 是比较典型的链上价格预言机方案，适合这种场景。
-
-### Q4: 你这个项目最关键的安全约束是什么？
-
-我会这样答：
-
-> 我认为最关键的约束是协议整体的抵押品美元价值，至少不能低于稳定币总供应量。所以我专门写了 invariant test 去验证这一点。对稳定币系统来说，这类系统级约束比单个函数能不能跑通更重要。
-
-### Q5: 这个项目还有哪些不足？
-
-我会这样答：
-
-> 这是一个原型项目，不是生产级协议。它还有一些可以继续补的地方，比如更完整的清算路径测试、更加真实的 fuzz handler、预言机异常情况处理、以及更深入的经济模型验证和安全审计。
-
-这个回答很重要，因为它说明你知道项目边界，而不是把原型说成产品。
-
----
-
-## 8. 从代码角度，我最该回忆哪几个点
-
-如果你面试前时间不多，我建议你优先回忆下面这些点：
-
-1. `DSCEngine` 管什么状态
-2. 用户从抵押到铸造的完整流程
-3. 健康因子是怎么约束 mint 的
-4. 为什么健康因子低了之后能被清算
-5. `DSC` 为什么要交给 `DSCEngine` 持有所有权
-6. 你写了哪些测试，尤其是不变量测试
-
-把这 6 个点讲顺了，这个项目基本就能讲清楚。
-
----
-
-## 9. 项目文件
-
-- [src/DSCEngine.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/src/DSCEngine.sol)
-- [src/DecentralizedStableCoin.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/src/DecentralizedStableCoin.sol)
-- [script/DeployDSC.s.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/script/DeployDSC.s.sol)
-- [script/HelperConfig.s.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/script/HelperConfig.s.sol)
-- [test/unit/DSCEngineTest.t.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/test/unit/DSCEngineTest.t.sol)
-- [test/fuzz/OpenInvariantsTest.t.sol](/Users/mac/Desktop/Web/open/defi-stablecoin/test/fuzz/OpenInvariantsTest.t.sol)
-
-## 10. 本地运行
-
-### 安装依赖
-
-```bash
-git submodule update --init --recursive
-```
-
-### 编译
-
-```bash
-forge build
-```
+- 超额抵押：协议不允许无抵押铸币
+- Health Factor：用于衡量当前仓位是否安全
+- Liquidation：当仓位不安全时允许外部清算
+- Chainlink 喂价：避免使用本地硬编码价格
+- Reentrancy 防护与白名单抵押品控制
 
 ### 测试
+
+这个项目强调的不只是“功能可用”，还包括“协议约束成立”。
+
+测试内容包括：
+
+- 单元测试
+- 交互测试
+- 模糊测试（Fuzz Testing）
+- 协议不变量测试
+
+重点验证：
+
+- 抵押、铸造、销毁、赎回、清算等核心路径
+- 抵押品价值与债务之间的关系是否始终满足协议约束
+- 系统在不同输入和极端情况下的健壮性
+
+### 前端说明
+
+项目包含一个基于 `Next.js` 的前端演示页面，主要用于展示协议核心功能，而不是做成完整商业产品。
+
+前端当前主要包含：
+
+- 协议说明模块
+- 账户总览与抵押品总览
+- 抵押 / 铸造 / 销毁 / 赎回操作
+- 组合流程操作
+- 清算模块
+- `WETH / WBTC` 双抵押品演示
+
+前端的目标是帮助别人快速理解：
+
+- 这个协议能做什么
+- 协议的风险控制是如何工作的
+- 合约和前端是如何对接的
+
+### 技术栈
+
+#### 合约侧
+
+- Solidity
+- Foundry
+- OpenZeppelin
+- Chainlink
+
+#### 前端侧
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- wagmi
+- RainbowKit
+- viem
+
+### 项目结构
+
+```text
+.
+├── src/                     # 核心智能合约
+├── script/                  # Foundry 部署与配置脚本
+├── test/                    # 单元测试 / 模糊测试 / 不变量测试
+├── tools/                   # 本地开发辅助脚本
+├── web/                     # Next.js 前端
+│   ├── app/                 # App Router 页面
+│   ├── components/          # 前端组件
+│   ├── hooks/               # 合约交互 hooks
+│   └── lib/contracts/       # ABI 与部署地址
+└── README.md
+```
+
+### 本地开发
+
+#### 1. 启动本地链
+
+```bash
+anvil
+```
+
+#### 2. 部署合约并同步到前端
+
+在项目根目录执行：
+
+```bash
+./tools/reset-local-dev.sh && source ./.local-dev.env
+```
+
+这个脚本会完成以下事情：
+
+- 编译 Foundry 合约
+- 部署本地合约
+- 同步 ABI 到前端
+- 将最新地址写入 `web/lib/contracts/addresses/31337.json`
+- 预置本地演示状态
+- 生成 `.local-dev.env` 供后续脚本和调试使用
+
+#### 3. 启动前端
+
+```bash
+cd web
+npm run dev
+```
+
+默认启动后可以在本地浏览器中访问前端 Demo。
+
+### 常用开发命令
+
+#### 运行测试
 
 ```bash
 forge test
 ```
 
-### 运行不变量测试
+#### 查看覆盖率
 
 ```bash
-forge test --match-path test/fuzz/OpenInvariantsTest.t.sol
+forge coverage
 ```
 
-### 本地部署
+#### 构建前端
 
-先启动：
+```bash
+cd web
+npm run build
+```
+
+### Demo 演示建议
+
+如果你要向别人展示这个项目，建议按下面的顺序演示：
+
+1. 连接钱包
+2. 查看账户总览和抵押品信息
+3. 存入 `WETH` 或 `WBTC`
+4. 铸造 `DSC`
+5. 展示 health factor 的变化
+6. 进行销毁和赎回
+7. 最后演示清算逻辑
+
+这样可以完整体现这个协议的闭环，而不只是展示单个按钮交互。
+
+### 为什么这个项目有价值
+
+这个项目体现的不是单一合约开发，而是一套完整的 DeFi 协议实现能力：
+
+- 能把协议规则抽象为智能合约状态机
+- 能接入预言机并做价格换算
+- 能设计风险控制与清算机制
+- 能使用 Foundry 对协议安全性做系统验证
+- 能把链上协议通过前端页面可视化演示出来
+
+### 后续可扩展方向
+
+- 支持更多抵押品类型
+- 增加更完整的前端交易状态反馈
+- 接入测试网部署
+- 增加协议参数治理能力
+- 增加事件分析与数据看板
+
+---
+
+## English
+
+### Overview
+
+`DSCoin` is a decentralized stablecoin protocol demo built around an overcollateralization model.  
+The project uses Solidity + Foundry for the core smart contracts, integrates Chainlink Price Feeds for real-time asset pricing, and manages protocol risk through a health-factor-driven liquidation mechanism. It also includes a Next.js frontend demo for showcasing the full collateralize / mint / burn / redeem / liquidate workflow.
+
+### Highlights
+
+- Built with `Foundry` for contract development, deployment scripts, unit tests, interaction tests, and fuzz testing
+- Integrates `Chainlink Price Feeds` to convert volatile collateral assets such as `WETH` and `WBTC` into USD-denominated values
+- Implements a health-factor-based liquidation system for risky positions
+- Separates the stablecoin token and the protocol engine into two focused contracts
+- Includes a `Next.js + wagmi + RainbowKit` frontend demo for end-to-end protocol interaction
+- Achieves roughly `95%` test coverage
+
+### Smart Contract Architecture
+
+The protocol is centered around two main contracts:
+
+#### 1. `DecentralizedStableCoin`
+
+The stablecoin token contract responsible for minting and burning `DSC`.
+
+- ERC20-based implementation
+- `mint` / `burn` permissions are controlled by the protocol engine
+- Clean separation between token logic and protocol rules
+
+#### 2. `DSCEngine`
+
+The protocol engine that manages collateral, debt accounting, pricing, and liquidation.
+
+Core responsibilities include:
+
+- Depositing collateral
+- Minting DSC
+- Burning DSC
+- Redeeming collateral
+- Calculating total account collateral value
+- Calculating health factor
+- Executing liquidations for unhealthy positions
+
+### Protocol Flow
+
+1. A user deposits `WETH` or `WBTC` as collateral.
+2. The protocol uses Chainlink price feeds to calculate the USD value of that collateral.
+3. The user mints `DSC` within the allowed collateralization bounds.
+4. If market volatility causes the position to become risky, the health factor decreases.
+5. Once the health factor falls below the threshold, third parties can liquidate part of the debt in exchange for collateral plus a liquidation bonus.
+
+### Risk Controls
+
+- Overcollateralization: minting without collateral is not allowed
+- Health Factor: measures whether a position remains safe
+- Liquidation: unsafe positions can be repaired by external liquidators
+- Chainlink pricing: avoids hardcoded local pricing assumptions
+- Reentrancy protection and collateral allowlist controls
+
+### Testing
+
+This project focuses not only on feature completeness, but also on protocol safety guarantees.
+
+Testing includes:
+
+- Unit tests
+- Interaction tests
+- Fuzz testing
+- Invariant testing
+
+Key properties verified:
+
+- Core flows such as deposit, mint, burn, redeem, and liquidation
+- The relationship between collateral value and outstanding debt
+- Protocol robustness across varied and edge-case inputs
+
+### Frontend
+
+The repository also includes a `Next.js` frontend demo designed to showcase the protocol rather than act as a production product UI.
+
+The frontend currently includes:
+
+- Protocol overview modules
+- Account and collateral overview panels
+- Deposit / mint / burn / redeem flows
+- Combined workflow operations
+- Liquidation module
+- `WETH / WBTC` multi-collateral interaction
+
+Its main purpose is to help users quickly understand:
+
+- What the protocol does
+- How the risk model works
+- How the frontend integrates with the contracts
+
+### Tech Stack
+
+#### Contracts
+
+- Solidity
+- Foundry
+- OpenZeppelin
+- Chainlink
+
+#### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- wagmi
+- RainbowKit
+- viem
+
+### Project Structure
+
+```text
+.
+├── src/                     # Core smart contracts
+├── script/                  # Foundry deployment and config scripts
+├── test/                    # Unit / fuzz / invariant tests
+├── tools/                   # Local development helper scripts
+├── web/                     # Next.js frontend
+│   ├── app/                 # App Router pages
+│   ├── components/          # Frontend components
+│   ├── hooks/               # Contract interaction hooks
+│   └── lib/contracts/       # ABI and deployment addresses
+└── README.md
+```
+
+### Local Development
+
+#### 1. Start a local chain
 
 ```bash
 anvil
 ```
 
-再部署：
+#### 2. Deploy contracts and sync them to the frontend
+
+From the project root:
 
 ```bash
-forge script script/DeployDSC.s.sol:DeployDSC --rpc-url http://127.0.0.1:8545 --broadcast
+./tools/reset-local-dev.sh && source ./.local-dev.env
 ```
+
+This script will:
+
+- Build the Foundry contracts
+- Deploy contracts locally
+- Sync ABI artifacts to the frontend
+- Write the latest addresses into `web/lib/contracts/addresses/31337.json`
+- Seed local demo state
+- Generate `.local-dev.env` for local development and debugging
+
+#### 3. Start the frontend
+
+```bash
+cd web
+npm run dev
+```
+
+Once started, the local frontend demo will be available in the browser.
+
+### Common Commands
+
+#### Run tests
+
+```bash
+forge test
+```
+
+#### Generate coverage
+
+```bash
+forge coverage
+```
+
+#### Build the frontend
+
+```bash
+cd web
+npm run build
+```
+
+### Suggested Demo Flow
+
+If you want to present the project to others, a good demo order is:
+
+1. Connect wallet
+2. Inspect account and collateral overview
+3. Deposit `WETH` or `WBTC`
+4. Mint `DSC`
+5. Show the health factor update
+6. Burn and redeem
+7. Finally demonstrate liquidation
+
+That sequence makes the full protocol loop easy to understand.
+
+### Why This Project Matters
+
+This is not just an ERC20 exercise. It demonstrates the ability to build a complete DeFi protocol flow:
+
+- Translating protocol rules into a smart-contract state machine
+- Integrating oracle pricing into core business logic
+- Designing health-factor and liquidation-based risk controls
+- Using Foundry to validate safety properties systematically
+- Exposing the protocol through a usable frontend demo
+
+### Possible Extensions
+
+- Support more collateral types
+- Add richer frontend transaction feedback
+- Deploy to public testnets
+- Add governance over protocol parameters
+- Add analytics and dashboarding
 
 ---
 
-## 11. 最后一句怎么收尾
-
-如果面试官问完以后，你想用一句话把这个项目收住，我建议你这样说：
-
-> 这个项目对我最大的价值，是让我把稳定币协议从“知道概念”推进到了“能自己实现核心机制、理解风险约束、并用测试验证协议行为”的阶段。
+If you are learning about decentralized stablecoins, DeFi risk controls, or full-stack blockchain development with contracts plus frontend integration, this repository can serve as a solid reference implementation.
