@@ -3,8 +3,8 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
+import { useDscBurnDsc } from "@/hooks/useDscBurnDsc";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
-import { useDscMintDsc } from "@/hooks/useDscMintDsc";
 
 function InfoRow({
   label,
@@ -21,13 +21,13 @@ function InfoRow({
   );
 }
 
-export function MintDscCard() {
+export function BurnDscCard() {
   const [amount, setAmount] = useState("100");
 
   const accountOverview = useDscAccountOverview();
   const collateralOverview = useDscCollateralOverview();
 
-  const mintFlow = useDscMintDsc({
+  const burnFlow = useDscBurnDsc({
     onSuccess: async () => {
       await Promise.all([
         accountOverview.readResult.refetch(),
@@ -37,51 +37,54 @@ export function MintDscCard() {
   });
 
   const isDisabled =
-    !mintFlow.enabled ||
-    mintFlow.status.isPending ||
+    !burnFlow.enabled ||
+    burnFlow.status.isPending ||
     !amount.trim() ||
     Number(amount) <= 0;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await mintFlow.mintDsc(amount);
+    await burnFlow.burnDsc(amount);
   };
 
   const currentStatus = useMemo(() => {
-    if (mintFlow.status.message) return mintFlow.status.message;
-
-    switch (mintFlow.status.step) {
+    if (burnFlow.status.message) return burnFlow.status.message;
+    switch (burnFlow.status.step) {
       case "idle":
         return "Ready";
-      case "minting":
-        return "Submitting mint...";
-      case "mint-confirming":
-        return "Waiting mint confirmation...";
+      case "approving":
+        return "Submitting approve...";
+      case "approve-confirming":
+        return "Waiting approve confirmation...";
+      case "burning":
+        return "Submitting burn...";
+      case "burn-confirming":
+        return "Waiting burn confirmation...";
       case "success":
-        return "Mint transaction confirmed.";
+        return "Burn transaction confirmed.";
       case "error":
-        return mintFlow.error?.message ?? "Mint failed.";
+        return burnFlow.error?.message ?? "Burn failed.";
       default:
         return "--";
     }
-  }, [mintFlow.status, mintFlow.error]);
+  }, [burnFlow.status, burnFlow.error]);
 
   return (
     <section className="rounded-2xl border p-4">
       <div>
-        <h2 className="text-lg font-semibold">Mint DSC</h2>
+        <h2 className="text-lg font-semibold">Burn DSC</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Minimal mint flow for local protocol testing
+          Minimal burn flow for local protocol testing
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <div className="space-y-2">
-          <label htmlFor="mint-dsc-amount" className="text-sm font-medium">
+          <label htmlFor="burn-dsc-amount" className="text-sm font-medium">
             DSC Amount
           </label>
           <input
-            id="mint-dsc-amount"
+            id="burn-dsc-amount"
             type="number"
             min="0"
             step="any"
@@ -93,10 +96,14 @@ export function MintDscCard() {
         </div>
 
         <InfoRow label="Status" value={currentStatus} />
-        <InfoRow label="Wallet" value={mintFlow.address ?? "--"} />
+        <InfoRow label="Wallet" value={burnFlow.address ?? "--"} />
         <InfoRow
           label="Current Total DSC Minted"
           value={accountOverview.overview.formatted.totalDscMinted ?? "--"}
+        />
+        <InfoRow
+          label="Current DSC Balance"
+          value={accountOverview.overview.formatted.dscBalance ?? "--"}
         />
         <InfoRow
           label="Current Collateral Value"
@@ -108,10 +115,6 @@ export function MintDscCard() {
           label="Current Health Factor"
           value={accountOverview.overview.formatted.healthFactor ?? "--"}
         />
-        <InfoRow
-          label="Current DSC Balance"
-          value={accountOverview.overview.formatted.dscBalance ?? "--"}
-        />
 
         <div className="flex gap-3">
           <button
@@ -119,13 +122,13 @@ export function MintDscCard() {
             disabled={isDisabled}
             className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {mintFlow.status.isPending ? "Processing..." : "Mint DSC"}
+            {burnFlow.status.isPending ? "Processing..." : "Approve + Burn DSC"}
           </button>
 
           <button
             type="button"
-            onClick={mintFlow.reset}
-            disabled={mintFlow.status.isPending}
+            onClick={burnFlow.reset}
+            disabled={burnFlow.status.isPending}
             className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset

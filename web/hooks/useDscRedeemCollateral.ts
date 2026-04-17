@@ -7,9 +7,14 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
 import { dscEngineAbi } from "@/lib/contracts/abi";
 
-type MintStep = "idle" | "minting" | "mint-confirming" | "success" | "error";
+type RedeemStep =
+  | "idle"
+  | "redeeming"
+  | "redeem-confirming"
+  | "success"
+  | "error";
 
-type UseDscMintDscOptions = {
+type UseDscRedeemCollateralOptions = {
   onSuccess?: () => Promise<void> | void;
 };
 
@@ -20,13 +25,15 @@ function getErrorMessage(error: unknown) {
   return String(error);
 }
 
-export function useDscMintDsc(options?: UseDscMintDscOptions) {
+export function useDscRedeemCollateral(
+  options?: UseDscRedeemCollateralOptions,
+) {
   const { address, chainId, isConnected } = useAccount();
   const publicClient = usePublicClient({ chainId });
   const { contracts, isSupportedChain } = useProtocolContracts();
   const { writeContractAsync } = useWriteContract();
 
-  const [step, setStep] = useState<MintStep>("idle");
+  const [step, setStep] = useState<RedeemStep>("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -36,10 +43,11 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
     isConnected &&
     isSupportedChain &&
     contracts?.dscEngine &&
+    contracts?.weth &&
     publicClient,
   );
 
-  const mintDsc = useCallback(
+  const redeemWeth = useCallback(
     async (amountInput: string) => {
       if (!enabled || !contracts || !publicClient) {
         const nextError = new Error(
@@ -60,19 +68,19 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
           throw new Error("Amount must be greater than zero.");
         }
 
-        setStep("minting");
-        setStatusMessage("Submitting mint transaction...");
+        setStep("redeeming");
+        setStatusMessage("Submitting redeem transaction...");
 
         const hash = await writeContractAsync({
           address: contracts.dscEngine as `0x${string}`,
           abi: dscEngineAbi,
-          functionName: "mintDsc",
-          args: [amount],
+          functionName: "redeemCollateral",
+          args: [contracts.weth as `0x${string}`, amount],
         });
 
         setTxHash(hash);
-        setStep("mint-confirming");
-        setStatusMessage("Waiting for mint confirmation...");
+        setStep("redeem-confirming");
+        setStatusMessage("Waiting for redeem confirmation...");
 
         await publicClient.waitForTransactionReceipt({ hash });
 
@@ -81,7 +89,7 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
         }
 
         setStep("success");
-        setStatusMessage("Mint transaction confirmed.");
+        setStatusMessage("Redeem transaction confirmed.");
         return hash;
       } catch (err) {
         const nextError =
@@ -103,7 +111,7 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
     setError(null);
   }, []);
 
-  const isPending = step === "minting" || step === "mint-confirming";
+  const isPending = step === "redeeming" || step === "redeem-confirming";
 
   const status = useMemo(
     () => ({
@@ -125,7 +133,7 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
     isSupportedChain,
     contracts,
     enabled,
-    mintDsc,
+    redeemWeth,
     reset,
     status,
     error,

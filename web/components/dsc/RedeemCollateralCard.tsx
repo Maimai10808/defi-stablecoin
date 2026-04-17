@@ -4,7 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
-import { useDscMintDsc } from "@/hooks/useDscMintDsc";
+import { useDscRedeemCollateral } from "@/hooks/useDscRedeemCollateral";
 
 function InfoRow({
   label,
@@ -21,13 +21,13 @@ function InfoRow({
   );
 }
 
-export function MintDscCard() {
-  const [amount, setAmount] = useState("100");
+export function RedeemCollateralCard() {
+  const [amount, setAmount] = useState("1");
 
   const accountOverview = useDscAccountOverview();
   const collateralOverview = useDscCollateralOverview();
 
-  const mintFlow = useDscMintDsc({
+  const redeemFlow = useDscRedeemCollateral({
     onSuccess: async () => {
       await Promise.all([
         accountOverview.readResult.refetch(),
@@ -37,80 +37,80 @@ export function MintDscCard() {
   });
 
   const isDisabled =
-    !mintFlow.enabled ||
-    mintFlow.status.isPending ||
+    !redeemFlow.enabled ||
+    redeemFlow.status.isPending ||
     !amount.trim() ||
     Number(amount) <= 0;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await mintFlow.mintDsc(amount);
+    await redeemFlow.redeemWeth(amount);
   };
 
   const currentStatus = useMemo(() => {
-    if (mintFlow.status.message) return mintFlow.status.message;
+    if (redeemFlow.status.message) return redeemFlow.status.message;
 
-    switch (mintFlow.status.step) {
+    switch (redeemFlow.status.step) {
       case "idle":
         return "Ready";
-      case "minting":
-        return "Submitting mint...";
-      case "mint-confirming":
-        return "Waiting mint confirmation...";
+      case "redeeming":
+        return "Submitting redeem...";
+      case "redeem-confirming":
+        return "Waiting redeem confirmation...";
       case "success":
-        return "Mint transaction confirmed.";
+        return "Redeem transaction confirmed.";
       case "error":
-        return mintFlow.error?.message ?? "Mint failed.";
+        return redeemFlow.error?.message ?? "Redeem failed.";
       default:
         return "--";
     }
-  }, [mintFlow.status, mintFlow.error]);
+  }, [redeemFlow.status, redeemFlow.error]);
 
   return (
     <section className="rounded-2xl border p-4">
       <div>
-        <h2 className="text-lg font-semibold">Mint DSC</h2>
+        <h2 className="text-lg font-semibold">Redeem Collateral</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          Minimal mint flow for local protocol testing
+          Minimal WETH-only redeem flow for local protocol testing
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <div className="space-y-2">
-          <label htmlFor="mint-dsc-amount" className="text-sm font-medium">
-            DSC Amount
+          <label htmlFor="redeem-weth-amount" className="text-sm font-medium">
+            WETH Amount
           </label>
           <input
-            id="mint-dsc-amount"
+            id="redeem-weth-amount"
             type="number"
             min="0"
             step="any"
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
             className="w-full rounded-xl border px-3 py-2 text-sm outline-none"
-            placeholder="100"
+            placeholder="1"
           />
         </div>
 
         <InfoRow label="Status" value={currentStatus} />
-        <InfoRow label="Wallet" value={mintFlow.address ?? "--"} />
+        <InfoRow label="Wallet" value={redeemFlow.address ?? "--"} />
+        <InfoRow
+          label="Current WETH Deposited"
+          value={collateralOverview.overview.formatted.wethDeposited ?? "--"}
+        />
+        <InfoRow
+          label="Current Total Collateral Value"
+          value={
+            collateralOverview.overview.formatted.totalCollateralUsd ?? "--"
+          }
+        />
         <InfoRow
           label="Current Total DSC Minted"
           value={accountOverview.overview.formatted.totalDscMinted ?? "--"}
         />
         <InfoRow
-          label="Current Collateral Value"
-          value={
-            accountOverview.overview.formatted.collateralValueInUsd ?? "--"
-          }
-        />
-        <InfoRow
           label="Current Health Factor"
           value={accountOverview.overview.formatted.healthFactor ?? "--"}
-        />
-        <InfoRow
-          label="Current DSC Balance"
-          value={accountOverview.overview.formatted.dscBalance ?? "--"}
         />
 
         <div className="flex gap-3">
@@ -119,13 +119,13 @@ export function MintDscCard() {
             disabled={isDisabled}
             className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {mintFlow.status.isPending ? "Processing..." : "Mint DSC"}
+            {redeemFlow.status.isPending ? "Processing..." : "Redeem WETH"}
           </button>
 
           <button
             type="button"
-            onClick={mintFlow.reset}
-            disabled={mintFlow.status.isPending}
+            onClick={redeemFlow.reset}
+            disabled={redeemFlow.status.isPending}
             className="rounded-xl border px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
           >
             Reset

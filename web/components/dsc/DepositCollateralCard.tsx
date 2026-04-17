@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 
+import { ActionCardShell } from "@/components/dsc/ActionCardShell";
+import { ActionInfoRow } from "@/components/dsc/ActionInfoRow";
+import { ActionPrimaryButton } from "@/components/dsc/ActionPrimaryButton";
+import { ActionSecondaryButton } from "@/components/dsc/ActionSecondaryButton";
 import { useDscDepositCollateral } from "@/hooks/useDscDepositCollateral";
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
@@ -36,19 +40,40 @@ export function DepositCollateralCard() {
         collateralOverview.readResult.refetch(),
       ]);
     } catch {
-      // error already handled in hook state
+      // hook state already handles error
     }
   };
 
-  return (
-    <div className="rounded-2xl border p-5 space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Deposit Collateral</h2>
-        <p className="text-sm text-muted-foreground">
-          Minimal WETH-only deposit flow for local protocol testing
-        </p>
-      </div>
+  const handleReset = () => {
+    setAmount("10");
+  };
 
+  return (
+    <ActionCardShell
+      title="Deposit Collateral"
+      description="Minimal WETH-only deposit flow for local protocol testing"
+      status={depositFlow.step}
+      errorMessage={depositFlow.error ?? null}
+      footer={
+        <>
+          <ActionPrimaryButton
+            onClick={handleDeposit}
+            disabled={!canSubmit}
+            className="flex-1"
+            fullWidth={false}
+          >
+            {depositFlow.isPending ? "Processing..." : "Approve + Deposit WETH"}
+          </ActionPrimaryButton>
+
+          <ActionSecondaryButton
+            onClick={handleReset}
+            disabled={depositFlow.isPending}
+          >
+            Reset
+          </ActionSecondaryButton>
+        </>
+      }
+    >
       <div className="space-y-2">
         <label htmlFor="deposit-amount" className="text-sm font-medium">
           WETH Amount
@@ -65,44 +90,25 @@ export function DepositCollateralCard() {
         />
       </div>
 
-      <div className="rounded-xl bg-muted/40 p-3 text-sm space-y-1">
-        <div className="flex items-center justify-between">
-          <span>Status</span>
-          <span>{depositFlow.step}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Wallet</span>
-          <span>{accountOverview.address ?? "Not connected"}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Current WETH Deposited</span>
-          <span>
-            {collateralOverview.overview.formatted.wethDeposited ?? "0.0000"}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Total Collateral Value</span>
-          <span>
-            {collateralOverview.overview.formatted.totalCollateralUsd ??
-              "0.0000"}
-          </span>
-        </div>
+      <div className="space-y-2">
+        <ActionInfoRow
+          label="Wallet"
+          value={accountOverview.address ?? "Not connected"}
+        />
+        <ActionInfoRow
+          label="Current WETH Deposited"
+          value={
+            collateralOverview.overview?.formatted?.wethDeposited ?? "0.0000"
+          }
+        />
+        <ActionInfoRow
+          label="Total Collateral Value"
+          value={
+            collateralOverview.overview?.formatted?.totalCollateralUsd ??
+            "0.0000"
+          }
+        />
       </div>
-
-      {depositFlow.error ? (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600">
-          {depositFlow.error}
-        </div>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={handleDeposit}
-        disabled={!canSubmit}
-        className="w-full rounded-xl border px-4 py-2 font-medium disabled:opacity-50"
-      >
-        {depositFlow.isPending ? "Processing..." : "Approve + Deposit WETH"}
-      </button>
-    </div>
+    </ActionCardShell>
   );
 }

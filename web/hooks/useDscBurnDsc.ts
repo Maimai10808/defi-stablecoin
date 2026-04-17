@@ -5,11 +5,18 @@ import { BaseError, parseUnits } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
-import { dscEngineAbi } from "@/lib/contracts/abi";
+import { dscAbi, dscEngineAbi } from "@/lib/contracts/abi";
 
-type MintStep = "idle" | "minting" | "mint-confirming" | "success" | "error";
+type BurnStep =
+  | "idle"
+  | "approving"
+  | "approve-confirming"
+  | "burning"
+  | "burn-confirming"
+  | "success"
+  | "error";
 
-type UseDscMintDscOptions = {
+type UseDscBurnDscOptions = {
   onSuccess?: () => Promise<void> | void;
 };
 
@@ -20,14 +27,15 @@ function getErrorMessage(error: unknown) {
   return String(error);
 }
 
-export function useDscMintDsc(options?: UseDscMintDscOptions) {
+export function useDscBurnDsc(options?: UseDscBurnDscOptions) {
   const { address, chainId, isConnected } = useAccount();
   const publicClient = usePublicClient({ chainId });
   const { contracts, isSupportedChain } = useProtocolContracts();
+
   const { writeContractAsync } = useWriteContract();
 
-  const [step, setStep] = useState<MintStep>("idle");
-  const [statusMessage, setStatusMessage] = useState("");
+  const [step, setStep] = useState<BurnStep>("idle");
+  const [statusMessage, setStatusMessage] = useState<string>("");
   const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
@@ -35,13 +43,14 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
     address &&
     isConnected &&
     isSupportedChain &&
+    contracts?.dsc &&
     contracts?.dscEngine &&
     publicClient,
   );
 
-  const mintDsc = useCallback(
+  const burnDsc = useCallback(
     async (amountInput: string) => {
-      if (!enabled || !contracts || !publicClient) {
+      if (!enabled || !address || !contracts || !publicClient) {
         const nextError = new Error(
           "Wallet or contract configuration is not ready.",
         );
@@ -60,29 +69,49 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
           throw new Error("Amount must be greater than zero.");
         }
 
-        setStep("minting");
-        setStatusMessage("Submitting mint transaction...");
+        setStep("approving");
+        setStatusMessage("Submitting DSC approve transaction...");
 
-        const hash = await writeContractAsync({
+        const approveHash = await writeContractAsync({
+          address: contracts.dsc as `0x${string}`,
+          abi: dscAbi,
+          functionName: "approve",
+          args: [contracts.dscEngine as `0x${string}`, amount],
+        });
+
+        setTxHash(approveHash);
+        setStep("approve-confirming");
+        setStatusMessage("Waiting for approve confirmation...");
+
+        await publicClient.waitForTransactionReceipt({
+          hash: approveHash,
+        });
+
+        setStep("burning");
+        setStatusMessage("Submitting burn transaction...");
+
+        const burnHash = await writeContractAsync({
           address: contracts.dscEngine as `0x${string}`,
           abi: dscEngineAbi,
-          functionName: "mintDsc",
+          functionName: "burnDsc",
           args: [amount],
         });
 
-        setTxHash(hash);
-        setStep("mint-confirming");
-        setStatusMessage("Waiting for mint confirmation...");
+        setTxHash(burnHash);
+        setStep("burn-confirming");
+        setStatusMessage("Waiting for burn confirmation...");
 
-        await publicClient.waitForTransactionReceipt({ hash });
+        await publicClient.waitForTransactionReceipt({
+          hash: burnHash,
+        });
 
         if (options?.onSuccess) {
           await options.onSuccess();
         }
 
         setStep("success");
-        setStatusMessage("Mint transaction confirmed.");
-        return hash;
+        setStatusMessage("Burn transaction confirmed.");
+        return burnHash;
       } catch (err) {
         const nextError =
           err instanceof Error ? err : new Error(getErrorMessage(err));
@@ -93,7 +122,7 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
         throw nextError;
       }
     },
-    [enabled, contracts, publicClient, writeContractAsync, options],
+    [enabled, address, contracts, publicClient, writeContractAsync, options],
   );
 
   const reset = useCallback(() => {
@@ -103,7 +132,11 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
     setError(null);
   }, []);
 
-  const isPending = step === "minting" || step === "mint-confirming";
+  const isPending =
+    step === "approving" ||
+    step === "approve-confirming" ||
+    step === "burning" ||
+    step === "burn-confirming";
 
   const status = useMemo(
     () => ({
@@ -125,7 +158,7 @@ export function useDscMintDsc(options?: UseDscMintDscOptions) {
     isSupportedChain,
     contracts,
     enabled,
-    mintDsc,
+    burnDsc,
     reset,
     status,
     error,
