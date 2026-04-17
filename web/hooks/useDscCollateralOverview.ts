@@ -7,10 +7,7 @@ import { useAccount, useReadContracts } from "wagmi";
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
 import { dscEngineAbi } from "@/lib/contracts/abi";
 
-type ReadContractSuccessResult = {
-  status: "success";
-  result: bigint;
-};
+type CollateralBalanceResult = bigint;
 
 function format18(value: bigint | undefined, digits = 4) {
   if (value === undefined) return null;
@@ -43,6 +40,12 @@ export function useDscCollateralOverview() {
             {
               address: contracts.dscEngine as `0x${string}`,
               abi: dscEngineAbi,
+              functionName: "getUsdValue",
+              args: [contracts.weth as `0x${string}`, BigInt(1e18)],
+            },
+            {
+              address: contracts.dscEngine as `0x${string}`,
+              abi: dscEngineAbi,
               functionName: "getCollateralBalanceOfUser",
               args: [address as `0x${string}`, contracts.wbtc as `0x${string}`],
             },
@@ -50,13 +53,13 @@ export function useDscCollateralOverview() {
               address: contracts.dscEngine as `0x${string}`,
               abi: dscEngineAbi,
               functionName: "getUsdValue",
-              args: [contracts.weth as `0x${string}`, BigInt(0)],
+              args: [contracts.wbtc as `0x${string}`, BigInt(1e18)],
             },
             {
               address: contracts.dscEngine as `0x${string}`,
               abi: dscEngineAbi,
-              functionName: "getUsdValue",
-              args: [contracts.wbtc as `0x${string}`, BigInt(0)],
+              functionName: "getAccountCollateralValue",
+              args: [address as `0x${string}`],
             },
           ]
         : [],
@@ -66,117 +69,85 @@ export function useDscCollateralOverview() {
   });
 
   const [
-    wethBalanceResult,
-    wbtcBalanceResult,
-    wethUsdPlaceholderResult,
-    wbtcUsdPlaceholderResult,
+    wethDepositedResult,
+    wethUnitUsdResult,
+    wbtcDepositedResult,
+    wbtcUnitUsdResult,
+    totalCollateralUsdResult,
   ] = readResult.data ?? [];
-
-  const rawWethDeposited =
-    wethBalanceResult?.status === "success"
-      ? (wethBalanceResult.result as bigint)
-      : undefined;
-
-  const rawWbtcDeposited =
-    wbtcBalanceResult?.status === "success"
-      ? (wbtcBalanceResult.result as bigint)
-      : undefined;
-
-  const usdValueReadResult = useReadContracts({
-    contracts:
-      enabled && contracts
-        ? [
-            {
-              address: contracts.dscEngine as `0x${string}`,
-              abi: dscEngineAbi,
-              functionName: "getUsdValue",
-              args: [
-                contracts.weth as `0x${string}`,
-                rawWethDeposited ?? BigInt(0),
-              ],
-            },
-            {
-              address: contracts.dscEngine as `0x${string}`,
-              abi: dscEngineAbi,
-              functionName: "getUsdValue",
-              args: [
-                contracts.wbtc as `0x${string}`,
-                rawWbtcDeposited ?? BigInt(0),
-              ],
-            },
-          ]
-        : [],
-    query: {
-      enabled,
-    },
-  });
-
-  const [wethUsdResult, wbtcUsdResult] = usdValueReadResult.data ?? [];
 
   const overview = useMemo(() => {
     const wethDeposited =
-      wethBalanceResult?.status === "success"
-        ? (wethBalanceResult.result as bigint)
+      wethDepositedResult?.status === "success"
+        ? (wethDepositedResult.result as CollateralBalanceResult)
         : undefined;
 
     const wbtcDeposited =
-      wbtcBalanceResult?.status === "success"
-        ? (wbtcBalanceResult.result as bigint)
+      wbtcDepositedResult?.status === "success"
+        ? (wbtcDepositedResult.result as CollateralBalanceResult)
         : undefined;
 
-    const wethUsdValue =
-      wethUsdResult?.status === "success"
-        ? (wethUsdResult.result as bigint)
+    const wethUnitUsd =
+      wethUnitUsdResult?.status === "success"
+        ? (wethUnitUsdResult.result as bigint)
         : undefined;
 
-    const wbtcUsdValue =
-      wbtcUsdResult?.status === "success"
-        ? (wbtcUsdResult.result as bigint)
+    const wbtcUnitUsd =
+      wbtcUnitUsdResult?.status === "success"
+        ? (wbtcUnitUsdResult.result as bigint)
         : undefined;
 
     const totalCollateralUsd =
-      wethUsdValue !== undefined && wbtcUsdValue !== undefined
-        ? wethUsdValue + wbtcUsdValue
+      totalCollateralUsdResult?.status === "success"
+        ? (totalCollateralUsdResult.result as bigint)
+        : undefined;
+
+    const wethUsdValue =
+      wethDeposited !== undefined && wethUnitUsd !== undefined
+        ? (wethDeposited * wethUnitUsd) / BigInt(1e18)
+        : undefined;
+
+    const wbtcUsdValue =
+      wbtcDeposited !== undefined && wbtcUnitUsd !== undefined
+        ? (wbtcDeposited * wbtcUnitUsd) / BigInt(1e18)
         : undefined;
 
     return {
-      address,
       tokens: {
         weth: contracts?.weth,
         wbtc: contracts?.wbtc,
       },
       raw: {
         wethDeposited,
-        wbtcDeposited,
         wethUsdValue,
+        wbtcDeposited,
         wbtcUsdValue,
         totalCollateralUsd,
       },
       formatted: {
         wethDeposited: format18(wethDeposited),
-        wbtcDeposited: format18(wbtcDeposited),
         wethUsdValue: format18(wethUsdValue),
+        wbtcDeposited: format18(wbtcDeposited),
         wbtcUsdValue: format18(wbtcUsdValue),
         totalCollateralUsd: format18(totalCollateralUsd),
       },
     };
   }, [
-    address,
     contracts?.weth,
     contracts?.wbtc,
-    wethBalanceResult,
-    wbtcBalanceResult,
-    wethUsdResult,
-    wbtcUsdResult,
+    wethDepositedResult,
+    wethUnitUsdResult,
+    wbtcDepositedResult,
+    wbtcUnitUsdResult,
+    totalCollateralUsdResult,
   ]);
 
   const contractErrors = [
-    wethBalanceResult,
-    wbtcBalanceResult,
-    wethUsdPlaceholderResult,
-    wbtcUsdPlaceholderResult,
-    wethUsdResult,
-    wbtcUsdResult,
+    wethDepositedResult,
+    wethUnitUsdResult,
+    wbtcDepositedResult,
+    wbtcUnitUsdResult,
+    totalCollateralUsdResult,
   ]
     .filter((item) => item?.status === "failure")
     .map((item) => item?.error)
@@ -190,18 +161,10 @@ export function useDscCollateralOverview() {
     contracts,
     enabled,
     overview,
-    isLoading: readResult.isLoading || usdValueReadResult.isLoading,
-    isFetching: readResult.isFetching || usdValueReadResult.isFetching,
-    isError:
-      readResult.isError ||
-      usdValueReadResult.isError ||
-      contractErrors.length > 0,
-    error:
-      (contractErrors[0] as Error | null) ??
-      readResult.error ??
-      usdValueReadResult.error ??
-      null,
+    isLoading: readResult.isLoading,
+    isFetching: readResult.isFetching,
+    isError: readResult.isError || contractErrors.length > 0,
+    error: (contractErrors[0] as Error | null) ?? readResult.error ?? null,
     readResult,
-    usdValueReadResult,
   };
 }
