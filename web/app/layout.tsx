@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Orbitron, Share_Tech_Mono } from "next/font/google";
+import { Bungee, DM_Sans, Outfit } from "next/font/google";
 import "./globals.css";
 import { Web3Provider } from "@/components/providers/web3-provider";
 
-const orbitron = Orbitron({
-  variable: "--font-orbitron",
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
 });
 
-const shareTechMono = Share_Tech_Mono({
-  variable: "--font-share-tech-mono",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
+  subsets: ["latin"],
+});
+
+const bungee = Bungee({
+  variable: "--font-bungee",
   weight: "400",
-  subsets: ["latin"],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${orbitron.variable} ${shareTechMono.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${outfit.variable} ${dmSans.variable} ${bungee.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Web3Provider>{children}</Web3Provider>
