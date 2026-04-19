@@ -1,18 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { formatUnits } from "viem";
 import { useAccount, useReadContracts } from "wagmi";
 
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
-import { dscEngineAbi } from "@/lib/contracts/abi";
+import { dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
+import {
+  formatTokenAmount,
+  getUnitAmount,
+  normalizeTokenDecimals,
+} from "@/lib/protocol/tokenUnits";
 
 type CollateralBalanceResult = bigint;
-
-function format18(value: bigint | undefined, digits = 4) {
-  if (value === undefined) return null;
-  return Number(formatUnits(value, 18)).toFixed(digits);
-}
 
 export function useDscCollateralOverview() {
   const { address, isConnected, chainId } = useAccount();
@@ -26,6 +25,39 @@ export function useDscCollateralOverview() {
     contracts?.weth &&
     contracts?.wbtc,
   );
+
+  const decimalsReadResult = useReadContracts({
+    contracts:
+      enabled && contracts
+        ? [
+            {
+              address: contracts.weth as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "decimals",
+            },
+            {
+              address: contracts.wbtc as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "decimals",
+            },
+          ]
+        : [],
+    query: {
+      enabled,
+    },
+  });
+
+  const [wethDecimalsResult, wbtcDecimalsResult] =
+    decimalsReadResult.data ?? [];
+
+  const wethDecimals =
+    wethDecimalsResult?.status === "success"
+      ? normalizeTokenDecimals(wethDecimalsResult.result as bigint)
+      : 18;
+  const wbtcDecimals =
+    wbtcDecimalsResult?.status === "success"
+      ? normalizeTokenDecimals(wbtcDecimalsResult.result as bigint)
+      : 18;
 
   const readResult = useReadContracts({
     contracts:
@@ -41,7 +73,7 @@ export function useDscCollateralOverview() {
               address: contracts.dscEngine as `0x${string}`,
               abi: dscEngineAbi,
               functionName: "getUsdValue",
-              args: [contracts.weth as `0x${string}`, BigInt(1e18)],
+              args: [contracts.weth as `0x${string}`, getUnitAmount(wethDecimals)],
             },
             {
               address: contracts.dscEngine as `0x${string}`,
@@ -53,7 +85,7 @@ export function useDscCollateralOverview() {
               address: contracts.dscEngine as `0x${string}`,
               abi: dscEngineAbi,
               functionName: "getUsdValue",
-              args: [contracts.wbtc as `0x${string}`, BigInt(1e18)],
+              args: [contracts.wbtc as `0x${string}`, getUnitAmount(wbtcDecimals)],
             },
             {
               address: contracts.dscEngine as `0x${string}`,
@@ -102,14 +134,17 @@ export function useDscCollateralOverview() {
         ? (totalCollateralUsdResult.result as bigint)
         : undefined;
 
+    const wethUnitAmount = getUnitAmount(wethDecimals ?? 18);
+    const wbtcUnitAmount = getUnitAmount(wbtcDecimals ?? 18);
+
     const wethUsdValue =
       wethDeposited !== undefined && wethUnitUsd !== undefined
-        ? (wethDeposited * wethUnitUsd) / BigInt(1e18)
+        ? (wethDeposited * wethUnitUsd) / wethUnitAmount
         : undefined;
 
     const wbtcUsdValue =
       wbtcDeposited !== undefined && wbtcUnitUsd !== undefined
-        ? (wbtcDeposited * wbtcUnitUsd) / BigInt(1e18)
+        ? (wbtcDeposited * wbtcUnitUsd) / wbtcUnitAmount
         : undefined;
 
     return {
@@ -123,18 +158,26 @@ export function useDscCollateralOverview() {
         wbtcDeposited,
         wbtcUsdValue,
         totalCollateralUsd,
+        wethDecimals,
+        wbtcDecimals,
       },
       formatted: {
-        wethDeposited: format18(wethDeposited),
-        wethUsdValue: format18(wethUsdValue),
-        wbtcDeposited: format18(wbtcDeposited),
-        wbtcUsdValue: format18(wbtcUsdValue),
-        totalCollateralUsd: format18(totalCollateralUsd),
+        wethDeposited: formatTokenAmount(wethDeposited, wethDecimals ?? 18),
+        wethUsdValue: formatTokenAmount(wethUsdValue, 18),
+        wbtcDeposited: formatTokenAmount(
+          wbtcDeposited,
+          wbtcDecimals ?? 18,
+          6,
+        ),
+        wbtcUsdValue: formatTokenAmount(wbtcUsdValue, 18),
+        totalCollateralUsd: formatTokenAmount(totalCollateralUsd, 18),
       },
     };
   }, [
     contracts?.weth,
     contracts?.wbtc,
+    wethDecimals,
+    wbtcDecimals,
     wethDepositedResult,
     wethUnitUsdResult,
     wbtcDepositedResult,
@@ -143,6 +186,8 @@ export function useDscCollateralOverview() {
   ]);
 
   const contractErrors = [
+    wethDecimalsResult,
+    wbtcDecimalsResult,
     wethDepositedResult,
     wethUnitUsdResult,
     wbtcDepositedResult,
@@ -161,10 +206,26 @@ export function useDscCollateralOverview() {
     contracts,
     enabled,
     overview,
-    isLoading: readResult.isLoading,
-    isFetching: readResult.isFetching,
-    isError: readResult.isError || contractErrors.length > 0,
-    error: (contractErrors[0] as Error | null) ?? readResult.error ?? null,
-    readResult,
+    isLoading: decimalsReadResult.isLoading || readResult.isLoading,
+    isFetching: decimalsReadResult.isFetching || readResult.isFetching,
+    isError:
+      decimalsReadResult.isError ||
+      readResult.isError ||
+      contractErrors.length > 0,
+    error:
+      (contractErrors[0] as Error | null) ??
+      decimalsReadResult.error ??
+      readResult.error ??
+      null,
+    readResult: {
+      refetch: async () => {
+        await Promise.all([
+          decimalsReadResult.refetch(),
+          readResult.refetch(),
+        ]);
+      },
+      decimals: decimalsReadResult,
+      values: readResult,
+    },
   };
 }

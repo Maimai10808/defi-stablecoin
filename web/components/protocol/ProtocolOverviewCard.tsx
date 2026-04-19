@@ -21,6 +21,11 @@ export function ProtocolOverviewCard() {
             Overcollateralized Stablecoin Control Surface
           </h1>
 
+          <p className="mt-4 max-w-3xl text-xs font-medium uppercase tracking-[0.18em] text-[var(--accent-secondary)] sm:text-sm">
+            Oracle-integrated protocol flow. This local demo uses mock price
+            feeds for deterministic testing: WETH = 2000 USD, WBTC = 1000 USD.
+          </p>
+
           <p className="cyber-description cyber-cursor mt-5 max-w-2xl text-sm sm:text-base">
             This front end is intentionally minimal. It exists to demonstrate
             the contract loop clearly: deposit collateral, mint DSC, monitor

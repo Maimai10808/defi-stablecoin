@@ -1,21 +1,17 @@
 "use client";
 
 import { useMemo } from "react";
-import { formatUnits } from "viem";
-import { useAccount, useReadContracts } from "wagmi";
+import { useAccount, useBalance, useReadContracts } from "wagmi";
 
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
-import { dscAbi, dscEngineAbi } from "@/lib/contracts/abi";
+import { dscAbi, dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
+import {
+  DSC_DECIMALS,
+  formatTokenAmount,
+  normalizeTokenDecimals,
+} from "@/lib/protocol/tokenUnits";
 
 type AccountInfoResult = readonly [bigint, bigint];
-
-const MAX_UINT256 = (BigInt(1) << BigInt(256)) - BigInt(1);
-
-function format18(value: bigint | undefined, digits = 4) {
-  if (value === undefined) return null;
-  if (value === MAX_UINT256) return "∞";
-  return Number(formatUnits(value, 18)).toFixed(digits);
-}
 
 export function useDscAccountOverview() {
   const { address, isConnected, chainId } = useAccount();
@@ -26,10 +22,12 @@ export function useDscAccountOverview() {
     isConnected &&
     isSupportedChain &&
     contracts?.dscEngine &&
-    contracts?.dsc,
+    contracts?.dsc &&
+    contracts?.weth &&
+    contracts?.wbtc,
   );
 
-  const readResult = useReadContracts({
+  const protocolReadResult = useReadContracts({
     contracts:
       enabled && contracts
         ? [
@@ -51,6 +49,16 @@ export function useDscAccountOverview() {
               functionName: "balanceOf",
               args: [address as `0x${string}`],
             },
+            {
+              address: contracts.weth as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "decimals",
+            },
+            {
+              address: contracts.wbtc as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "decimals",
+            },
           ]
         : [],
     query: {
@@ -58,8 +66,47 @@ export function useDscAccountOverview() {
     },
   });
 
-  const [healthFactorResult, accountInfoResult, dscBalanceResult] =
-    readResult.data ?? [];
+  const walletTokenReadResult = useReadContracts({
+    contracts:
+      enabled && contracts
+        ? [
+            {
+              address: contracts.weth as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "balanceOf",
+              args: [address as `0x${string}`],
+            },
+            {
+              address: contracts.wbtc as `0x${string}`,
+              abi: erc20Abi,
+              functionName: "balanceOf",
+              args: [address as `0x${string}`],
+            },
+          ]
+        : [],
+    query: {
+      enabled,
+    },
+  });
+
+  const ethBalanceResult = useBalance({
+    address: address as `0x${string}` | undefined,
+    query: {
+      enabled: Boolean(address && isConnected && isSupportedChain),
+    },
+  });
+
+  const [
+    healthFactorResult,
+    accountInfoResult,
+    dscBalanceResult,
+    wethDecimalsResult,
+    wbtcDecimalsResult,
+  ] =
+    protocolReadResult.data ?? [];
+
+  const [wethBalanceResult, wbtcBalanceResult] =
+    walletTokenReadResult.data ?? [];
 
   const overview = useMemo(() => {
     const rawHealthFactor =
@@ -77,6 +124,26 @@ export function useDscAccountOverview() {
         ? (dscBalanceResult.result as bigint)
         : undefined;
 
+    const rawWethBalance =
+      wethBalanceResult?.status === "success"
+        ? (wethBalanceResult.result as bigint)
+        : undefined;
+
+    const rawWbtcBalance =
+      wbtcBalanceResult?.status === "success"
+        ? (wbtcBalanceResult.result as bigint)
+        : undefined;
+
+    const rawEthBalance = ethBalanceResult.data?.value;
+    const wethDecimals =
+      wethDecimalsResult?.status === "success"
+        ? normalizeTokenDecimals(wethDecimalsResult.result as bigint)
+        : undefined;
+    const wbtcDecimals =
+      wbtcDecimalsResult?.status === "success"
+        ? normalizeTokenDecimals(wbtcDecimalsResult.result as bigint)
+        : undefined;
+
     const totalDscMinted = rawAccountInfo?.[0];
     const collateralValueInUsd = rawAccountInfo?.[1];
 
@@ -87,20 +154,42 @@ export function useDscAccountOverview() {
         totalDscMinted,
         collateralValueInUsd,
         dscBalance: rawDscBalance,
+        ethBalance: rawEthBalance,
+        wethBalance: rawWethBalance,
+        wbtcBalance: rawWbtcBalance,
+        wethDecimals,
+        wbtcDecimals,
       },
       formatted: {
-        healthFactor: format18(rawHealthFactor),
-        totalDscMinted: format18(totalDscMinted),
-        collateralValueInUsd: format18(collateralValueInUsd),
-        dscBalance: format18(rawDscBalance),
+        healthFactor: formatTokenAmount(rawHealthFactor, DSC_DECIMALS),
+        totalDscMinted: formatTokenAmount(totalDscMinted, DSC_DECIMALS),
+        collateralValueInUsd: formatTokenAmount(collateralValueInUsd, DSC_DECIMALS),
+        dscBalance: formatTokenAmount(rawDscBalance, DSC_DECIMALS),
+        ethBalance: formatTokenAmount(rawEthBalance, 18),
+        wethBalance: formatTokenAmount(rawWethBalance, wethDecimals ?? 18),
+        wbtcBalance: formatTokenAmount(rawWbtcBalance, wbtcDecimals ?? 18, 6),
       },
     };
-  }, [address, healthFactorResult, accountInfoResult, dscBalanceResult]);
+  }, [
+    address,
+    healthFactorResult,
+    accountInfoResult,
+    dscBalanceResult,
+    wethDecimalsResult,
+    wbtcDecimalsResult,
+    wethBalanceResult,
+    wbtcBalanceResult,
+    ethBalanceResult.data,
+  ]);
 
   const contractErrors = [
     healthFactorResult,
     accountInfoResult,
     dscBalanceResult,
+    wethDecimalsResult,
+    wbtcDecimalsResult,
+    wethBalanceResult,
+    wbtcBalanceResult,
   ]
     .filter((item) => item?.status === "failure")
     .map((item) => item?.error)
@@ -114,10 +203,36 @@ export function useDscAccountOverview() {
     contracts,
     enabled,
     overview,
-    isLoading: readResult.isLoading,
-    isFetching: readResult.isFetching,
-    isError: readResult.isError || contractErrors.length > 0,
-    error: (contractErrors[0] as Error | null) ?? readResult.error ?? null,
-    readResult,
+    isLoading:
+      protocolReadResult.isLoading ||
+      walletTokenReadResult.isLoading ||
+      ethBalanceResult.isLoading,
+    isFetching:
+      protocolReadResult.isFetching ||
+      walletTokenReadResult.isFetching ||
+      ethBalanceResult.isFetching,
+    isError:
+      protocolReadResult.isError ||
+      walletTokenReadResult.isError ||
+      ethBalanceResult.isError ||
+      contractErrors.length > 0,
+    error:
+      (contractErrors[0] as Error | null) ??
+      protocolReadResult.error ??
+      walletTokenReadResult.error ??
+      ethBalanceResult.error ??
+      null,
+    readResult: {
+      refetch: async () => {
+        await Promise.all([
+          protocolReadResult.refetch(),
+          walletTokenReadResult.refetch(),
+          ethBalanceResult.refetch(),
+        ]);
+      },
+      protocol: protocolReadResult,
+      walletTokens: walletTokenReadResult,
+      ethBalance: ethBalanceResult,
+    },
   };
 }

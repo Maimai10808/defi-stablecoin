@@ -4,12 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 import { BaseError, parseUnits } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
-import { dscAbi, dscEngineAbi } from "@/lib/contracts/abi";
+import { dscAbi, dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
 import {
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
+import { DEFAULT_TOKEN_DECIMALS, DSC_DECIMALS } from "@/lib/protocol/tokenUnits";
 
 type BurnAndRedeemStep =
   | "idle"
@@ -74,8 +75,19 @@ export function useDscBurnAndRedeem(options?: UseDscBurnAndRedeemOptions) {
         setError(null);
         setTxHash(null);
 
-        const collateralAmount = parseUnits(collateralAmountInput || "0", 18);
-        const burnAmount = parseUnits(burnAmountInput || "0", 18);
+        const collateralDecimals = Number(
+          await publicClient.readContract({
+            address: collateralAddress as `0x${string}`,
+            abi: erc20Abi,
+            functionName: "decimals",
+          }),
+        );
+
+        const collateralAmount = parseUnits(
+          collateralAmountInput || "0",
+          collateralDecimals || DEFAULT_TOKEN_DECIMALS,
+        );
+        const burnAmount = parseUnits(burnAmountInput || "0", DSC_DECIMALS);
 
         if (collateralAmount <= BigInt(0) || burnAmount <= BigInt(0)) {
           throw new Error(

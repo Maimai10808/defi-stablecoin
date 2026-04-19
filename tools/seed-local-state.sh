@@ -11,8 +11,16 @@ RPC_URL="${RPC_URL:-http://127.0.0.1:8545}"
 CHAIN_ID="${CHAIN_ID:-31337}"
 PRIVATE_KEY="${PRIVATE_KEY:-}"
 USER_ADDRESS="${USER_ADDRESS:-0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266}"
-MINT_AMOUNT="${MINT_AMOUNT:-100000000000000000000}"
-DEPOSIT_AMOUNT="${DEPOSIT_AMOUNT:-10000000000000000000}"
+
+# Default mint / deposit amounts
+# WETH uses 18 decimals
+WETH_MINT_AMOUNT="${WETH_MINT_AMOUNT:-100000000000000000000}"      # 100 WETH
+WETH_DEPOSIT_AMOUNT="${WETH_DEPOSIT_AMOUNT:-10000000000000000000}" # 10 WETH
+
+# Local WBTC uses OpenZeppelin ERC20Mock, which defaults to 18 decimals
+WBTC_MINT_AMOUNT="${WBTC_MINT_AMOUNT:-100000000000000000000}"      # 100 WBTC
+WBTC_DEPOSIT_AMOUNT="${WBTC_DEPOSIT_AMOUNT:-1000000000000000000}"  # 1 WBTC
+
 ADDRESS_FILE="./web/lib/contracts/addresses/${CHAIN_ID}.json"
 
 if [ -z "${PRIVATE_KEY}" ]; then
@@ -49,6 +57,10 @@ cast code "$WETH_ADDRESS" --rpc-url "$RPC_URL" | grep -qv '^0x$' || {
   echo "No code at WETH address: $WETH_ADDRESS"
   exit 1
 }
+cast code "$WBTC_ADDRESS" --rpc-url "$RPC_URL" | grep -qv '^0x$' || {
+  echo "No code at WBTC address: $WBTC_ADDRESS"
+  exit 1
+}
 cast code "$DSC_ENGINE_ADDRESS" --rpc-url "$RPC_URL" | grep -qv '^0x$' || {
   echo "No code at DSCEngine address: $DSC_ENGINE_ADDRESS"
   exit 1
@@ -58,7 +70,7 @@ echo "==> Minting mock WETH..."
 cast send "$WETH_ADDRESS" \
   "mint(address,uint256)" \
   "$USER_ADDRESS" \
-  "$MINT_AMOUNT" \
+  "$WETH_MINT_AMOUNT" \
   --private-key "$PRIVATE_KEY" \
   --rpc-url "$RPC_URL"
 
@@ -66,7 +78,7 @@ echo "==> Approving DSCEngine to spend WETH..."
 cast send "$WETH_ADDRESS" \
   "approve(address,uint256)" \
   "$DSC_ENGINE_ADDRESS" \
-  "$DEPOSIT_AMOUNT" \
+  "$WETH_DEPOSIT_AMOUNT" \
   --private-key "$PRIVATE_KEY" \
   --rpc-url "$RPC_URL"
 
@@ -74,7 +86,32 @@ echo "==> Depositing WETH collateral..."
 cast send "$DSC_ENGINE_ADDRESS" \
   "depositCollateral(address,uint256)" \
   "$WETH_ADDRESS" \
-  "$DEPOSIT_AMOUNT" \
+  "$WETH_DEPOSIT_AMOUNT" \
+  --private-key "$PRIVATE_KEY" \
+  --rpc-url "$RPC_URL"
+
+echo
+echo "==> Minting mock WBTC..."
+cast send "$WBTC_ADDRESS" \
+  "mint(address,uint256)" \
+  "$USER_ADDRESS" \
+  "$WBTC_MINT_AMOUNT" \
+  --private-key "$PRIVATE_KEY" \
+  --rpc-url "$RPC_URL"
+
+echo "==> Approving DSCEngine to spend WBTC..."
+cast send "$WBTC_ADDRESS" \
+  "approve(address,uint256)" \
+  "$DSC_ENGINE_ADDRESS" \
+  "$WBTC_DEPOSIT_AMOUNT" \
+  --private-key "$PRIVATE_KEY" \
+  --rpc-url "$RPC_URL"
+
+echo "==> Depositing WBTC collateral..."
+cast send "$DSC_ENGINE_ADDRESS" \
+  "depositCollateral(address,uint256)" \
+  "$WBTC_ADDRESS" \
+  "$WBTC_DEPOSIT_AMOUNT" \
   --private-key "$PRIVATE_KEY" \
   --rpc-url "$RPC_URL"
 
@@ -103,6 +140,13 @@ cast call "$DSC_ENGINE_ADDRESS" \
 echo
 echo "--- WETH wallet balance ---"
 cast call "$WETH_ADDRESS" \
+  "balanceOf(address)(uint256)" \
+  "$USER_ADDRESS" \
+  --rpc-url "$RPC_URL"
+
+echo
+echo "--- WBTC wallet balance ---"
+cast call "$WBTC_ADDRESS" \
   "balanceOf(address)(uint256)" \
   "$USER_ADDRESS" \
   --rpc-url "$RPC_URL"

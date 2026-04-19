@@ -39,9 +39,7 @@ export function DscAccountOverviewCard() {
           <h2 className="cyber-title">Account Overview</h2>
         </div>
 
-        <p className="cyber-description mt-3 text-sm">
-          Wallet not connected.
-        </p>
+        <p className="cyber-description mt-3 text-sm">Wallet not connected.</p>
 
         <div className="mt-4">
           <WalletConnectCard />
@@ -92,23 +90,30 @@ export function DscAccountOverviewCard() {
     <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="cyber-kicker">Vault State</div>
+          <div className="cyber-kicker">Wallet + Vault State</div>
           <h2 className="cyber-title mt-3">Account Overview</h2>
           <p className="cyber-description mt-2 text-sm">
-            Read-only protocol state for the connected wallet
+            Read-only wallet balances and protocol state for the connected
+            wallet
           </p>
         </div>
 
-        {isFetching ? (
-          <span className="cyber-chip">Refreshing</span>
-        ) : null}
+        {isFetching ? <span className="cyber-chip">Refreshing</span> : null}
       </div>
 
       <div className="mt-5 space-y-3">
         <OverviewRow label="Wallet Address" value={address} />
         <OverviewRow
-          label="Collateral Value (USD)"
-          value={overview?.formatted?.collateralValueInUsd ?? "--"}
+          label="ETH Balance"
+          value={overview?.formatted?.ethBalance ?? "--"}
+        />
+        <OverviewRow
+          label="WETH Wallet Balance"
+          value={overview?.formatted?.wethBalance ?? "--"}
+        />
+        <OverviewRow
+          label="WBTC Wallet Balance"
+          value={overview?.formatted?.wbtcBalance ?? "--"}
         />
         <OverviewRow
           label="DSC Balance"

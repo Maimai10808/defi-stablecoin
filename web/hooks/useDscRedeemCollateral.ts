@@ -5,11 +5,12 @@ import { BaseError, parseUnits } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
-import { dscEngineAbi } from "@/lib/contracts/abi";
+import { dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
 import {
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
+import { DEFAULT_TOKEN_DECIMALS } from "@/lib/protocol/tokenUnits";
 
 type RedeemStep =
   | "idle"
@@ -78,7 +79,18 @@ export function useDscRedeemCollateral(
         setError(null);
         setTxHash(null);
 
-        const amount = parseUnits(amountInput || "0", 18);
+        const decimals = Number(
+          await publicClient.readContract({
+            address: collateralAddress as `0x${string}`,
+            abi: erc20Abi,
+            functionName: "decimals",
+          }),
+        );
+
+        const amount = parseUnits(
+          amountInput || "0",
+          decimals || DEFAULT_TOKEN_DECIMALS,
+        );
         if (amount <= BigInt(0)) {
           throw new Error("Amount must be greater than zero.");
         }

@@ -15,6 +15,7 @@ import {
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
+import { DEFAULT_TOKEN_DECIMALS } from "@/lib/protocol/tokenUnits";
 
 type DepositStep = "idle" | "approving" | "depositing" | "success" | "error";
 
@@ -54,7 +55,18 @@ export function useDscDepositCollateral() {
         throw new Error("Contracts not ready");
       }
 
-      const parsedAmount = parseUnits(amount, 18);
+      if (!publicClient) {
+        throw new Error("Public client not ready");
+      }
+
+      const decimals = Number(
+        await publicClient.readContract({
+          address: collateralAddress as `0x${string}`,
+          abi: erc20Abi,
+          functionName: "decimals",
+        }),
+      );
+      const parsedAmount = parseUnits(amount, decimals || DEFAULT_TOKEN_DECIMALS);
 
       setError(null);
       setStep("approving");
@@ -67,10 +79,6 @@ export function useDscDepositCollateral() {
       });
 
       setPendingHash(hash);
-
-      if (!publicClient) {
-        throw new Error("Public client not ready");
-      }
 
       await publicClient.waitForTransactionReceipt({ hash });
       setPendingHash(undefined);
@@ -88,7 +96,18 @@ export function useDscDepositCollateral() {
         throw new Error("Contracts not ready");
       }
 
-      const parsedAmount = parseUnits(amount, 18);
+      if (!publicClient) {
+        throw new Error("Public client not ready");
+      }
+
+      const decimals = Number(
+        await publicClient.readContract({
+          address: collateralAddress as `0x${string}`,
+          abi: erc20Abi,
+          functionName: "decimals",
+        }),
+      );
+      const parsedAmount = parseUnits(amount, decimals || DEFAULT_TOKEN_DECIMALS);
 
       setError(null);
       setStep("depositing");
@@ -101,10 +120,6 @@ export function useDscDepositCollateral() {
       });
 
       setPendingHash(hash);
-
-      if (!publicClient) {
-        throw new Error("Public client not ready");
-      }
 
       await publicClient.waitForTransactionReceipt({ hash });
       setPendingHash(undefined);

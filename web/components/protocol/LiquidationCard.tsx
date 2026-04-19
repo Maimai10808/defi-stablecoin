@@ -7,16 +7,22 @@ import { useReadContract } from "wagmi";
 import { ActionInfoRow } from "@/components/dsc/ActionInfoRow";
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscLiquidation } from "@/hooks/useDscLiquidation";
-import { dscEngineAbi } from "@/lib/contracts/abi";
+import { dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
 import {
   COLLATERAL_OPTIONS,
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
+import { normalizeTokenDecimals } from "@/lib/protocol/tokenUnits";
 
 function format18(value?: bigint) {
   if (value === undefined) return "--";
   return Number(formatUnits(value, 18)).toFixed(4);
+}
+
+function formatToken(value: bigint | undefined, decimals: number) {
+  if (value === undefined) return "--";
+  return Number(formatUnits(value, decimals)).toFixed(4);
 }
 
 function isPositiveNumber(value: string) {
@@ -79,6 +85,15 @@ export function LiquidationCard() {
     },
   });
 
+  const collateralDecimalsQuery = useReadContract({
+    address: collateralAddress as `0x${string}` | undefined,
+    abi: erc20Abi,
+    functionName: "decimals",
+    query: {
+      enabled: Boolean(liquidateFlow.enabled && collateralAddress),
+    },
+  });
+
   const currentStatus = useMemo(() => {
     if (liquidateFlow.status.message) return liquidateFlow.status.message;
     return "Ready";
@@ -115,6 +130,10 @@ export function LiquidationCard() {
     previewBasePayout !== undefined
       ? previewBasePayout + previewBasePayout / BigInt(10)
       : undefined;
+  const collateralDecimals =
+    collateralDecimalsQuery.data !== undefined
+      ? normalizeTokenDecimals(collateralDecimalsQuery.data as bigint)
+      : 18;
 
   return (
     <section className="cyber-panel cyber-panel-hover p-5 md:p-6">
@@ -206,11 +225,11 @@ export function LiquidationCard() {
           />
           <ActionInfoRow
             label={`Estimated ${collateralSymbol} From Debt`}
-            value={format18(previewBasePayout)}
+            value={formatToken(previewBasePayout, collateralDecimals)}
           />
           <ActionInfoRow
             label={`Estimated ${collateralSymbol} With 10% Bonus`}
-            value={format18(previewBonusPayout)}
+            value={formatToken(previewBonusPayout, collateralDecimals)}
           />
           <ActionInfoRow
             label="Liquidator DSC Balance"

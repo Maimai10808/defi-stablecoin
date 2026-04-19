@@ -10,6 +10,7 @@ import {
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
+import { DEFAULT_TOKEN_DECIMALS, DSC_DECIMALS } from "@/lib/protocol/tokenUnits";
 
 type DepositAndMintStep =
   | "idle"
@@ -73,8 +74,19 @@ export function useDscDepositAndMint(options?: UseDscDepositAndMintOptions) {
         setError(null);
         setTxHash(null);
 
-        const collateralAmount = parseUnits(collateralAmountInput || "0", 18);
-        const mintAmount = parseUnits(mintAmountInput || "0", 18);
+        const collateralDecimals = Number(
+          await publicClient.readContract({
+            address: collateralAddress as `0x${string}`,
+            abi: erc20Abi,
+            functionName: "decimals",
+          }),
+        );
+
+        const collateralAmount = parseUnits(
+          collateralAmountInput || "0",
+          collateralDecimals || DEFAULT_TOKEN_DECIMALS,
+        );
+        const mintAmount = parseUnits(mintAmountInput || "0", DSC_DECIMALS);
 
         if (collateralAmount <= BigInt(0) || mintAmount <= BigInt(0)) {
           throw new Error("Collateral amount and mint amount must be positive.");
