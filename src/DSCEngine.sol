@@ -3,8 +3,10 @@ pragma solidity ^0.8.18;
 
 import {IDecentralizedStableCoin} from "./interface/IDecentralizedStableCoin.sol";
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
+
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
 /**
@@ -30,6 +32,10 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interf
  * - liquidating unhealthy positions
  */
 contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
+    // ============
+    //    Errors
+    // ============
+
     error DSCEngine__AmountMustBeMoreThanZero();
     error DSCEngine__NotTheAllowedToken();
     error DSCEngine__TheAddressListLengthNotMatch();
@@ -39,6 +45,10 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
     error DSCEngine__HealthFactorIsSafe(uint256 userHealthFactor);
     error DSCEngine__HealthFactorNotImproved();
 
+    // =========================
+    //   Constants / Immutables
+    // =========================
+
     uint256 private constant ADDITIONAL_FEED_PRECISION_1e10 = 1e10;
     uint256 private constant PRECISION_1e18 = 1e18;
     uint256 private constant LIQUIDATION_RATIO_50 = 50;
@@ -46,23 +56,29 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
     uint256 private constant MINIMUM_HEALTH_FACTOR_1e18 = 1e18;
     uint256 private constant LIQUIDATION_BONUS_10 = 10;
 
-    mapping(address token => address priceFeed) private s_priceFeedsMap;
-    mapping(address user => mapping(address token => uint256 amount))
-        private s_collateralDepositedMap;
-    mapping(address user => uint256 amountDscMinted) private s_DscMintedMap;
-    address[] private s_tokenCollateralAddrList;
     DecentralizedStableCoin private immutable i_dsc;
 
-    ////////////////////
-    //   Modifiers    //
-    ////////////////////
+    // ============
+    //   Storage
+    // ============
+
+    mapping(address collateralToken => address priceFeed) private s_priceFeeds;
+    mapping(address user => mapping(address collateralToken => uint256 amount))
+        private s_collateralDeposited;
+    mapping(address user => uint256 dscMinted) private s_dscMinted;
+
+    address[] private s_collateralTokens;
+
+    // =============
+    //   Modifiers
+    // =============
 
     /**
      * @notice Ensures the provided amount is greater than zero.
-     * @param _amount The amount to validate.
+     * @param amount The amount to validate.
      */
-    modifier onlyAmountMoreThanZero(uint256 _amount) {
-        if (_amount <= 0) {
+    modifier onlyAmountMoreThanZero(uint256 amount) {
+        if (amount <= 0) {
             revert DSCEngine__AmountMustBeMoreThanZero();
         }
         _;
@@ -70,140 +86,141 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
 
     /**
      * @notice Ensures the provided token is supported as collateral.
-     * @param _tokenAddr The token address to validate.
+     * @param collateralToken The token address to validate.
      */
-    modifier onlyAllowedToken(address _tokenAddr) {
-        if (s_priceFeedsMap[_tokenAddr] == address(0)) {
+    modifier onlyAllowedToken(address collateralToken) {
+        if (s_priceFeeds[collateralToken] == address(0)) {
             revert DSCEngine__NotTheAllowedToken();
         }
         _;
     }
 
+    // ===============
+    //   Constructor
+    // ===============
+
     /**
-     * @param tokenCollateralAddrList_ List of supported collateral token addresses.
-     * @param priceFeedAddrList_ List of Chainlink price feed addresses corresponding to each collateral token.
-     * @param DSCAddr_ Address of the DecentralizedStableCoin contract.
+     * @param collateralTokens List of supported collateral token addresses.
+     * @param priceFeedAddresses List of Chainlink price feed addresses corresponding to each collateral token.
+     * @param dscAddress Address of the DecentralizedStableCoin contract.
      * @notice Initializes the engine with supported collateral tokens, their price feeds, and the DSC token contract.
      * @dev The collateral token list and price feed list must have the same length.
      */
     constructor(
-        address[] memory tokenCollateralAddrList_,
-        address[] memory priceFeedAddrList_,
-        address DSCAddr_
+        address[] memory collateralTokens,
+        address[] memory priceFeedAddresses,
+        address dscAddress
     ) {
-        if (tokenCollateralAddrList_.length != priceFeedAddrList_.length) {
+        if (collateralTokens.length != priceFeedAddresses.length) {
             revert DSCEngine__TheAddressListLengthNotMatch();
         }
 
-        s_tokenCollateralAddrList = tokenCollateralAddrList_;
+        s_collateralTokens = collateralTokens;
 
-        for (uint256 i = 0; i < tokenCollateralAddrList_.length; i++) {
-            s_priceFeedsMap[tokenCollateralAddrList_[i]] = priceFeedAddrList_[
-                i
-            ];
+        for (uint256 i = 0; i < collateralTokens.length; i++) {
+            s_priceFeeds[collateralTokens[i]] = priceFeedAddresses[i];
         }
 
-        i_dsc = DecentralizedStableCoin(DSCAddr_);
+        i_dsc = DecentralizedStableCoin(dscAddress);
     }
 
+    // ==============================
+    //   External / Public Actions
+    // ==============================
+
     /**
-     * @param _tokenCollateralAddr The address of the collateral token to deposit.
-     * @param _amountCollateral The amount of collateral to deposit.
+     * @param collateralToken The address of the collateral token to deposit.
+     * @param collateralAmount The amount of collateral to deposit.
      * @notice Deposits approved collateral into the protocol.
      * @dev The token must be an allowed collateral asset. The function updates storage,
      * emits an event, and then transfers collateral from the user into the contract.
      */
     function depositCollateral(
-        address _tokenCollateralAddr,
-        uint256 _amountCollateral
+        address collateralToken,
+        uint256 collateralAmount
     )
         public
         override
-        onlyAmountMoreThanZero(_amountCollateral)
-        onlyAllowedToken(_tokenCollateralAddr)
+        onlyAmountMoreThanZero(collateralAmount)
+        onlyAllowedToken(collateralToken)
         nonReentrant
     {
-        s_collateralDepositedMap[msg.sender][
-            _tokenCollateralAddr
-        ] += _amountCollateral;
+        s_collateralDeposited[msg.sender][collateralToken] += collateralAmount;
 
-        emit CollateralDeposited(
-            msg.sender,
-            _tokenCollateralAddr,
-            _amountCollateral
-        );
+        emit CollateralDeposited(msg.sender, collateralToken, collateralAmount);
 
-        bool _success = IERC20(_tokenCollateralAddr).transferFrom(
+        bool success = IERC20(collateralToken).transferFrom(
             msg.sender,
             address(this),
-            _amountCollateral
+            collateralAmount
         );
 
-        if (!_success) {
+        if (!success) {
             revert DSCEngine_TransferFromFailed();
         }
     }
 
     /**
-     * @param _acceptedToken The address of the collateral token to deposit.
-     * @param _amountCollateral The amount of collateral to deposit.
-     * @param _expectedMint The amount of DSC to mint.
+     * @param collateralToken The address of the collateral token to deposit.
+     * @param collateralAmount The amount of collateral to deposit.
+     * @param dscAmountToMint The amount of DSC to mint.
      * @notice Deposits collateral and mints DSC in a single transaction.
      * @dev This is a convenience wrapper that first deposits collateral and then mints DSC.
      */
     function depositCollateralAndMintDsc(
-        address _acceptedToken,
-        uint256 _amountCollateral,
-        uint256 _expectedMint
+        address collateralToken,
+        uint256 collateralAmount,
+        uint256 dscAmountToMint
     ) public override {
-        depositCollateral(_acceptedToken, _amountCollateral);
-        mintDsc(_expectedMint);
+        depositCollateral(collateralToken, collateralAmount);
+        mintDsc(dscAmountToMint);
     }
 
     /**
-     * @param _expectedToken The address of the collateral token to redeem.
-     * @param _expectedCollateralAmount The amount of collateral to redeem.
-     * @param _amountToBurn The amount of DSC to burn.
-     * @notice Burns DSC and redeems collateral in a single transaction.
-     * @dev The function first burns the user's DSC, then redeems the specified collateral,
-     * and finally checks that the user's health factor remains valid.
+     * @param dscAmountToMint The amount of DSC to mint.
+     * @notice Mints DSC against the caller's deposited collateral.
+     * @dev The user's minted DSC balance is increased first, then the health factor
+     * is checked, and only afterward is the DSC token actually minted.
      */
-    function redeemCollateralForDsc(
-        address _expectedToken,
-        uint256 _expectedCollateralAmount,
-        uint256 _amountToBurn
-    ) public override {
-        burnDsc(_amountToBurn);
+    function mintDsc(uint256 dscAmountToMint) public override {
+        s_dscMinted[msg.sender] += dscAmountToMint;
 
-        _redeemCollateral(
-            _expectedToken,
-            _expectedCollateralAmount,
-            msg.sender,
-            msg.sender
-        );
+        _revertIfHealthFactorIsBroken(msg.sender);
 
+        bool success = i_dsc.mint(msg.sender, dscAmountToMint);
+
+        if (!success) {
+            revert DSCEngine__MintFailed();
+        }
+    }
+
+    /**
+     * @param dscAmountToBurn The amount of DSC to burn.
+     * @notice Burns DSC and reduces the caller's outstanding minted balance.
+     * @dev The DSC is first transferred from the user into the contract and then burned.
+     * A health factor check is performed afterward, although burning DSC should only improve solvency.
+     */
+    function burnDsc(
+        uint256 dscAmountToBurn
+    ) public override onlyAmountMoreThanZero(dscAmountToBurn) {
+        _burnDsc(dscAmountToBurn, msg.sender, msg.sender);
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
     /**
-     * @param _expectedToken The address of the collateral token to redeem.
-     * @param _expectedCollateralAmount The amount of collateral to redeem.
+     * @param collateralToken The address of the collateral token to redeem.
+     * @param collateralAmount The amount of collateral to redeem.
      * @notice Redeems deposited collateral from the protocol.
      * @dev After transferring the collateral out, the protocol checks that the user's
      * health factor is still above the minimum threshold.
      */
     function redeemCollateral(
-        address _expectedToken,
-        uint256 _expectedCollateralAmount
-    )
-        public
-        override
-        onlyAmountMoreThanZero(_expectedCollateralAmount)
-        nonReentrant
-    {
+        address collateralToken,
+        uint256 collateralAmount
+    ) public override onlyAmountMoreThanZero(collateralAmount) nonReentrant {
         bool success = _redeemCollateral(
-            _expectedToken,
-            _expectedCollateralAmount,
+            collateralToken,
+            collateralAmount,
             msg.sender,
             msg.sender
         );
@@ -216,22 +233,34 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
     }
 
     /**
-     * @param _amountToBurn The amount of DSC to burn.
-     * @notice Burns DSC and reduces the caller's outstanding minted balance.
-     * @dev The DSC is first transferred from the user into the contract and then burned.
-     * A health factor check is performed afterward, although burning DSC should only improve solvency.
+     * @param collateralToken The address of the collateral token to redeem.
+     * @param collateralAmount The amount of collateral to redeem.
+     * @param dscAmountToBurn The amount of DSC to burn.
+     * @notice Burns DSC and redeems collateral in a single transaction.
+     * @dev The function first burns the user's DSC, then redeems the specified collateral,
+     * and finally checks that the user's health factor remains valid.
      */
-    function burnDsc(
-        uint256 _amountToBurn
-    ) public override onlyAmountMoreThanZero(_amountToBurn) {
-        _burnDsc(_amountToBurn, msg.sender, msg.sender);
+    function redeemCollateralForDsc(
+        address collateralToken,
+        uint256 collateralAmount,
+        uint256 dscAmountToBurn
+    ) public override {
+        burnDsc(dscAmountToBurn);
+
+        _redeemCollateral(
+            collateralToken,
+            collateralAmount,
+            msg.sender,
+            msg.sender
+        );
+
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
     /**
-     * @param _collateral The address of the collateral token to seize.
-     * @param _liquidatedUser The address of the undercollateralized user to liquidate.
-     * @param _debtToCover The amount of DSC debt the liquidator wants to cover.
+     * @param collateralToken The address of the collateral token to seize.
+     * @param userToLiquidate The address of the undercollateralized user to liquidate.
+     * @param debtToCover The amount of DSC debt the liquidator wants to cover.
      * @notice Liquidates a user whose health factor has fallen below the minimum threshold.
      * @dev The liquidator burns DSC to cover part of the unhealthy user's debt and receives
      * the corresponding collateral plus a liquidation bonus. The function reverts if:
@@ -239,37 +268,37 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
      * - the liquidation does not improve the user's health factor
      */
     function liquidate(
-        address _collateral,
-        address _liquidatedUser,
-        uint256 _debtToCover
-    ) public override onlyAmountMoreThanZero(_debtToCover) nonReentrant {
-        uint256 startingUserHealthFactor = _healthFactor(_liquidatedUser);
+        address collateralToken,
+        address userToLiquidate,
+        uint256 debtToCover
+    ) public override onlyAmountMoreThanZero(debtToCover) nonReentrant {
+        uint256 startingUserHealthFactor = _healthFactor(userToLiquidate);
 
         if (startingUserHealthFactor >= MINIMUM_HEALTH_FACTOR_1e18) {
             revert DSCEngine__HealthFactorIsSafe(startingUserHealthFactor);
         }
 
-        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(
-            _collateral,
-            _debtToCover
+        uint256 collateralAmountFromDebtCovered = getTokenAmountFromUsd(
+            collateralToken,
+            debtToCover
         );
 
-        uint256 bonusCollateral = (tokenAmountFromDebtCovered *
+        uint256 bonusCollateral = (collateralAmountFromDebtCovered *
             LIQUIDATION_BONUS_10) / LIQUIDATION_PRECISION_100;
 
-        uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered +
+        uint256 totalCollateralToRedeem = collateralAmountFromDebtCovered +
             bonusCollateral;
 
         _redeemCollateral(
-            _collateral,
+            collateralToken,
             totalCollateralToRedeem,
-            _liquidatedUser,
+            userToLiquidate,
             msg.sender
         );
 
-        _burnDsc(_debtToCover, _liquidatedUser, msg.sender);
+        _burnDsc(debtToCover, userToLiquidate, msg.sender);
 
-        uint256 endingUserHealthFactor = _healthFactor(_liquidatedUser);
+        uint256 endingUserHealthFactor = _healthFactor(userToLiquidate);
 
         if (endingUserHealthFactor <= startingUserHealthFactor) {
             revert DSCEngine__HealthFactorNotImproved();
@@ -278,110 +307,90 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    /**
-     * @param _expectedMint The amount of DSC to mint.
-     * @notice Mints DSC against the caller's deposited collateral.
-     * @dev The user's minted DSC balance is increased first, then the health factor
-     * is checked, and only afterward is the DSC token actually minted.
-     */
-    function mintDsc(uint256 _expectedMint) public override {
-        s_DscMintedMap[msg.sender] += _expectedMint;
-
-        _revertIfHealthFactorIsBroken(msg.sender);
-
-        bool _success = i_dsc.mint(msg.sender, _expectedMint);
-
-        if (!_success) {
-            revert DSCEngine__MintFailed();
-        }
-    }
+    // ===========================
+    //   Internal Core Actions
+    // ===========================
 
     /**
-     * @param _amountToBurn The amount of DSC to burn.
-     * @param _onBehalfOf The user whose minted DSC accounting will be reduced.
-     * @param _dscFrom The address that provides the DSC tokens to burn.
+     * @param dscAmountToBurn The amount of DSC to burn.
+     * @param onBehalfOf The user whose minted DSC accounting will be reduced.
+     * @param dscFrom The address that provides the DSC tokens to burn.
      * @notice Internal helper for burning DSC and reducing outstanding debt.
      * @dev This function:
-     * 1. decreases the debt accounting for `_onBehalfOf`
-     * 2. transfers DSC from `_dscFrom` to this contract
+     * 1. decreases the debt accounting for `onBehalfOf`
+     * 2. transfers DSC from `dscFrom` to this contract
      * 3. burns the received DSC
      */
     function _burnDsc(
-        uint256 _amountToBurn,
-        address _onBehalfOf,
-        address _dscFrom
+        uint256 dscAmountToBurn,
+        address onBehalfOf,
+        address dscFrom
     ) internal {
-        s_DscMintedMap[_onBehalfOf] -= _amountToBurn;
+        s_dscMinted[onBehalfOf] -= dscAmountToBurn;
 
         bool success = IERC20(address(i_dsc)).transferFrom(
-            _dscFrom,
+            dscFrom,
             address(this),
-            _amountToBurn
+            dscAmountToBurn
         );
 
         if (!success) {
             revert DSCEngine_TransferFromFailed();
         }
 
-        i_dsc.burn(_amountToBurn);
+        i_dsc.burn(dscAmountToBurn);
     }
 
     /**
-     * @param _expectedToken The collateral token to redeem.
-     * @param _expectedCollateralAmount The amount of collateral to redeem.
-     * @param _from The address whose collateral balance will be reduced.
-     * @param _to The recipient of the redeemed collateral.
-     * @return _success Whether the collateral transfer succeeded.
+     * @param collateralToken The collateral token to redeem.
+     * @param collateralAmount The amount of collateral to redeem.
+     * @param from The address whose collateral balance will be reduced.
+     * @param to The recipient of the redeemed collateral.
+     * @return success Whether the collateral transfer succeeded.
      * @notice Internal helper for redeeming collateral from the protocol.
      * @dev Storage is updated before the ERC20 transfer is executed.
      */
     function _redeemCollateral(
-        address _expectedToken,
-        uint256 _expectedCollateralAmount,
-        address _from,
-        address _to
-    ) internal returns (bool _success) {
-        s_collateralDepositedMap[_from][
-            _expectedToken
-        ] -= _expectedCollateralAmount;
+        address collateralToken,
+        uint256 collateralAmount,
+        address from,
+        address to
+    ) internal returns (bool success) {
+        s_collateralDeposited[from][collateralToken] -= collateralAmount;
 
-        emit CollateralRedeemed(
-            _from,
-            _to,
-            _expectedToken,
-            _expectedCollateralAmount
-        );
+        emit CollateralRedeemed(from, to, collateralToken, collateralAmount);
 
-        (_success) = IERC20(_expectedToken).transfer(
-            _to,
-            _expectedCollateralAmount
-        );
+        success = IERC20(collateralToken).transfer(to, collateralAmount);
     }
 
+    // =================================
+    //   Internal Health Factor Logic
+    // =================================
+
     /**
-     * @param _user The address of the user to query.
-     * @return _totalDscMinted The total amount of DSC minted by the user.
-     * @return _CollateralValueInUsd The total USD value of the user's deposited collateral.
+     * @param user The address of the user to query.
+     * @return totalDscMinted The total amount of DSC minted by the user.
+     * @return collateralValueInUsd The total USD value of the user's deposited collateral.
      * @notice Returns the user's debt and total collateral value.
      */
     function _getAccountInformation(
-        address _user
+        address user
     )
         internal
         view
-        returns (uint256 _totalDscMinted, uint256 _CollateralValueInUsd)
+        returns (uint256 totalDscMinted, uint256 collateralValueInUsd)
     {
-        _totalDscMinted = s_DscMintedMap[_user];
-        _CollateralValueInUsd = getAccountCollateralValue(_user);
+        totalDscMinted = s_dscMinted[user];
+        collateralValueInUsd = getAccountCollateralValue(user);
     }
 
     /**
-     * @param _user The address of the user to evaluate.
+     * @param user The address of the user to evaluate.
      * @notice Reverts if the user's health factor is below the minimum allowed threshold.
      * @dev Used as a protocol solvency check after state-changing operations.
      */
-    function _revertIfHealthFactorIsBroken(address _user) internal view {
-        uint256 userHealthFactor = _healthFactor(_user);
+    function _revertIfHealthFactorIsBroken(address user) internal view {
+        uint256 userHealthFactor = _healthFactor(user);
 
         if (userHealthFactor < MINIMUM_HEALTH_FACTOR_1e18) {
             revert DSCEngine__HealthFactorIsBroken(userHealthFactor);
@@ -389,198 +398,207 @@ contract DSCEngine is IDecentralizedStableCoin, ReentrancyGuard {
     }
 
     /**
-     * @param _user The address of the user to evaluate.
+     * @param user The address of the user to evaluate.
      * @return userHealthFactor The user's current health factor.
      * @notice Calculates the user's current health factor from debt and collateral value.
      */
     function _healthFactor(
-        address _user
+        address user
     ) internal view returns (uint256 userHealthFactor) {
         (
-            uint256 _totalDscMinted,
-            uint256 _CollateralValueInUsd
-        ) = _getAccountInformation(_user);
+            uint256 totalDscMinted,
+            uint256 collateralValueInUsd
+        ) = _getAccountInformation(user);
 
         userHealthFactor = _calculateHealthFactor(
-            _totalDscMinted,
-            _CollateralValueInUsd
+            totalDscMinted,
+            collateralValueInUsd
         );
     }
 
     /**
-     * @param _totalDscMinted The total amount of DSC minted by the user.
-     * @param _CollateralValueInUsd The total USD value of the user's collateral.
+     * @param totalDscMinted The total amount of DSC minted by the user.
+     * @param collateralValueInUsd The total USD value of the user's collateral.
      * @return userHealthFactor The calculated health factor.
      * @notice Computes a health factor from a user's debt and collateral position.
      * @dev If the user has minted no DSC, the function returns the maximum uint256 value.
      */
     function _calculateHealthFactor(
-        uint256 _totalDscMinted,
-        uint256 _CollateralValueInUsd
+        uint256 totalDscMinted,
+        uint256 collateralValueInUsd
     ) internal pure returns (uint256 userHealthFactor) {
-        if (_totalDscMinted == 0) return type(uint256).max;
+        if (totalDscMinted == 0) return type(uint256).max;
 
-        uint256 collateralAdjustedForRatio = (_CollateralValueInUsd *
+        uint256 collateralAdjustedForThreshold = (collateralValueInUsd *
             LIQUIDATION_RATIO_50) / LIQUIDATION_PRECISION_100;
 
         userHealthFactor =
-            (collateralAdjustedForRatio * PRECISION_1e18) /
-            _totalDscMinted;
+            (collateralAdjustedForThreshold * PRECISION_1e18) /
+            totalDscMinted;
     }
 
-    ////////////////////
-    // Getter Methods //
-    ////////////////////
+    // ============================
+    //   Public View / Getters
+    // ============================
 
     /**
-     * @param _collateral The address of the collateral token.
-     * @param _usdAmountInWei The USD amount, scaled to 1e18.
-     * @return _amount The equivalent amount of collateral tokens.
+     * @param collateralToken The address of the collateral token.
+     * @param usdAmountInWei The USD amount, scaled to 1e18.
+     * @return collateralAmount The equivalent amount of collateral tokens.
      * @notice Converts a USD-denominated amount into the corresponding collateral token amount.
      * @dev Uses the configured Chainlink price feed for the collateral token.
      */
     function getTokenAmountFromUsd(
-        address _collateral,
-        uint256 _usdAmountInWei
-    ) public view returns (uint256 _amount) {
-        AggregatorV3Interface _priceFeed = AggregatorV3Interface(
-            s_priceFeedsMap[_collateral]
+        address collateralToken,
+        uint256 usdAmountInWei
+    ) public view returns (uint256 collateralAmount) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(
+            s_priceFeeds[collateralToken]
         );
 
-        (, int256 _price, , , ) = _priceFeed.latestRoundData();
+        (, int256 price, , , ) = priceFeed.latestRoundData();
 
-        _amount =
-            (_usdAmountInWei * PRECISION_1e18) /
-            uint256(_price) /
+        collateralAmount =
+            (usdAmountInWei * PRECISION_1e18) /
+            uint256(price) /
             ADDITIONAL_FEED_PRECISION_1e10;
     }
 
     /**
-     * @param _tokenAddr The address of the collateral token.
-     * @return _priceFeed The address of the associated Chainlink price feed.
+     * @param collateralToken The address of the collateral token.
+     * @return priceFeed The address of the associated Chainlink price feed.
      * @notice Returns the price feed configured for a collateral token.
      */
     function priceFeeds(
-        address _tokenAddr
-    ) public view returns (address _priceFeed) {
-        _priceFeed = s_priceFeedsMap[_tokenAddr];
+        address collateralToken
+    ) public view returns (address priceFeed) {
+        priceFeed = s_priceFeeds[collateralToken];
     }
 
     /**
-     * @return _dsc The address of the DSC token contract.
+     * @return dscAddress The address of the DSC token contract.
      * @notice Returns the address of the Decentralized StableCoin contract.
      */
-    function dsc() public view returns (address _dsc) {
-        _dsc = address(i_dsc);
+    function dsc() public view returns (address dscAddress) {
+        dscAddress = address(i_dsc);
     }
 
     /**
-     * @param _user The address of the user to query.
-     * @return _totalCollateralValueInUsd The total USD value of all collateral deposited by the user.
+     * @param user The address of the user to query.
+     * @return totalCollateralValueInUsd The total USD value of all collateral deposited by the user.
      * @notice Returns the total collateral value of a user, denominated in USD.
      * @dev Iterates across all supported collateral tokens and sums their USD values.
      */
     function getAccountCollateralValue(
-        address _user
-    ) public view returns (uint256 _totalCollateralValueInUsd) {
-        for (uint256 i = 0; i < s_tokenCollateralAddrList.length; i++) {
-            address _token = s_tokenCollateralAddrList[i];
-            uint256 _amount = s_collateralDepositedMap[_user][_token];
-            _totalCollateralValueInUsd += getUsdValue(_token, _amount);
+        address user
+    ) public view returns (uint256 totalCollateralValueInUsd) {
+        for (uint256 i = 0; i < s_collateralTokens.length; i++) {
+            address collateralToken = s_collateralTokens[i];
+            uint256 collateralAmount = s_collateralDeposited[user][
+                collateralToken
+            ];
+            totalCollateralValueInUsd += getUsdValue(
+                collateralToken,
+                collateralAmount
+            );
         }
     }
 
     /**
-     * @param _token The address of the collateral token.
-     * @param _amount The amount of the collateral token.
-     * @return _usdValue The USD value of the given token amount, scaled to 1e18.
+     * @param collateralToken The address of the collateral token.
+     * @param collateralAmount The amount of the collateral token.
+     * @return usdValue The USD value of the given token amount, scaled to 1e18.
      * @notice Returns the USD value of a collateral token amount.
      * @dev Uses the token's Chainlink price feed and normalizes precision to 1e18.
      */
     function getUsdValue(
-        address _token,
-        uint256 _amount
-    ) public view returns (uint256 _usdValue) {
-        AggregatorV3Interface _priceFeed = AggregatorV3Interface(
-            s_priceFeedsMap[_token]
+        address collateralToken,
+        uint256 collateralAmount
+    ) public view returns (uint256 usdValue) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(
+            s_priceFeeds[collateralToken]
         );
 
-        (, int256 _price, , , ) = _priceFeed.latestRoundData();
+        (, int256 price, , , ) = priceFeed.latestRoundData();
 
-        _usdValue =
-            (uint256(_price) * ADDITIONAL_FEED_PRECISION_1e10 * _amount) /
+        usdValue =
+            (uint256(price) *
+                ADDITIONAL_FEED_PRECISION_1e10 *
+                collateralAmount) /
             PRECISION_1e18;
     }
 
     /**
-     * @param _index The index in the supported collateral token list.
-     * @return _collateral The collateral token address at the given index.
+     * @param index The index in the supported collateral token list.
+     * @return collateralToken The collateral token address at the given index.
      * @notice Returns a supported collateral token address by index.
      */
     function getTokenCollateralAddrList(
-        uint256 _index
-    ) public view returns (address _collateral) {
-        _collateral = s_tokenCollateralAddrList[_index];
+        uint256 index
+    ) public view returns (address collateralToken) {
+        collateralToken = s_collateralTokens[index];
     }
 
     /**
-     * @param _user The address of the user to query.
-     * @return _totalDscMinted The total amount of DSC minted by the user.
-     * @return _CollateralValueInUsd The total USD value of the user's deposited collateral.
+     * @param user The address of the user to query.
+     * @return totalDscMinted The total amount of DSC minted by the user.
+     * @return collateralValueInUsd The total USD value of the user's deposited collateral.
      * @notice Returns the user's debt and collateral information.
      */
     function getAccountInformation(
-        address _user
+        address user
     )
         public
         view
-        returns (uint256 _totalDscMinted, uint256 _CollateralValueInUsd)
+        returns (uint256 totalDscMinted, uint256 collateralValueInUsd)
     {
-        (_totalDscMinted, _CollateralValueInUsd) = _getAccountInformation(
-            _user
-        );
+        (totalDscMinted, collateralValueInUsd) = _getAccountInformation(user);
     }
 
     /**
-     * @param _user The address of the user to query.
-     * @return _amount The total amount of DSC minted by the user.
+     * @param user The address of the user to query.
+     * @return dscMinted The total amount of DSC minted by the user.
      * @notice Returns how much DSC a given user has minted.
      */
     function getDscMintedAmount(
-        address _user
-    ) public view returns (uint256 _amount) {
-        _amount = s_DscMintedMap[_user];
+        address user
+    ) public view returns (uint256 dscMinted) {
+        dscMinted = s_dscMinted[user];
     }
 
     /**
-     * @param _user The address of the user to query.
+     * @param user The address of the user to query.
      * @return healthFactor The user's current health factor.
      * @notice Returns the current health factor of a user.
      */
     function getHealthFactor(
-        address _user
+        address user
     ) public view returns (uint256 healthFactor) {
-        healthFactor = _healthFactor(_user);
+        healthFactor = _healthFactor(user);
     }
 
     /**
-     * @return _minimum The minimum allowed health factor.
+     * @return minimumHealthFactor The minimum allowed health factor.
      * @notice Returns the minimum health factor required by the protocol.
      */
-    function getMinHealthFactor() external pure returns (uint256 _minimum) {
-        _minimum = MINIMUM_HEALTH_FACTOR_1e18;
+    function getMinHealthFactor()
+        external
+        pure
+        returns (uint256 minimumHealthFactor)
+    {
+        minimumHealthFactor = MINIMUM_HEALTH_FACTOR_1e18;
     }
 
     /**
-     * @param _user The address of the user to query.
-     * @param _token The address of the collateral token.
-     * @return _amount The amount of the specified collateral token deposited by the user.
+     * @param user The address of the user to query.
+     * @param collateralToken The address of the collateral token.
+     * @return collateralAmount The amount of the specified collateral token deposited by the user.
      * @notice Returns a user's deposited balance for a given collateral token.
      */
     function getCollateralBalanceOfUser(
-        address _user,
-        address _token
-    ) public view returns (uint256 _amount) {
-        _amount = s_collateralDepositedMap[_user][_token];
+        address user,
+        address collateralToken
+    ) public view returns (uint256 collateralAmount) {
+        collateralAmount = s_collateralDeposited[user][collateralToken];
     }
 }
