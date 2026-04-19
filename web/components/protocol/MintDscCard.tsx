@@ -8,12 +8,42 @@ import { ActionSecondaryButton } from "@/components/dsc/ActionSecondaryButton";
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
 import { useDscMintDsc } from "@/hooks/useDscMintDsc";
+import {
+  getProjectedPositionPreview,
+  getSafetyStatusLabel,
+} from "@/lib/protocol/positionPreview";
+import {
+  formatTokenAmount,
+  safeParseTokenAmount,
+} from "@/lib/protocol/tokenUnits";
 
 export function MintDscCard() {
   const [amount, setAmount] = useState("100");
 
   const accountOverview = useDscAccountOverview();
   const collateralOverview = useDscCollateralOverview();
+  const parsedAmount = safeParseTokenAmount(amount, 18);
+  const preview = getProjectedPositionPreview({
+    currentCollateralValueUsd: accountOverview.overview.raw.collateralValueInUsd,
+    currentDebt: accountOverview.overview.raw.totalDscMinted,
+    debtDelta: parsedAmount,
+  });
+
+  const issues = useMemo(() => {
+    const nextIssues: string[] = [];
+
+    if (amount.trim() && parsedAmount === undefined) {
+      nextIssues.push("Enter a valid DSC mint amount.");
+    }
+
+    if (preview.willRevert) {
+      nextIssues.push(
+        "This transaction would make the position unsafe and will revert.",
+      );
+    }
+
+    return nextIssues;
+  }, [amount, parsedAmount, preview.willRevert]);
 
   const mintFlow = useDscMintDsc({
     onSuccess: async () => {
@@ -28,7 +58,9 @@ export function MintDscCard() {
     !mintFlow.enabled ||
     mintFlow.status.isPending ||
     !amount.trim() ||
-    Number(amount) <= 0;
+    Number(amount) <= 0 ||
+    parsedAmount === undefined ||
+    issues.length > 0;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,6 +140,29 @@ export function MintDscCard() {
           label="Current DSC Balance"
           value={accountOverview.overview.formatted.dscBalance ?? "--"}
         />
+        <ActionInfoRow
+          label="Projected Total DSC Minted"
+          value={formatTokenAmount(preview.projectedDebt, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Projected Health Factor"
+          value={formatTokenAmount(preview.projectedHealthFactor, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Safety Status"
+          value={getSafetyStatusLabel(preview)}
+          valueClassName={preview.willRevert ? "text-red-500" : "text-[var(--accent-secondary)]"}
+        />
+
+        {issues.length > 0 ? (
+          <div className="space-y-1">
+            {issues.map((issue) => (
+              <p key={issue} className="text-sm text-[var(--destructive)]">
+                {issue}
+              </p>
+            ))}
+          </div>
+        ) : null}
 
         <div className="flex gap-3">
           <ActionPrimaryButton

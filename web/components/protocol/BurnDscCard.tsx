@@ -8,12 +8,59 @@ import { ActionSecondaryButton } from "@/components/dsc/ActionSecondaryButton";
 import { useDscAccountOverview } from "@/hooks/useDscAccountOverview";
 import { useDscBurnDsc } from "@/hooks/useDscBurnDsc";
 import { useDscCollateralOverview } from "@/hooks/useDscCollateralOverview";
+import {
+  getProjectedPositionPreview,
+  getSafetyStatusLabel,
+} from "@/lib/protocol/positionPreview";
+import {
+  formatTokenAmount,
+  safeParseTokenAmount,
+} from "@/lib/protocol/tokenUnits";
 
 export function BurnDscCard() {
   const [amount, setAmount] = useState("100");
 
   const accountOverview = useDscAccountOverview();
   const collateralOverview = useDscCollateralOverview();
+  const parsedAmount = safeParseTokenAmount(amount, 18);
+  const preview = getProjectedPositionPreview({
+    currentCollateralValueUsd: accountOverview.overview.raw.collateralValueInUsd,
+    currentDebt: accountOverview.overview.raw.totalDscMinted,
+    debtDelta: parsedAmount !== undefined ? -parsedAmount : undefined,
+  });
+
+  const issues = useMemo(() => {
+    const nextIssues: string[] = [];
+    const currentBalance = accountOverview.overview.raw.dscBalance;
+    const currentDebt = accountOverview.overview.raw.totalDscMinted;
+
+    if (amount.trim() && parsedAmount === undefined) {
+      nextIssues.push("Enter a valid DSC burn amount.");
+    }
+
+    if (
+      parsedAmount !== undefined &&
+      currentBalance !== undefined &&
+      parsedAmount > currentBalance
+    ) {
+      nextIssues.push("Burn amount exceeds wallet DSC balance.");
+    }
+
+    if (
+      parsedAmount !== undefined &&
+      currentDebt !== undefined &&
+      parsedAmount > currentDebt
+    ) {
+      nextIssues.push("Burn amount exceeds outstanding minted DSC debt.");
+    }
+
+    return nextIssues;
+  }, [
+    amount,
+    parsedAmount,
+    accountOverview.overview.raw.dscBalance,
+    accountOverview.overview.raw.totalDscMinted,
+  ]);
 
   const burnFlow = useDscBurnDsc({
     onSuccess: async () => {
@@ -28,7 +75,9 @@ export function BurnDscCard() {
     !burnFlow.enabled ||
     burnFlow.status.isPending ||
     !amount.trim() ||
-    Number(amount) <= 0;
+    Number(amount) <= 0 ||
+    parsedAmount === undefined ||
+    issues.length > 0;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -111,6 +160,29 @@ export function BurnDscCard() {
           label="Current Health Factor"
           value={accountOverview.overview.formatted.healthFactor ?? "--"}
         />
+        <ActionInfoRow
+          label="Projected Total DSC Minted"
+          value={formatTokenAmount(preview.projectedDebt, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Projected Health Factor"
+          value={formatTokenAmount(preview.projectedHealthFactor, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Safety Status"
+          value={getSafetyStatusLabel(preview)}
+          valueClassName="text-[var(--accent-secondary)]"
+        />
+
+        {issues.length > 0 ? (
+          <div className="space-y-1">
+            {issues.map((issue) => (
+              <p key={issue} className="text-sm text-[var(--destructive)]">
+                {issue}
+              </p>
+            ))}
+          </div>
+        ) : null}
 
         <div className="flex gap-3">
           <ActionPrimaryButton

@@ -13,6 +13,15 @@ import {
   COLLATERAL_OPTIONS,
   type CollateralSymbol,
 } from "@/lib/protocol/collateral";
+import {
+  getCollateralUsdDelta,
+  getProjectedPositionPreview,
+  getSafetyStatusLabel,
+} from "@/lib/protocol/positionPreview";
+import {
+  formatTokenAmount,
+  safeParseTokenAmount,
+} from "@/lib/protocol/tokenUnits";
 
 function isValidPositiveNumber(value: string) {
   if (!value.trim()) return false;
@@ -29,13 +38,57 @@ export function DepositCollateralCard() {
   const accountOverview = useDscAccountOverview();
   const collateralOverview = useDscCollateralOverview();
 
+  const selectedDecimals =
+    collateralSymbol === "WBTC"
+      ? collateralOverview.overview.raw.wbtcDecimals
+      : collateralOverview.overview.raw.wethDecimals;
+  const selectedUnitUsd =
+    collateralSymbol === "WBTC"
+      ? collateralOverview.overview.raw.wbtcUnitUsd
+      : collateralOverview.overview.raw.wethUnitUsd;
+  const walletBalance =
+    collateralSymbol === "WBTC"
+      ? accountOverview.overview.raw.wbtcBalance
+      : accountOverview.overview.raw.wethBalance;
+  const parsedAmount = safeParseTokenAmount(amount, selectedDecimals ?? 18);
+  const collateralUsdDelta = getCollateralUsdDelta(
+    parsedAmount,
+    selectedUnitUsd,
+    selectedDecimals,
+  );
+  const preview = getProjectedPositionPreview({
+    currentCollateralValueUsd: accountOverview.overview.raw.collateralValueInUsd,
+    currentDebt: accountOverview.overview.raw.totalDscMinted,
+    collateralUsdDelta,
+  });
+
+  const issues = useMemo(() => {
+    const nextIssues: string[] = [];
+
+    if (amount.trim() && parsedAmount === undefined) {
+      nextIssues.push("Enter a valid collateral amount.");
+    }
+
+    if (
+      parsedAmount !== undefined &&
+      walletBalance !== undefined &&
+      parsedAmount > walletBalance
+    ) {
+      nextIssues.push(`Insufficient ${collateralSymbol} wallet balance.`);
+    }
+
+    return nextIssues;
+  }, [amount, parsedAmount, walletBalance, collateralSymbol]);
+
   const canSubmit = useMemo(() => {
     return (
       depositFlow.enabled &&
       isValidPositiveNumber(amount) &&
+      parsedAmount !== undefined &&
+      issues.length === 0 &&
       !depositFlow.isPending
     );
-  }, [depositFlow.enabled, depositFlow.isPending, amount]);
+  }, [depositFlow.enabled, depositFlow.isPending, amount, parsedAmount, issues]);
 
   const handleDeposit = async () => {
     try {
@@ -144,7 +197,30 @@ export function DepositCollateralCard() {
             "0.0000"
           }
         />
+        <ActionInfoRow
+          label="Projected Collateral Value"
+          value={formatTokenAmount(preview.projectedCollateralValueUsd, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Projected Health Factor"
+          value={formatTokenAmount(preview.projectedHealthFactor, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Safety Status"
+          value={getSafetyStatusLabel(preview)}
+          valueClassName={preview.willRevert ? "text-red-500" : "text-[var(--accent-secondary)]"}
+        />
       </div>
+
+      {issues.length > 0 ? (
+        <div className="space-y-1">
+          {issues.map((issue) => (
+            <p key={issue} className="text-sm text-[var(--destructive)]">
+              {issue}
+            </p>
+          ))}
+        </div>
+      ) : null}
     </ActionCardShell>
   );
 }

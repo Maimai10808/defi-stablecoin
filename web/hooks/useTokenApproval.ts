@@ -65,6 +65,12 @@ export function useTokenApproval({
     return allowance >= amount;
   }, [allowance, amount]);
 
+  const needsApproval = useMemo(() => {
+    if (amount === undefined) return false;
+    if (allowance === undefined) return false;
+    return allowance < amount;
+  }, [allowance, amount]);
+
   function approve() {
     if (!tokenAddress || !spenderAddress || amount === undefined) return;
 
@@ -79,6 +85,7 @@ export function useTokenApproval({
   return {
     allowance,
     isApproved,
+    needsApproval,
     approve,
     approveHash,
     isAllowanceLoading: allowanceQuery.isLoading,

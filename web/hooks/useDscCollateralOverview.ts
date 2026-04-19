@@ -154,8 +154,10 @@ export function useDscCollateralOverview() {
       },
       raw: {
         wethDeposited,
+        wethUnitUsd,
         wethUsdValue,
         wbtcDeposited,
+        wbtcUnitUsd,
         wbtcUsdValue,
         totalCollateralUsd,
         wethDecimals,

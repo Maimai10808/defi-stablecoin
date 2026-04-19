@@ -4,12 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 import { BaseError, parseUnits } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
-import { dscAbi, dscEngineAbi } from "@/lib/contracts/abi";
+import { dscAbi, dscEngineAbi, erc20Abi } from "@/lib/contracts/abi";
 import { useProtocolContracts } from "@/hooks/useProtocolContracts";
 import {
   type CollateralSymbol,
   getAddressKeyForSymbol,
 } from "@/lib/protocol/collateral";
+import { getReadableProtocolError } from "@/lib/protocol/errorMessages";
 
 type LiquidationStep =
   | "idle"
@@ -26,7 +27,7 @@ type UseDscLiquidationOptions = {
 
 function getErrorMessage(error: unknown) {
   if (!error) return "Unknown error";
-  if (error instanceof BaseError) return error.shortMessage || error.message;
+  if (error instanceof BaseError) return getReadableProtocolError(error);
   if (error instanceof Error) return error.message;
   return String(error);
 }
@@ -60,7 +61,13 @@ export function useDscLiquidation(options?: UseDscLiquidationOptions) {
       const addressKey = getAddressKeyForSymbol(collateralSymbol);
       const collateralAddress = addressKey ? contracts?.[addressKey] : undefined;
 
-      if (!enabled || !contracts || !publicClient || !collateralAddress) {
+      if (
+        !enabled ||
+        !address ||
+        !contracts ||
+        !publicClient ||
+        !collateralAddress
+      ) {
         const nextError = new Error(
           "Wallet or contract configuration is not ready.",
         );
@@ -79,22 +86,59 @@ export function useDscLiquidation(options?: UseDscLiquidationOptions) {
           throw new Error("Debt to cover must be greater than zero.");
         }
 
-        setStep("approving");
-        setStatusMessage("Approving DSC for liquidation...");
+        const [dscBalance, currentAllowance] = await Promise.all([
+          publicClient.readContract({
+            address: contracts.dsc as `0x${string}`,
+            abi: dscAbi,
+            functionName: "balanceOf",
+            args: [address as `0x${string}`],
+          }),
+          publicClient.readContract({
+            address: contracts.dsc as `0x${string}`,
+            abi: erc20Abi,
+            functionName: "allowance",
+            args: [
+              address as `0x${string}`,
+              contracts.dscEngine as `0x${string}`,
+            ],
+          }),
+        ]);
 
-        const approveHash = await writeContractAsync({
-          address: contracts.dsc as `0x${string}`,
-          abi: dscAbi,
-          functionName: "approve",
-          args: [contracts.dscEngine as `0x${string}`, debtToCover],
-        });
+        if ((dscBalance as bigint) < debtToCover) {
+          throw new Error("Insufficient DSC balance for liquidation.");
+        }
 
-        setTxHash(approveHash);
-        setStep("approve-confirming");
-        setStatusMessage("Waiting for DSC approval...");
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        if ((currentAllowance as bigint) < debtToCover) {
+          setStep("approving");
+          setStatusMessage("Approving DSC for liquidation...");
+
+          const approveHash = await writeContractAsync({
+            address: contracts.dsc as `0x${string}`,
+            abi: dscAbi,
+            functionName: "approve",
+            args: [contracts.dscEngine as `0x${string}`, debtToCover],
+          });
+
+          setTxHash(approveHash);
+          setStep("approve-confirming");
+          setStatusMessage("Waiting for DSC approval...");
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        }
 
         setStep("liquidating");
+        setStatusMessage("Simulating liquidation...");
+
+        await publicClient.simulateContract({
+          account: address as `0x${string}`,
+          address: contracts.dscEngine as `0x${string}`,
+          abi: dscEngineAbi,
+          functionName: "liquidate",
+          args: [
+            collateralAddress as `0x${string}`,
+            targetUser,
+            debtToCover,
+          ],
+        });
         setStatusMessage("Submitting liquidation transaction...");
 
         const liquidationHash = await writeContractAsync({

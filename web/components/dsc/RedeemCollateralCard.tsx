@@ -12,6 +12,15 @@ import {
   COLLATERAL_OPTIONS,
   type CollateralSymbol,
 } from "@/lib/protocol/collateral";
+import {
+  getCollateralUsdDelta,
+  getProjectedPositionPreview,
+  getSafetyStatusLabel,
+} from "@/lib/protocol/positionPreview";
+import {
+  formatTokenAmount,
+  safeParseTokenAmount,
+} from "@/lib/protocol/tokenUnits";
 
 export function RedeemCollateralCard() {
   const [collateralSymbol, setCollateralSymbol] =
@@ -20,6 +29,54 @@ export function RedeemCollateralCard() {
 
   const accountOverview = useDscAccountOverview();
   const collateralOverview = useDscCollateralOverview();
+  const selectedDecimals =
+    collateralSymbol === "WBTC"
+      ? collateralOverview.overview.raw.wbtcDecimals
+      : collateralOverview.overview.raw.wethDecimals;
+  const selectedUnitUsd =
+    collateralSymbol === "WBTC"
+      ? collateralOverview.overview.raw.wbtcUnitUsd
+      : collateralOverview.overview.raw.wethUnitUsd;
+  const selectedDepositedRaw =
+    collateralSymbol === "WBTC"
+      ? collateralOverview.overview.raw.wbtcDeposited
+      : collateralOverview.overview.raw.wethDeposited;
+  const parsedAmount = safeParseTokenAmount(amount, selectedDecimals ?? 18);
+  const collateralUsdDelta = getCollateralUsdDelta(
+    parsedAmount,
+    selectedUnitUsd,
+    selectedDecimals,
+  );
+  const preview = getProjectedPositionPreview({
+    currentCollateralValueUsd: accountOverview.overview.raw.collateralValueInUsd,
+    currentDebt: accountOverview.overview.raw.totalDscMinted,
+    collateralUsdDelta:
+      collateralUsdDelta !== undefined ? -collateralUsdDelta : undefined,
+  });
+
+  const issues = useMemo(() => {
+    const nextIssues: string[] = [];
+
+    if (amount.trim() && parsedAmount === undefined) {
+      nextIssues.push("Enter a valid collateral amount.");
+    }
+
+    if (
+      parsedAmount !== undefined &&
+      selectedDepositedRaw !== undefined &&
+      parsedAmount > selectedDepositedRaw
+    ) {
+      nextIssues.push(`Redeem amount exceeds deposited ${collateralSymbol}.`);
+    }
+
+    if (preview.willRevert) {
+      nextIssues.push(
+        "This redemption would make the position unsafe and will revert.",
+      );
+    }
+
+    return nextIssues;
+  }, [amount, parsedAmount, selectedDepositedRaw, collateralSymbol, preview.willRevert]);
 
   const redeemFlow = useDscRedeemCollateral({
     onSuccess: async () => {
@@ -34,7 +91,9 @@ export function RedeemCollateralCard() {
     !redeemFlow.enabled ||
     redeemFlow.status.isPending ||
     !amount.trim() ||
-    Number(amount) <= 0;
+    Number(amount) <= 0 ||
+    parsedAmount === undefined ||
+    issues.length > 0;
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -141,6 +200,29 @@ export function RedeemCollateralCard() {
           label="Current Health Factor"
           value={accountOverview.overview.formatted.healthFactor ?? "--"}
         />
+        <ActionInfoRow
+          label="Projected Collateral Value"
+          value={formatTokenAmount(preview.projectedCollateralValueUsd, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Projected Health Factor"
+          value={formatTokenAmount(preview.projectedHealthFactor, 18) ?? "--"}
+        />
+        <ActionInfoRow
+          label="Safety Status"
+          value={getSafetyStatusLabel(preview)}
+          valueClassName={preview.willRevert ? "text-red-500" : "text-[var(--accent-secondary)]"}
+        />
+
+        {issues.length > 0 ? (
+          <div className="space-y-1">
+            {issues.map((issue) => (
+              <p key={issue} className="text-sm text-[var(--destructive)]">
+                {issue}
+              </p>
+            ))}
+          </div>
+        ) : null}
 
         <div className="flex gap-3">
           <ActionPrimaryButton
