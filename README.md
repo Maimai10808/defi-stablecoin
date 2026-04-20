@@ -1,139 +1,249 @@
 # DSCoin
 
-[中文](#中文说明) | [English](#english)
+一个面向学习、联调和演示场景的超额抵押稳定币协议 Demo。用户可以存入 `WETH` 或 `WBTC` 作为抵押物，按价格喂价换算出的美元价值铸造稳定币 `DSC`，并通过健康因子约束仓位风险；当仓位跌破安全线时，协议允许第三方执行清算。
 
----
+DSCoin 的目标不是做一个“只会跑单个合约函数”的 Solidity 示例，而是把一条完整链路串起来：`deposit collateral -> mint DSC -> burn -> redeem -> liquidation`。仓库同时包含 Foundry 合约工程、部署与同步脚本，以及一个基于 Next.js 的前端演示面板，适合合约开发者、Web3 前端开发者、面试项目准备者和刚接触 DeFi 协议的新手开发者。
 
-## 中文说明
+## 项目定位
 
-### 项目简介
+一句话介绍：
 
-`DSCoin` 是一个基于超额抵押模型实现的去中心化稳定币协议示例项目。  
-项目使用 Solidity + Foundry 编写核心智能合约，接入 Chainlink Price Feeds 获取实时价格数据，并通过健康因子与清算机制管理协议风险。同时提供了一个基于 Next.js 的前端 Demo，用于演示抵押、铸造、赎回、销毁与清算等核心流程。
+> DSCoin 是一个带前端演示面板的超额抵押稳定币协议 Demo，重点展示协议闭环、价格喂价、健康因子风控和前后端联调。
 
-### 项目亮点
+它主要解决三个问题：
 
-- 基于 `Foundry` 完成合约开发、部署脚本、单元测试、交互测试和模糊测试
-- 接入 `Chainlink Price Feeds`，将 `WETH`、`WBTC` 等波动资产统一换算为美元价值
-- 实现基于健康因子的清算逻辑，用于管理风险仓位
-- 将稳定币本体与协议引擎拆分为两个核心合约，职责清晰
-- 提供 `Next.js + wagmi + RainbowKit` 前端 Demo，完整演示协议主流程
-- 测试覆盖率达到约 `95%`
+- 帮你快速理解“超额抵押稳定币协议”最核心的业务闭环。
+- 提供一个可以本地启动、部署、同步 ABI/地址并直接演示的完整工程。
+- 给 Solidity + Foundry + Next.js 联调提供一个结构清晰的示例仓库。
 
-### 智能合约设计
+适合的读者：
 
-协议核心由两个主要合约组成：
+- 想系统学习稳定币协议和健康因子逻辑的开发者
+- 想练习 Foundry 部署、测试和脚本能力的合约开发者
+- 想把前端直接接到本地链或 Sepolia 的 Web3 前端开发者
+- 需要一个可讲、可演示、可扩展项目的求职者
 
-#### 1. `DecentralizedStableCoin`
+## 核心流程
 
-稳定币本体，负责 `DSC` 的发行与销毁。
+DSCoin 当前的协议主流程是：
 
-- 基于 ERC20 实现
-- `mint` / `burn` 权限由协议引擎统一控制
-- 将“代币逻辑”和“协议规则”解耦
+1. 用户向 `DSCEngine` 存入 `WETH` 或 `WBTC`。
+2. 协议通过 Chainlink 价格喂价计算抵押物的美元价值。
+3. 用户在健康因子允许的前提下铸造 `DSC`。
+4. 用户可以销毁 `DSC` 来减少债务，也可以赎回抵押物。
+5. 如果价格波动导致仓位不安全，第三方可以发起清算。
 
-#### 2. `DSCEngine`
+这条链路在当前仓库中不只是合约层存在，前端也提供了对应的演示入口。
 
-协议业务核心，负责管理抵押资产、债务、价格换算和清算逻辑。
+## 项目特性
 
-主要职责包括：
+- 完整协议闭环：支持 `deposit / mint / burn / redeem / liquidation`
+- 双抵押资产：当前支持 `WETH` 和 `WBTC`
+- 健康因子风控：铸造、赎回和清算都围绕 `health factor` 进行约束
+- 价格喂价接入：本地链使用 `MockV3Aggregator`，Sepolia 使用真实 Chainlink Feed
+- 本地部署后自动写入前端地址：部署脚本会把最新地址同步到 `web/lib/contracts/addresses`
+- ABI 半自动同步：`tools/sync-abi.sh` 会把 Foundry 编译产物里的 ABI 复制到前端
+- 本地演示数据自动注入：`tools/seed-local-state.sh` 会为默认账户 mint mock token 并预存抵押物
+- 前后端联调路径清晰：根目录负责合约与脚本，`web/` 负责读取链上状态和发起交易
 
-- 存入抵押品
-- 铸造 DSC
-- 销毁 DSC
-- 赎回抵押品
-- 计算账户总抵押价值
-- 计算健康因子
-- 在健康因子过低时执行清算
+## 技术栈
 
-### 协议工作流程
+### 合约侧
 
-1. 用户存入 `WETH` 或 `WBTC` 作为抵押品。
-2. 协议通过 Chainlink 价格预言机计算抵押品的美元价值。
-3. 用户在满足抵押率要求的前提下铸造 `DSC`。
-4. 如果市场波动导致仓位风险上升，健康因子下降。
-5. 当健康因子低于阈值时，其他用户可以发起清算，偿还部分债务并获得对应抵押品和清算奖励。
+- `Solidity`：实现 `DecentralizedStableCoin` 与 `DSCEngine`
+- `Foundry`：负责构建、测试、脚本执行和本地部署
+- `OpenZeppelin`：提供 `ERC20`、`Ownable`、`ReentrancyGuard` 等基础能力
+- `Chainlink AggregatorV3Interface`：用于读取价格喂价
 
-### 风险控制机制
+### 前端侧
 
-- 超额抵押：协议不允许无抵押铸币
-- Health Factor：用于衡量当前仓位是否安全
-- Liquidation：当仓位不安全时允许外部清算
-- Chainlink 喂价：避免使用本地硬编码价格
-- Reentrancy 防护与白名单抵押品控制
+- `Next.js 16`：承载前端页面和应用结构
+- `React 19`：构建交互式协议面板
+- `TypeScript`：约束 hooks、合约配置和前端数据结构
+- `wagmi`：负责读写合约和钱包连接
+- `viem`：负责 ABI 类型、单位处理和链上交互底层
+- `RainbowKit`：提供钱包连接 UI
+- `Tailwind CSS v4`：负责页面样式
 
-### 测试
+### 工程化与联调
 
-这个项目强调的不只是“功能可用”，还包括“协议约束成立”。
+- `forge script`：负责部署合约并生成最新地址
+- `cast`：在本地 seed 流程中 mint token、approve 和 deposit
+- `jq`：从地址 JSON 中提取字段，供 shell 脚本继续使用
+- `tools/*.sh`：把“编译 -> 部署 -> ABI 同步 -> 演示数据注入 -> 生成本地环境变量”串起来
 
-测试内容包括：
+## 仓库结构
 
-- 单元测试
-- 交互测试
-- 模糊测试（Fuzz Testing）
-- 协议不变量测试
-
-重点验证：
-
-- 抵押、铸造、销毁、赎回、清算等核心路径
-- 抵押品价值与债务之间的关系是否始终满足协议约束
-- 系统在不同输入和极端情况下的健壮性
-
-### 前端说明
-
-项目包含一个基于 `Next.js` 的前端演示页面，主要用于展示协议核心功能，而不是做成完整商业产品。
-
-前端当前主要包含：
-
-- 协议说明模块
-- 账户总览与抵押品总览
-- 抵押 / 铸造 / 销毁 / 赎回操作
-- 组合流程操作
-- 清算模块
-- `WETH / WBTC` 双抵押品演示
-
-前端的目标是帮助别人快速理解：
-
-- 这个协议能做什么
-- 协议的风险控制是如何工作的
-- 合约和前端是如何对接的
-
-### 技术栈
-
-#### 合约侧
-
-- Solidity
-- Foundry
-- OpenZeppelin
-- Chainlink
-
-#### 前端侧
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- wagmi
-- RainbowKit
-- viem
-
-### 项目结构
+这个仓库没有单独的 `foundry/` 子目录。当前真实结构是“Foundry 工程在根目录，前端在 `web/` 子目录”。
 
 ```text
 .
-├── src/                     # 核心智能合约
-├── script/                  # Foundry 部署与配置脚本
-├── test/                    # 单元测试 / 模糊测试 / 不变量测试
-├── tools/                   # 本地开发辅助脚本
-├── web/                     # Next.js 前端
-│   ├── app/                 # App Router 页面
-│   ├── components/          # 前端组件
-│   ├── hooks/               # 合约交互 hooks
-│   └── lib/contracts/       # ABI 与部署地址
-└── README.md
+├── src/                         # 核心合约
+├── script/                      # Foundry 部署脚本与网络配置
+├── test/                        # 单元测试、模糊测试、不变量测试
+├── tools/                       # 本地开发、部署、同步、seed 脚本
+├── web/                         # Next.js 前端
+├── out/                         # Foundry 编译产物（ABI 来源）
+├── broadcast/                   # forge script 广播记录
+├── docs/                        # 项目说明文档
+├── foundry.toml                 # Foundry 配置
+└── README.md                    # 当前文档
 ```
 
-### 本地开发
+重点目录说明：
+
+- [`src/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/src)
+  - [`DSCEngine.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/src/DSCEngine.sol)：协议核心逻辑，负责抵押、铸造、销毁、赎回和清算
+  - [`DecentralizedStableCoin.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/src/DecentralizedStableCoin.sol)：稳定币本体
+- [`script/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/script)
+  - [`DeployDSC.s.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/script/DeployDSC.s.sol)：部署合约并把地址写入前端
+  - [`HelperConfig.s.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/script/HelperConfig.s.sol)：区分本地链与 Sepolia 的配置来源
+- [`test/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/test)
+  - `unit/`：单元测试
+  - `fuzz/`：模糊测试与 invariant 相关代码
+  - `mocks/`：测试和本地网络使用的 mock 合约
+- [`tools/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools)
+  - [`deploy-local-and-sync.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/deploy-local-and-sync.sh)：编译、部署、同步 ABI
+  - [`seed-local-state.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/seed-local-state.sh)：给默认账户注入本地演示数据
+  - [`reset-local-dev.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/reset-local-dev.sh)：本地联调主入口，串联部署、seed 和环境变量输出
+  - [`sync-abi.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/sync-abi.sh)：把 `out/` 中的 ABI 复制到前端
+- [`web/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web)
+  - `app/`：Next.js App Router 页面
+  - `components/`：协议面板组件
+  - `hooks/`：链上读写和状态聚合 hooks
+  - `lib/contracts/abi/`：前端使用的 ABI
+  - `lib/contracts/addresses/`：前端按链 ID 读取的部署地址
+  - `lib/protocol/`：协议相关前端工具函数和计算逻辑
+  - `lib/config/`：wagmi / RainbowKit 配置
+
+## 核心实现思路
+
+### 1. 协议如何工作
+
+这个项目不是订单撮合或市场协议，而是一个基于抵押借贷模型的稳定币协议。
+
+- 用户把 `WETH` / `WBTC` 存入 `DSCEngine`
+- 协议根据价格喂价计算总抵押价值
+- 用户在健康因子允许的范围内铸造 `DSC`
+- `DSC` 本质上代表一笔由抵押物支持的协议债务
+- 价格下跌导致仓位不安全时，清算人可以用自己的 `DSC` 去覆盖目标用户部分债务，并拿走对应抵押物和奖励
+
+### 2. 健康因子在这里扮演什么角色
+
+健康因子是协议的核心风控指标。当前合约里，`mintDsc` 和 `redeemCollateral` 等关键路径都会在操作后检查健康因子：
+
+- 健康因子过低时，铸造会回滚
+- 赎回过多抵押物导致仓位不安全时，交易会回滚
+- 清算只允许针对不安全仓位执行
+- 清算后还要求目标仓位的健康因子必须得到改善
+
+对于新手来说，可以先把它理解为：
+
+> 健康因子越高，仓位越安全；低于 1 就进入可清算状态。
+
+### 3. 前端为什么不手动维护很多地址和 ABI
+
+这套仓库已经有一条比较清晰的“合约 -> 前端”同步路径：
+
+- [`script/DeployDSC.s.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/script/DeployDSC.s.sol) 在部署完成后，会把最新地址直接写到：
+  - [`web/lib/contracts/addresses/31337.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/addresses/31337.json)
+  - 或 [`web/lib/contracts/addresses/11155111.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/addresses/11155111.json)
+- [`tools/sync-abi.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/sync-abi.sh) 会把 Foundry 编译输出中的 ABI 同步到：
+  - [`web/lib/contracts/abi/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/abi)
+- 前端通过 [`web/hooks/useProtocolContracts.ts`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/hooks/useProtocolContracts.ts) 和 [`web/lib/contracts/addresses/index.ts`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/addresses/index.ts) 读取当前链的地址配置
+
+这意味着：
+
+- 重新部署本地合约后，不需要手动去前端到处改地址
+- 只要走对脚本流程，前端会拿到最新地址和 ABI
+
+## 快速开始
+
+这一节面向第一次接触仓库的新手开发者。
+
+### 环境要求
+
+请先确保本机已安装：
+
+- `Node.js`：建议 `20+`
+- `npm`
+- `Foundry`：需要 `forge`、`cast`、`anvil`
+- `jq`：用于解析地址 JSON
+
+如果你还没有安装 Foundry：
+
+```bash
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+```
+
+如果你还没有安装 `jq`：
+
+```bash
+brew install jq
+```
+
+### 第一次 clone 后先做什么
+
+1. 安装前端依赖
+2. 准备根目录 `.env`
+3. 准备前端 `web/.env.local`
+4. 启动本地链
+5. 运行本地部署与数据注入脚本
+6. 启动前端
+
+### 需要哪些环境变量
+
+#### 根目录 `.env`
+
+当前仓库中的部署和 seed 脚本会读取根目录 `.env`。
+
+本地开发至少需要这些变量：
+
+```bash
+RPC_URL=http://127.0.0.1:8545
+CHAIN_ID=31337
+PRIVATE_KEY=<anvil 默认账户私钥或你自己的测试私钥>
+USER_ADDRESS=<用于 seed 的目标账户地址，可选>
+```
+
+说明：
+
+- `RPC_URL`：Foundry 脚本连接的节点地址
+- `CHAIN_ID`：本地链通常是 `31337`
+- `PRIVATE_KEY`：部署合约和执行 seed 的私钥；本地 anvil 可以直接使用默认账户私钥
+- `USER_ADDRESS`：如果不填，脚本会默认使用 anvil 账户 `0xf39F...2266`
+
+额外可选的 seed 参数：
+
+- `WETH_MINT_AMOUNT`
+- `WETH_DEPOSIT_AMOUNT`
+- `WBTC_MINT_AMOUNT`
+- `WBTC_DEPOSIT_AMOUNT`
+
+如果不设置，`tools/seed-local-state.sh` 会使用脚本中的默认值。
+
+> 当前真实情况：根目录 [`.env.example`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/.env.example) 还是空文件，所以第一次使用时需要手动创建 `.env`。这是仓库后续最值得补的一个新手友好项。
+
+#### 前端 `web/.env.local`
+
+前端当前会读取：
+
+```bash
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=<WalletConnect project id>
+NEXT_PUBLIC_SEPOLIA_RPC_URL=<Sepolia RPC URL，可选但建议填写>
+```
+
+说明：
+
+- `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`：RainbowKit / WalletConnect 需要
+- `NEXT_PUBLIC_SEPOLIA_RPC_URL`：如果你想切到 Sepolia，需要可用 RPC
+
+本地联调时，即使主要连接 `anvil`，`NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` 仍然必须存在，因为 [`web/lib/config/wagmi.ts`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/config/wagmi.ts) 会在缺失时直接抛错。
+
+### 当前最简本地启动方式
+
+安装依赖后，当前仓库最短的联调流程是：
 
 #### 1. 启动本地链
 
@@ -141,303 +251,325 @@
 anvil
 ```
 
-#### 2. 部署合约并同步到前端
-
-在项目根目录执行：
+#### 2. 在仓库根目录部署合约、同步前端配置并注入演示数据
 
 ```bash
 ./tools/reset-local-dev.sh && source ./.local-dev.env
 ```
 
-这个脚本会完成以下事情：
+这个脚本会依次做这些事：
 
-- 编译 Foundry 合约
-- 部署本地合约
-- 同步 ABI 到前端
-- 将最新地址写入 `web/lib/contracts/addresses/31337.json`
-- 预置本地演示状态
-- 生成 `.local-dev.env` 供后续脚本和调试使用
+- 调用 [`tools/deploy-local-and-sync.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/deploy-local-and-sync.sh)
+- 运行 `forge build`
+- 执行 [`script/DeployDSC.s.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/script/DeployDSC.s.sol) 完成部署
+- 调用 [`tools/sync-abi.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/sync-abi.sh) 同步 ABI
+- 调用 [`tools/seed-local-state.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/seed-local-state.sh) 给默认账户 mint 并 deposit mock 资产
+- 生成 [`.local-dev.env`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/.local-dev.env)，方便你后续用 `cast` 调试
 
 #### 3. 启动前端
 
 ```bash
 cd web
+npm install
 npm run dev
 ```
 
-默认启动后可以在本地浏览器中访问前端 Demo。
+打开 [http://localhost:3000](http://localhost:3000)。
 
-### 常用开发命令
+### 当前真实情况 vs 理想状态
 
-#### 运行测试
+当前仓库还没有做到真正意义上的“两条主命令一把拉起”，因为：
 
-```bash
-forge test
-```
+- 根目录没有统一的 `package.json`
+- 没有根级别的 `bootstrap` 命令
+- 合约侧和前端侧仍然分成两套启动命令
+- `.env.example` 和 `web/.env.example` 不够完整
 
-#### 查看覆盖率
+**当前真实最简方式**
 
-```bash
-forge coverage
-```
+1. `anvil`
+2. `./tools/reset-local-dev.sh && source ./.local-dev.env`
+3. `cd web && npm run dev`
 
-#### 构建前端
+**推荐优化后的理想方式**
 
-```bash
-cd web
-npm run build
-```
+1. `npm run bootstrap`
+2. `npm run dev`
 
-### Demo 演示建议
+这一点我会在文末的“后续优化建议”里展开说明。
 
-如果你要向别人展示这个项目，建议按下面的顺序演示：
+## 当前仓库已有命令
 
-1. 连接钱包
-2. 查看账户总览和抵押品信息
-3. 存入 `WETH` 或 `WBTC`
-4. 铸造 `DSC`
-5. 展示 health factor 的变化
-6. 进行销毁和赎回
-7. 最后演示清算逻辑
+### 根目录 / Foundry / tools
 
-这样可以完整体现这个协议的闭环，而不只是展示单个按钮交互。
+| 命令 | 当前是否存在 | 作用 |
+| --- | --- | --- |
+| `forge build` | 已存在 | 编译合约 |
+| `forge test` | 已存在 | 运行 Foundry 测试 |
+| `forge script script/DeployDSC.s.sol:DeployDSC --rpc-url ... --private-key ... --broadcast` | 已存在 | 部署合约 |
+| `./tools/sync-abi.sh` | 已存在 | 同步 ABI 到前端 |
+| `./tools/deploy-local-and-sync.sh` | 已存在 | 本地编译、部署并同步 ABI |
+| `./tools/seed-local-state.sh` | 已存在 | 为默认账户注入本地演示数据 |
+| `./tools/reset-local-dev.sh` | 已存在 | 本地开发主入口：部署 + 同步 + seed + 输出 `.local-dev.env` |
+| `./tools/print-local-env.sh` | 已存在 | 打印当前本地链相关环境变量 |
 
-### 为什么这个项目有价值
+### 前端 `web/`
 
-这个项目体现的不是单一合约开发，而是一套完整的 DeFi 协议实现能力：
+| 命令 | 当前是否存在 | 作用 |
+| --- | --- | --- |
+| `npm run dev` | 已存在 | 启动 Next.js 开发服务器 |
+| `npm run build` | 已存在 | 构建前端 |
+| `npm run start` | 已存在 | 运行生产构建 |
+| `npm run lint` | 已存在 | 运行 ESLint |
 
-- 能把协议规则抽象为智能合约状态机
-- 能接入预言机并做价格换算
-- 能设计风险控制与清算机制
-- 能使用 Foundry 对协议安全性做系统验证
-- 能把链上协议通过前端页面可视化演示出来
+## 推荐新增，但当前仓库还没有的命令
 
-### 后续可扩展方向
+下面这些命令**不是仓库当前已有命令**，而是推荐你后续补上的聚合入口：
 
-- 支持更多抵押品类型
-- 增加更完整的前端交易状态反馈
-- 接入测试网部署
-- 增加协议参数治理能力
-- 增加事件分析与数据看板
+| 建议命令 | 当前是否存在 | 目的 |
+| --- | --- | --- |
+| `npm run bootstrap` | 不存在 | 安装前端依赖、检查 env、启动本地部署与同步流程 |
+| `npm run dev:web` | 不存在 | 从根目录代理到 `web/npm run dev` |
+| `npm run dev:contracts` | 不存在 | 启动或提示本地链与脚本流程 |
+| `npm run sync:contracts` | 不存在 | 调用 `tools/deploy-local-and-sync.sh` |
+| `npm run seed:local` | 不存在 | 调用 `tools/seed-local-state.sh` |
 
----
+## ABI / 地址自动同步机制
 
-## English
+这是这个仓库里非常重要的一条工程化链路。
 
-### Overview
+### 地址是怎么同步到前端的
 
-`DSCoin` is a decentralized stablecoin protocol demo built around an overcollateralization model.  
-The project uses Solidity + Foundry for the core smart contracts, integrates Chainlink Price Feeds for real-time asset pricing, and manages protocol risk through a health-factor-driven liquidation mechanism. It also includes a Next.js frontend demo for showcasing the full collateralize / mint / burn / redeem / liquidate workflow.
+[`script/DeployDSC.s.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/script/DeployDSC.s.sol) 在部署完成后，会调用 `_writeFrontendAddresses()`，并把结果直接写入：
 
-### Highlights
+- [`web/lib/contracts/addresses/31337.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/addresses/31337.json)
+- 或 [`web/lib/contracts/addresses/11155111.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/addresses/11155111.json)
 
-- Built with `Foundry` for contract development, deployment scripts, unit tests, interaction tests, and fuzz testing
-- Integrates `Chainlink Price Feeds` to convert volatile collateral assets such as `WETH` and `WBTC` into USD-denominated values
-- Implements a health-factor-based liquidation system for risky positions
-- Separates the stablecoin token and the protocol engine into two focused contracts
-- Includes a `Next.js + wagmi + RainbowKit` frontend demo for end-to-end protocol interaction
-- Achieves roughly `95%` test coverage
+所以如果你重新部署本地链，只要走 `forge script` 或 `tools/deploy-local-and-sync.sh`，前端地址文件就会更新。
 
-### Smart Contract Architecture
+### ABI 是怎么同步到前端的
 
-The protocol is centered around two main contracts:
+[`tools/sync-abi.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/sync-abi.sh) 会从 Foundry 编译产物中提取 ABI：
 
-#### 1. `DecentralizedStableCoin`
+- `out/DSCEngine.sol/DSCEngine.json`
+- `out/DecentralizedStableCoin.sol/DecentralizedStableCoin.json`
+- `out/ERC20Mock.sol/ERC20Mock.json`
 
-The stablecoin token contract responsible for minting and burning `DSC`.
+然后写入：
 
-- ERC20-based implementation
-- `mint` / `burn` permissions are controlled by the protocol engine
-- Clean separation between token logic and protocol rules
+- [`web/lib/contracts/abi/DSCEngine.abi.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/abi/DSCEngine.abi.json)
+- [`web/lib/contracts/abi/DecentralizedStableCoin.abi.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/abi/DecentralizedStableCoin.abi.json)
+- [`web/lib/contracts/abi/ERC20Mock.abi.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/abi/ERC20Mock.abi.json)
 
-#### 2. `DSCEngine`
+### 什么时候触发同步
 
-The protocol engine that manages collateral, debt accounting, pricing, and liquidation.
+当前最常见的两种方式：
 
-Core responsibilities include:
+1. 你手动执行 [`tools/sync-abi.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/sync-abi.sh)
+2. 你执行 [`tools/deploy-local-and-sync.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/deploy-local-and-sync.sh) 或 [`tools/reset-local-dev.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/reset-local-dev.sh)
 
-- Depositing collateral
-- Minting DSC
-- Burning DSC
-- Redeeming collateral
-- Calculating total account collateral value
-- Calculating health factor
-- Executing liquidations for unhealthy positions
+### 新手应该怎么理解这条流程
 
-### Protocol Flow
-
-1. A user deposits `WETH` or `WBTC` as collateral.
-2. The protocol uses Chainlink price feeds to calculate the USD value of that collateral.
-3. The user mints `DSC` within the allowed collateralization bounds.
-4. If market volatility causes the position to become risky, the health factor decreases.
-5. Once the health factor falls below the threshold, third parties can liquidate part of the debt in exchange for collateral plus a liquidation bonus.
-
-### Risk Controls
-
-- Overcollateralization: minting without collateral is not allowed
-- Health Factor: measures whether a position remains safe
-- Liquidation: unsafe positions can be repaired by external liquidators
-- Chainlink pricing: avoids hardcoded local pricing assumptions
-- Reentrancy protection and collateral allowlist controls
-
-### Testing
-
-This project focuses not only on feature completeness, but also on protocol safety guarantees.
-
-Testing includes:
-
-- Unit tests
-- Interaction tests
-- Fuzz testing
-- Invariant testing
-
-Key properties verified:
-
-- Core flows such as deposit, mint, burn, redeem, and liquidation
-- The relationship between collateral value and outstanding debt
-- Protocol robustness across varied and edge-case inputs
-
-### Frontend
-
-The repository also includes a `Next.js` frontend demo designed to showcase the protocol rather than act as a production product UI.
-
-The frontend currently includes:
-
-- Protocol overview modules
-- Account and collateral overview panels
-- Deposit / mint / burn / redeem flows
-- Combined workflow operations
-- Liquidation module
-- `WETH / WBTC` multi-collateral interaction
-
-Its main purpose is to help users quickly understand:
-
-- What the protocol does
-- How the risk model works
-- How the frontend integrates with the contracts
-
-### Tech Stack
-
-#### Contracts
-
-- Solidity
-- Foundry
-- OpenZeppelin
-- Chainlink
-
-#### Frontend
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- wagmi
-- RainbowKit
-- viem
-
-### Project Structure
-
-```text
-.
-├── src/                     # Core smart contracts
-├── script/                  # Foundry deployment and config scripts
-├── test/                    # Unit / fuzz / invariant tests
-├── tools/                   # Local development helper scripts
-├── web/                     # Next.js frontend
-│   ├── app/                 # App Router pages
-│   ├── components/          # Frontend components
-│   ├── hooks/               # Contract interaction hooks
-│   └── lib/contracts/       # ABI and deployment addresses
-└── README.md
-```
-
-### Local Development
-
-#### 1. Start a local chain
+如果你**重新部署合约**，最稳妥的做法不是自己去手改前端地址，而是直接重新执行：
 
 ```bash
-anvil
+./tools/reset-local-dev.sh
 ```
 
-#### 2. Deploy contracts and sync them to the frontend
+这样前端会拿到：
 
-From the project root:
+- 最新部署地址
+- 最新 ABI
+- 本地演示数据
+
+### 当前流程已经顺滑到什么程度
+
+已经比“手工复制地址 + 手工复制 ABI”顺很多，但还不算完全无脑，因为：
+
+- 仍然依赖 shell 脚本链路
+- 仍然需要你自己准备 `.env`
+- 前端依赖安装和本地链启动还不在统一入口里
+
+## 演示流程
+
+如果你要给别人演示这个项目，推荐按下面这条最短路径走。
+
+### 本地演示前准备
+
+1. 启动 `anvil`
+2. 运行：
 
 ```bash
 ./tools/reset-local-dev.sh && source ./.local-dev.env
 ```
 
-This script will:
-
-- Build the Foundry contracts
-- Deploy contracts locally
-- Sync ABI artifacts to the frontend
-- Write the latest addresses into `web/lib/contracts/addresses/31337.json`
-- Seed local demo state
-- Generate `.local-dev.env` for local development and debugging
-
-#### 3. Start the frontend
+3. 启动前端：
 
 ```bash
 cd web
 npm run dev
 ```
 
-Once started, the local frontend demo will be available in the browser.
+4. 浏览器打开 [http://localhost:3000](http://localhost:3000)
 
-### Common Commands
+### 演示时建议怎么讲
 
-#### Run tests
+首页当前的结构大致是：
+
+- `Wallet Debug`：看当前钱包和网络是否连对
+- `Protocol Overview`：解释协议做什么
+- `Account Overview`：看钱包、债务、健康因子等关键状态
+- `Collateral Overview`：看抵押品与 USD 价值
+- `Combined Flows`：一站式体验 `deposit + mint`、`burn + redeem`
+- `Manual Controls`：按原子操作演示协议动作
+- `Liquidation`：展示仓位不安全时的清算入口
+
+### 一个适合演示的顺序
+
+1. 连接本地钱包
+2. 展示默认账户已有 seed 后的抵押物状态
+3. 执行一次 `mint DSC`
+4. 展示 `health factor` 的变化
+5. 执行一次 `burn` 或 `redeem`
+6. 如果需要演示清算，再配合 mock price / 第二账户做 liquidation
+
+这样别人很快就能看到“这个项目不是静态页面，而是一个真的能跑的协议 Demo”。
+
+## 测试
+
+当前仓库已经包含单元测试、模糊测试和 invariant 相关测试代码。
+
+运行测试：
 
 ```bash
 forge test
 ```
 
-#### Generate coverage
+相关目录：
+
+- [`test/unit/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/test/unit)
+- [`test/fuzz/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/test/fuzz)
+- [`test/mocks/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/test/mocks)
+
+## 常见问题 / 踩坑指南
+
+### 1. 前端起不来，提示 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID is not set`
+
+原因：
+
+- [`web/lib/config/wagmi.ts`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/config/wagmi.ts) 会在缺少这个环境变量时直接报错
+
+处理方式：
+
+- 在 `web/.env.local` 中补上 `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`
+
+### 2. 重新部署后，前端读到的还是旧地址
+
+原因：
+
+- 你可能只重新部署了合约，但没有重新同步地址和 ABI
+
+处理方式：
 
 ```bash
-forge coverage
+./tools/reset-local-dev.sh
 ```
 
-#### Build the frontend
+然后刷新前端页面。
+
+### 3. 钱包连上了，但页面没有协议数据
+
+常见原因：
+
+- 钱包网络不是 `31337`
+- 本地链没启动
+- 前端地址文件和当前链不一致
+
+优先检查：
+
+- `anvil` 是否在运行
+- 页面连接的是否是本地 Foundry/Hardhat 网络
+- [`web/lib/contracts/addresses/31337.json`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/addresses/31337.json) 是否是最新部署结果
+
+### 4. 本地 `WBTC` 显示精度和真实比特币不一样
+
+当前本地链使用的是 OpenZeppelin 的 `ERC20Mock`，在本地网络里 `WBTC` mock 默认是 `18 decimals`，不是主网常见的 `8 decimals`。这一点会影响本地 seed 数量和前端单位处理，但不影响协议主流程演示。
+
+### 5. 本地价格一直不变
+
+这是正常的。当前 `anvil` 环境里用的是 [`MockV3Aggregator`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/test/mocks/MockV3Aggregator.sol)，价格不是实时市场价，而是脚本里写死的 mock 值。Sepolia 才会使用真实 Chainlink Feed。
+
+### 6. 本地钱包交易出现 `nonce too low`
+
+这通常不是协议逻辑问题，而是本地链重置后钱包缓存了旧 nonce。切换网络、清理钱包本地活动记录，或重新连接当前本地账户即可。
+
+## 后续优化建议
+
+如果你的目标是把这个仓库做成“新手 clone 下来就能很快跑起来”的开源项目，最值得优先做的不是再加协议功能，而是补齐工程体验。
+
+### 1. 增加根目录 `package.json`
+
+目标：
+
+- 把分散在 `tools/` 和 `web/` 的开发命令聚合起来
+- 让新手不需要记很多 shell 脚本路径
+
+优先建议的 scripts：
+
+- `bootstrap`
+- `dev`
+- `dev:web`
+- `sync:contracts`
+- `seed:local`
+
+### 2. 补齐根目录 `.env.example`
+
+当前这是最明显的新手阻塞项之一。至少应该提供本地开发所需的最小模板，并标注哪些是必填，哪些是可选。
+
+### 3. 增加 `web/.env.example`
+
+现在前端环境变量散落在 [`web/.env.local`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/.env.local) 里，不利于开源仓库的首次使用体验。应该提供一个可直接复制的示例文件。
+
+### 4. 把“安装依赖 + 部署 + seed + 启动前端”收敛为两个主命令
+
+理想体验：
 
 ```bash
-cd web
-npm run build
+npm run bootstrap
+npm run dev
 ```
 
-### Suggested Demo Flow
+其中：
 
-If you want to present the project to others, a good demo order is:
+- `bootstrap`：检查依赖、安装前端依赖、提示 env、执行 `reset-local-dev.sh`
+- `dev`：启动 `web` 前端，并打印本地链使用说明
 
-1. Connect wallet
-2. Inspect account and collateral overview
-3. Deposit `WETH` or `WBTC`
-4. Mint `DSC`
-5. Show the health factor update
-6. Burn and redeem
-7. Finally demonstrate liquidation
+### 5. 增加一份更偏工程视角的架构文档
 
-That sequence makes the full protocol loop easy to understand.
+比如新增：
 
-### Why This Project Matters
+- `docs/architecture.md`
+- `docs/local-development.md`
 
-This is not just an ERC20 exercise. It demonstrates the ability to build a complete DeFi protocol flow:
+这样 README 可以专注“快速上手”，更细的实现细节放到文档里展开。
 
-- Translating protocol rules into a smart-contract state machine
-- Integrating oracle pricing into core business logic
-- Designing health-factor and liquidation-based risk controls
-- Using Foundry to validate safety properties systematically
-- Exposing the protocol through a usable frontend demo
+### 6. 增强演示数据和演示脚本
 
-### Possible Extensions
+目前已经有 `seed-local-state.sh`，但还可以继续完善：
 
-- Support more collateral types
-- Add richer frontend transaction feedback
-- Deploy to public testnets
-- Add governance over protocol parameters
-- Add analytics and dashboarding
+- 增加“清算演示”专用脚本
+- 增加 mock price 调整脚本
+- 增加第二账户的预置步骤
 
----
+这样面试或 demo 时会更稳定。
 
-If you are learning about decentralized stablecoins, DeFi risk controls, or full-stack blockchain development with contracts plus frontend integration, this repository can serve as a solid reference implementation.
+## 相关文件入口
+
+- 根 README：[`README.md`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/README.md)
+- 前端入口页面：[`web/app/page.tsx`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/app/page.tsx)
+- 协议核心合约：[`src/DSCEngine.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/src/DSCEngine.sol)
+- 稳定币合约：[`src/DecentralizedStableCoin.sol`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/src/DecentralizedStableCoin.sol)
+- 本地开发主脚本：[`tools/reset-local-dev.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/reset-local-dev.sh)
+- ABI 同步脚本：[`tools/sync-abi.sh`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/tools/sync-abi.sh)
+- 地址配置：[`web/lib/contracts/addresses/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/addresses)
+- ABI 配置：[`web/lib/contracts/abi/`](/Volumes/DevDisk/Dev/projects/Web/open/defi-stablecoin/web/lib/contracts/abi)
