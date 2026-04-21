@@ -4,6 +4,10 @@
 
 DSCoin 的目标不是做一个“只会跑单个合约函数”的 Solidity 示例，而是把一条完整链路串起来：`deposit collateral -> mint DSC -> burn -> redeem -> liquidation`。仓库同时包含 Foundry 合约工程、部署与同步脚本，以及一个基于 Next.js 的前端演示面板，适合合约开发者、Web3 前端开发者、面试项目准备者和刚接触 DeFi 协议的新手开发者。
 
+<p align="center">
+  <img src="./1.png" alt="Home" width="50%" />
+</p>
+
 ## 项目定位
 
 一句话介绍：
@@ -302,37 +306,37 @@ npm run dev
 
 ### 根目录 / Foundry / tools
 
-| 命令 | 当前是否存在 | 作用 |
-| --- | --- | --- |
-| `forge build` | 已存在 | 编译合约 |
-| `forge test` | 已存在 | 运行 Foundry 测试 |
-| `forge script script/DeployDSC.s.sol:DeployDSC --rpc-url ... --private-key ... --broadcast` | 已存在 | 部署合约 |
-| `./tools/sync-abi.sh` | 已存在 | 同步 ABI 到前端 |
-| `./tools/deploy-local-and-sync.sh` | 已存在 | 本地编译、部署并同步 ABI |
-| `./tools/seed-local-state.sh` | 已存在 | 为默认账户注入本地演示数据 |
-| `./tools/reset-local-dev.sh` | 已存在 | 本地开发主入口：部署 + 同步 + seed + 输出 `.local-dev.env` |
-| `./tools/print-local-env.sh` | 已存在 | 打印当前本地链相关环境变量 |
+| 命令                                                                                        | 当前是否存在 | 作用                                                       |
+| ------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------- |
+| `forge build`                                                                               | 已存在       | 编译合约                                                   |
+| `forge test`                                                                                | 已存在       | 运行 Foundry 测试                                          |
+| `forge script script/DeployDSC.s.sol:DeployDSC --rpc-url ... --private-key ... --broadcast` | 已存在       | 部署合约                                                   |
+| `./tools/sync-abi.sh`                                                                       | 已存在       | 同步 ABI 到前端                                            |
+| `./tools/deploy-local-and-sync.sh`                                                          | 已存在       | 本地编译、部署并同步 ABI                                   |
+| `./tools/seed-local-state.sh`                                                               | 已存在       | 为默认账户注入本地演示数据                                 |
+| `./tools/reset-local-dev.sh`                                                                | 已存在       | 本地开发主入口：部署 + 同步 + seed + 输出 `.local-dev.env` |
+| `./tools/print-local-env.sh`                                                                | 已存在       | 打印当前本地链相关环境变量                                 |
 
 ### 前端 `web/`
 
-| 命令 | 当前是否存在 | 作用 |
-| --- | --- | --- |
-| `npm run dev` | 已存在 | 启动 Next.js 开发服务器 |
-| `npm run build` | 已存在 | 构建前端 |
-| `npm run start` | 已存在 | 运行生产构建 |
-| `npm run lint` | 已存在 | 运行 ESLint |
+| 命令            | 当前是否存在 | 作用                    |
+| --------------- | ------------ | ----------------------- |
+| `npm run dev`   | 已存在       | 启动 Next.js 开发服务器 |
+| `npm run build` | 已存在       | 构建前端                |
+| `npm run start` | 已存在       | 运行生产构建            |
+| `npm run lint`  | 已存在       | 运行 ESLint             |
 
 ## 推荐新增，但当前仓库还没有的命令
 
 下面这些命令**不是仓库当前已有命令**，而是推荐你后续补上的聚合入口：
 
-| 建议命令 | 当前是否存在 | 目的 |
-| --- | --- | --- |
-| `npm run bootstrap` | 不存在 | 安装前端依赖、检查 env、启动本地部署与同步流程 |
-| `npm run dev:web` | 不存在 | 从根目录代理到 `web/npm run dev` |
-| `npm run dev:contracts` | 不存在 | 启动或提示本地链与脚本流程 |
-| `npm run sync:contracts` | 不存在 | 调用 `tools/deploy-local-and-sync.sh` |
-| `npm run seed:local` | 不存在 | 调用 `tools/seed-local-state.sh` |
+| 建议命令                 | 当前是否存在 | 目的                                           |
+| ------------------------ | ------------ | ---------------------------------------------- |
+| `npm run bootstrap`      | 不存在       | 安装前端依赖、检查 env、启动本地部署与同步流程 |
+| `npm run dev:web`        | 不存在       | 从根目录代理到 `web/npm run dev`               |
+| `npm run dev:contracts`  | 不存在       | 启动或提示本地链与脚本流程                     |
+| `npm run sync:contracts` | 不存在       | 调用 `tools/deploy-local-and-sync.sh`          |
+| `npm run seed:local`     | 不存在       | 调用 `tools/seed-local-state.sh`               |
 
 ## ABI / 地址自动同步机制
 
