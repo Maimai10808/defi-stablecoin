@@ -1,0 +1,20 @@
+{
+  "name": "defi-stablecoin",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Maimai10808/defi-stablecoin#readme",
+  "bugs": {
+    "url": "https://github.com/Maimai10808/defi-stablecoin/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Maimai10808/defi-stablecoin.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
