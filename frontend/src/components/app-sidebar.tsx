@@ -17,109 +17,115 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 
-const data = {
-  versions: ["Local Anvil", "Sepolia", "Mainnet"],
-  navMain: [
-    {
-      title: "Overview",
-      items: [
-        {
-          title: "Protocol Status",
-          url: "#protocol-status",
-        },
-        {
-          title: "My Position",
-          url: "#my-position",
-        },
-      ],
-    },
-    {
-      title: "Actions",
-      items: [
-        {
-          title: "Faucet",
-          url: "#faucet",
-        },
-        {
-          title: "Deposit & Mint",
-          url: "#deposit-mint",
-        },
-        {
-          title: "Repay & Redeem",
-          url: "#repay-redeem",
-        },
-      ],
-    },
-    {
-      title: "Risk",
-      items: [
-        {
-          title: "Health Factor",
-          url: "#health-factor",
-        },
-        {
-          title: "Liquidation Demo",
-          url: "#liquidation-demo",
-        },
-      ],
-    },
-    {
-      title: "Dev Tools",
-      items: [
-        {
-          title: "Activity Log",
-          url: "#activity-log",
-        },
-        {
-          title: "Contract Addresses",
-          url: "#contract-addresses",
-        },
-      ],
-    },
-  ],
+export type DashboardView =
+  | "protocol-status"
+  | "my-position"
+  | "faucet"
+  | "deposit-mint"
+  | "repay-redeem"
+  | "health-factor"
+  | "liquidation-demo"
+  | "activity-log"
+  | "contract-addresses";
+
+type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
+  activeView: DashboardView;
+  onViewChange: (view: DashboardView) => void;
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [activeHash, setActiveHash] = React.useState("#protocol-status");
+const versions = ["Local Anvil", "Sepolia", "Mainnet"];
 
-  React.useEffect(() => {
-    const updateActiveHash = () => {
-      setActiveHash(window.location.hash || "#protocol-status");
-    };
+const navMain = [
+  {
+    title: "Overview",
+    items: [
+      {
+        title: "Protocol Status",
+        value: "protocol-status",
+      },
+      {
+        title: "My Position",
+        value: "my-position",
+      },
+    ],
+  },
+  {
+    title: "Actions",
+    items: [
+      {
+        title: "Faucet",
+        value: "faucet",
+      },
+      {
+        title: "Deposit & Mint",
+        value: "deposit-mint",
+      },
+      {
+        title: "Repay & Redeem",
+        value: "repay-redeem",
+      },
+    ],
+  },
+  {
+    title: "Risk",
+    items: [
+      {
+        title: "Health Factor",
+        value: "health-factor",
+      },
+      {
+        title: "Liquidation Demo",
+        value: "liquidation-demo",
+      },
+    ],
+  },
+  {
+    title: "Dev Tools",
+    items: [
+      {
+        title: "Activity Log",
+        value: "activity-log",
+      },
+      {
+        title: "Contract Addresses",
+        value: "contract-addresses",
+      },
+    ],
+  },
+] satisfies Array<{
+  title: string;
+  items: Array<{
+    title: string;
+    value: DashboardView;
+  }>;
+}>;
 
-    updateActiveHash();
-
-    window.addEventListener("hashchange", updateActiveHash);
-
-    return () => {
-      window.removeEventListener("hashchange", updateActiveHash);
-    };
-  }, []);
-
+export function AppSidebar({
+  activeView,
+  onViewChange,
+  ...props
+}: AppSidebarProps) {
   return (
     <Sidebar {...props}>
       <SidebarHeader>
-        <VersionSwitcher
-          versions={data.versions}
-          defaultVersion={data.versions[0]}
-        />
+        <VersionSwitcher versions={versions} defaultVersion={versions[0]} />
         <SearchForm />
       </SidebarHeader>
 
       <SidebarContent>
-        {data.navMain.map((group) => (
+        {navMain.map((group) => (
           <SidebarGroup key={group.title}>
             <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
 
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.value}>
                     <SidebarMenuButton
-                      asChild
-                      isActive={activeHash === item.url}
+                      isActive={activeView === item.value}
+                      onClick={() => onViewChange(item.value)}
                     >
-                      <a href={item.url}>{item.title}</a>
+                      {item.title}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

@@ -1,5 +1,9 @@
+"use client";
+
+import * as React from "react";
+
 import { ActivityLog } from "@/components/activity-log";
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar, type DashboardView } from "@/components/app-sidebar";
 import { ContractAddresses } from "@/components/contract-addresses";
 import { DepositMint } from "@/components/deposit-mint";
 import { Faucet } from "@/components/faucet";
@@ -21,10 +25,59 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
+const viewTitles: Record<DashboardView, string> = {
+  "protocol-status": "Protocol Status",
+  "my-position": "My Position",
+  faucet: "Faucet",
+  "deposit-mint": "Deposit & Mint",
+  "repay-redeem": "Repay & Redeem",
+  "health-factor": "Health Factor",
+  "liquidation-demo": "Liquidation Demo",
+  "activity-log": "Activity Log",
+  "contract-addresses": "Contract Addresses",
+};
+
 export default function AppShell() {
+  const [activeView, setActiveView] =
+    React.useState<DashboardView>("protocol-status");
+
+  const renderActiveView = () => {
+    switch (activeView) {
+      case "protocol-status":
+        return <ProtocolStatus />;
+
+      case "my-position":
+        return <MyPosition />;
+
+      case "faucet":
+        return <Faucet />;
+
+      case "deposit-mint":
+        return <DepositMint />;
+
+      case "repay-redeem":
+        return <RepayRedeem />;
+
+      case "health-factor":
+        return <HealthFactor />;
+
+      case "liquidation-demo":
+        return <LiquidationDemo />;
+
+      case "activity-log":
+        return <ActivityLog />;
+
+      case "contract-addresses":
+        return <ContractAddresses />;
+
+      default:
+        return <ProtocolStatus />;
+    }
+  };
+
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar activeView={activeView} onViewChange={setActiveView} />
 
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
@@ -38,7 +91,7 @@ export default function AppShell() {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbPage>DSC Protocol Dashboard</BreadcrumbPage>
+                <BreadcrumbPage>{viewTitles[activeView]}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -47,36 +100,14 @@ export default function AppShell() {
         <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
           <section className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight">
-              Decentralized StableCoin Demo
+              {viewTitles[activeView]}
             </h1>
             <p className="max-w-3xl text-sm text-muted-foreground">
-              A local DeFi protocol dashboard for collateral deposit, DSC
-              minting, position monitoring, health factor tracking, and
-              liquidation demonstration.
+              Decentralized StableCoin local demo dashboard.
             </p>
           </section>
 
-          <div className="grid gap-6 xl:grid-cols-2">
-            <ProtocolStatus />
-            <MyPosition />
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <Faucet />
-            <DepositMint />
-          </div>
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <RepayRedeem />
-            <HealthFactor />
-          </div>
-
-          <LiquidationDemo />
-
-          <div className="grid gap-6 xl:grid-cols-2">
-            <ActivityLog />
-            <ContractAddresses />
-          </div>
+          {renderActiveView()}
         </main>
       </SidebarInset>
     </SidebarProvider>
