@@ -1,56 +1,68 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {Test, console} from "forge-std/Test.sol";
-import {Vm} from "forge-std/Vm.sol";
+// Foundry 测试基�"工具
+import {Test} from "forge-std/Test.sol";
+
+// 部署脚�"�与网�"配置
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {DeployDSC} from "../../script/DeployDSC.s.sol";
+
+// 核心协议合约
 import {DSCEngine} from "../../src/DSCEngine.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
+import {DSCEngineErrors} from "../../src/engine/DSCEngineErrors.sol";
+
+// Mock 合约与外部�"赖
+import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import {MockFailedMintDSC} from "../mocks/MockFailedMintDSC.sol";
 import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
-import {DSCEngineErrors} from "../../src/engine/DSCEngineErrors.sol";
 
 contract DSCEngineTest is Test {
+    // ========== 部署与核心合约 ==========
+
     HelperConfig public helperConfig;
     DSCEngine public dscEngine;
     DecentralizedStableCoin public dsc;
+    // ========== 抵押资产与价格预�"�"� ==========
     address public ethUsdPriceFeed;
     address public btcUsdPriceFeed;
     address public weth;
     address public wbtc;
+    // ========== 测试账户与基�"参数 ==========
     uint256 public deployerKey;
     address public user = makeAddr("user");
+    address public liquidator = makeAddr("liquidator");
     uint256 public constant STARTING_BALANCE_100ether = 100 ether;
     uint256 public constant AMOUNT_COLLATERAL_10ether = 10 ether;
+    // 用于构�"�函数测试的数组
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
+    // ========== 协议计算常量 ==========
     uint256 private constant ADDITIONAL_FEED_PRECISION_1e10 = 1e10;
     uint256 private constant PRECISION_1e18 = 1e18;
     uint256 private constant LIQUIDATION_RATIO_50 = 50;
     uint256 private constant LIQUIDATION_PRECISION_100 = 100;
     uint256 private constant MINIMUM_HEALTH_FACTOR_1e18 = 1e18;
     uint256 private constant LIQUIDATION_BONUS_10 = 10;
+    // ========== Mock 价格数据 ==========
     int256 public constant ETH_USD_PRICE_2000e8 = 2000e8;
     int256 public constant BTC_USD_PRICE_1000e8 = 1000e8;
+    int256 public constant ETH_USD_PRICE_1000e8 = 1000e8;
+    // 用于部署 MockFailedMintDSC 的�"始 owner
     address public constant INITIAL_OWNER =
         0xF42f4b5cb102b3f5A180E08E6BA726c0179D172E;
-    address public liquidator = makeAddr("liquidator");
-
+    // ========== 清算�"�景测试参数 ==========
     uint256 public constant LIQUIDATION_USER_MINTED_10000ether = 10000 ether;
     uint256 public constant LIQUIDATION_LIQUIDATOR_MINTED_5000ether =
         5000 ether;
     uint256 public constant LIQUIDATION_DEBT_TO_COVER_5000ether = 5000 ether;
-
-    int256 public constant ETH_USD_PRICE_1000e8 = 1000e8;
-
     uint256 public constant LIQUIDATION_USER_MINTED_6000ether = 6000 ether;
     uint256 public constant LIQUIDATION_LIQUIDATOR_MINTED_2000ether =
         2000 ether;
     uint256 public constant LIQUIDATION_DEBT_TO_COVER_2000ether = 2000 ether;
-
+    // ========== �"��"�声明事件，用于 expectEmit 校验 ==========
     event CollateralDeposited(
         address indexed user,
         address tokenCollateralAddr,
@@ -65,6 +77,8 @@ contract DSCEngineTest is Test {
 
     constructor() {}
 
+    // ========== 测试前置 modifier ==========
+    // 预先为 user 存入抵押品
     modifier depositedCollateral() {
         vm.startPrank(user);
         ERC20Mock(weth).approve(address(dscEngine), AMOUNT_COLLATERAL_10ether);
@@ -72,14 +86,14 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
         _;
     }
-
+    // �"�已存入抵押品的基�"上，铸�"�指定数量 DSC
     modifier mintDsc(uint256 _expectedDscMinted) {
         vm.startPrank(user);
         dscEngine.mintDsc(_expectedDscMinted);
         vm.stopPrank();
         _;
     }
-
+    // 预先完成抵押品存入与 DSC 铸�"�
     modifier depositedCollateralAndMintedDsc() {
         vm.startPrank(user);
         ERC20Mock(weth).approve(address(dscEngine), AMOUNT_COLLATERAL_10ether);
@@ -92,6 +106,7 @@ contract DSCEngineTest is Test {
         _;
     }
 
+    // 每个测试执行前部署协议，并为测试账户分配 ETH 与 Mock 抵押资产
     function setUp() external {
         DeployDSC deployer = new DeployDSC();
         (dsc, dscEngine, helperConfig) = deployer.run();
@@ -103,19 +118,17 @@ contract DSCEngineTest is Test {
             deployerKey,
 
         ) = helperConfig.activeNetworkConfig();
-
         if (block.chainid == 31337) {
             vm.deal(user, STARTING_BALANCE_100ether);
             vm.deal(liquidator, STARTING_BALANCE_100ether);
         }
-
         ERC20Mock(weth).mint(user, STARTING_BALANCE_100ether);
         ERC20Mock(wbtc).mint(user, STARTING_BALANCE_100ether);
-
         ERC20Mock(weth).mint(liquidator, STARTING_BALANCE_100ether);
         ERC20Mock(wbtc).mint(liquidator, STARTING_BALANCE_100ether);
     }
 
+    // ========== Constructor 测试 ==========
     function testConstructor_ShouldReverts_WhenListLenthIsNotEqual() public {
         tokenAddresses.push(weth);
         priceFeedAddresses.push(ethUsdPriceFeed);
@@ -144,6 +157,7 @@ contract DSCEngineTest is Test {
         assertEq(engine.priceFeeds(wbtc), btcUsdPriceFeed);
     }
 
+    // ========== 价格换算测试 ==========
     function testGetUsdValue_ShouldCalculatesCorrectly_WhenParamsAreRight()
         public
     {
@@ -172,6 +186,7 @@ contract DSCEngineTest is Test {
         assertEq(actualAmount, expectedAmount);
     }
 
+    // ========== 抵押品存入测试 ==========
     function testDepositCollateral_ShouldReverts_WhenAmountLessThanZero()
         public
     {
@@ -245,6 +260,7 @@ contract DSCEngineTest is Test {
         assertEq(userBalance, 0);
     }
 
+    // ========== DSC 铸�"�测试 ==========
     function testMintDsc_ShouldChecksHealthFactor_WhenConditionMatching()
         public
         depositedCollateral
@@ -302,6 +318,7 @@ contract DSCEngineTest is Test {
         assertEq(expectedUsdValue, _usdValue);
     }
 
+    // ========== 抵押品赎回测试 ==========
     function testRedeemCollateral_ShouldReverts_WhenAmountIsNotEnough() public {
         uint256 amount = 0;
         vm.expectRevert(
@@ -342,7 +359,7 @@ contract DSCEngineTest is Test {
         assertEq(userBalance, 0);
     }
 
-    // test Getters
+    // ========== Getter 测试 ==========
     function testDsc_ShouldGetsCorrectly_WhenItConfigured() public {
         address expectedDsc = address(dsc);
         address realDsc = dscEngine.dsc();
@@ -372,6 +389,7 @@ contract DSCEngineTest is Test {
         assertEq(MINIMUM_HEALTH_FACTOR_1e18, expectedValue);
     }
 
+    // ========== DSC 燃烧测试 ==========
     function testBurnDsc_ShouldReverts_WhenAmountIsNotEnough()
         public
         depositedCollateralAndMintedDsc
@@ -403,6 +421,7 @@ contract DSCEngineTest is Test {
         assertEq(userBalance, 0);
     }
 
+    // ========== 清算测试辅助函数 ==========
     function _depositAndMint(
         address _actor,
         uint256 _collateralAmount,
@@ -431,6 +450,7 @@ contract DSCEngineTest is Test {
         _updateEthPrice(ETH_USD_PRICE_1000e8);
     }
 
+    // ========== 清算�"�辑测试 ==========
     function testCannotLiquidateIfHealthFactorIsSafe() public {
         _depositAndMint(
             user,
@@ -442,17 +462,14 @@ contract DSCEngineTest is Test {
             AMOUNT_COLLATERAL_10ether,
             LIQUIDATION_LIQUIDATOR_MINTED_2000ether
         );
-
         vm.startPrank(liquidator);
         dsc.approve(address(dscEngine), LIQUIDATION_DEBT_TO_COVER_2000ether);
-
         vm.expectRevert(
             abi.encodeWithSelector(
                 DSCEngineErrors.DSCEngine__HealthFactorIsSafe.selector,
                 dscEngine.getHealthFactor(user)
             )
         );
-
         dscEngine.liquidate(weth, user, LIQUIDATION_DEBT_TO_COVER_2000ether);
         vm.stopPrank();
     }
@@ -466,7 +483,6 @@ contract DSCEngineTest is Test {
             AMOUNT_COLLATERAL_10ether,
             LIQUIDATION_LIQUIDATOR_MINTED_2000ether
         );
-
         uint256 tokenAmountFromDebtCovered = dscEngine.getTokenAmountFromUsd(
             weth,
             LIQUIDATION_DEBT_TO_COVER_2000ether
@@ -475,7 +491,6 @@ contract DSCEngineTest is Test {
             LIQUIDATION_BONUS_10) / LIQUIDATION_PRECISION_100;
         uint256 expectedCollateralRedeemed = tokenAmountFromDebtCovered +
             bonusCollateral;
-
         uint256 userStartingMinted = dscEngine.getDscMintedAmount(user);
         uint256 userStartingCollateral = dscEngine.getCollateralBalanceOfUser(
             user,
@@ -483,12 +498,10 @@ contract DSCEngineTest is Test {
         );
         uint256 liquidatorStartingDsc = dsc.balanceOf(liquidator);
         uint256 liquidatorStartingWeth = ERC20Mock(weth).balanceOf(liquidator);
-
         vm.startPrank(liquidator);
         dsc.approve(address(dscEngine), LIQUIDATION_DEBT_TO_COVER_2000ether);
         dscEngine.liquidate(weth, user, LIQUIDATION_DEBT_TO_COVER_2000ether);
         vm.stopPrank();
-
         uint256 userEndingMinted = dscEngine.getDscMintedAmount(user);
         uint256 userEndingCollateral = dscEngine.getCollateralBalanceOfUser(
             user,
@@ -496,7 +509,6 @@ contract DSCEngineTest is Test {
         );
         uint256 liquidatorEndingDsc = dsc.balanceOf(liquidator);
         uint256 liquidatorEndingWeth = ERC20Mock(weth).balanceOf(liquidator);
-
         assertEq(
             userStartingMinted - userEndingMinted,
             LIQUIDATION_DEBT_TO_COVER_2000ether
@@ -522,12 +534,10 @@ contract DSCEngineTest is Test {
             AMOUNT_COLLATERAL_10ether,
             LIQUIDATION_LIQUIDATOR_MINTED_5000ether
         );
-
         vm.startPrank(liquidator);
         dsc.approve(address(dscEngine), LIQUIDATION_DEBT_TO_COVER_5000ether);
         dscEngine.liquidate(weth, user, LIQUIDATION_DEBT_TO_COVER_5000ether);
         vm.stopPrank();
-
         assertGe(dscEngine.getHealthFactor(user), MINIMUM_HEALTH_FACTOR_1e18);
     }
 
@@ -538,27 +548,22 @@ contract DSCEngineTest is Test {
             AMOUNT_COLLATERAL_10ether,
             LIQUIDATION_LIQUIDATOR_MINTED_2000ether
         );
-
         uint256 startingHealthFactor = dscEngine.getHealthFactor(user);
-
         vm.startPrank(liquidator);
         dsc.approve(address(dscEngine), LIQUIDATION_DEBT_TO_COVER_2000ether);
         dscEngine.liquidate(weth, user, LIQUIDATION_DEBT_TO_COVER_2000ether);
         vm.stopPrank();
-
         uint256 endingHealthFactor = dscEngine.getHealthFactor(user);
-
         assertGt(endingHealthFactor, startingHealthFactor);
     }
 
+    // ========== Fuzz 测试 ==========
     function testFuzz_GetUsdValueAndGetTokenAmountFromUsd_AreRoughlyInverse(
         uint96 amount
     ) public view {
         vm.assume(amount > 0);
-
         uint256 usdValue = dscEngine.getUsdValue(weth, uint256(amount));
         uint256 tokenAmount = dscEngine.getTokenAmountFromUsd(weth, usdValue);
-
         assertApproxEqAbs(tokenAmount, uint256(amount), 1);
     }
 
@@ -567,12 +572,10 @@ contract DSCEngineTest is Test {
     ) public {
         vm.assume(amount > 0);
         vm.assume(uint256(amount) <= STARTING_BALANCE_100ether);
-
         vm.startPrank(user);
         ERC20Mock(weth).approve(address(dscEngine), uint256(amount));
         dscEngine.depositCollateral(weth, uint256(amount));
         vm.stopPrank();
-
         assertEq(dscEngine.getCollateralBalanceOfUser(user, weth), amount);
     }
 }
