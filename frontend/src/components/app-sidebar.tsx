@@ -1,7 +1,9 @@
-import * as React from "react"
+"use client";
 
-import { SearchForm } from "@/components/search-form"
-import { VersionSwitcher } from "@/components/version-switcher"
+import * as React from "react";
+
+import { SearchForm } from "@/components/search-form";
+import { VersionSwitcher } from "@/components/version-switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -13,141 +15,87 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
-// This is sample data.
 const data = {
-  versions: ["1.0.1", "1.1.0-alpha", "2.0.0-beta1"],
+  versions: ["Local Anvil", "Sepolia", "Mainnet"],
   navMain: [
     {
-      title: "Getting Started",
-      url: "#",
+      title: "Overview",
       items: [
         {
-          title: "Installation",
-          url: "#",
+          title: "Protocol Status",
+          url: "#protocol-status",
         },
         {
-          title: "Project Structure",
-          url: "#",
+          title: "My Position",
+          url: "#my-position",
         },
       ],
     },
     {
-      title: "Build Your Application",
-      url: "#",
+      title: "Actions",
       items: [
         {
-          title: "Routing",
-          url: "#",
+          title: "Faucet",
+          url: "#faucet",
         },
         {
-          title: "Data Fetching",
-          url: "#",
-          isActive: true,
+          title: "Deposit & Mint",
+          url: "#deposit-mint",
         },
         {
-          title: "Rendering",
-          url: "#",
-        },
-        {
-          title: "Caching",
-          url: "#",
-        },
-        {
-          title: "Styling",
-          url: "#",
-        },
-        {
-          title: "Optimizing",
-          url: "#",
-        },
-        {
-          title: "Configuring",
-          url: "#",
-        },
-        {
-          title: "Testing",
-          url: "#",
-        },
-        {
-          title: "Authentication",
-          url: "#",
-        },
-        {
-          title: "Deploying",
-          url: "#",
-        },
-        {
-          title: "Upgrading",
-          url: "#",
-        },
-        {
-          title: "Examples",
-          url: "#",
+          title: "Repay & Redeem",
+          url: "#repay-redeem",
         },
       ],
     },
     {
-      title: "API Reference",
-      url: "#",
+      title: "Risk",
       items: [
         {
-          title: "Components",
-          url: "#",
+          title: "Health Factor",
+          url: "#health-factor",
         },
         {
-          title: "File Conventions",
-          url: "#",
-        },
-        {
-          title: "Functions",
-          url: "#",
-        },
-        {
-          title: "next.config.js Options",
-          url: "#",
-        },
-        {
-          title: "CLI",
-          url: "#",
-        },
-        {
-          title: "Edge Runtime",
-          url: "#",
+          title: "Liquidation Demo",
+          url: "#liquidation-demo",
         },
       ],
     },
     {
-      title: "Architecture",
-      url: "#",
+      title: "Dev Tools",
       items: [
         {
-          title: "Accessibility",
-          url: "#",
+          title: "Activity Log",
+          url: "#activity-log",
         },
         {
-          title: "Fast Refresh",
-          url: "#",
-        },
-        {
-          title: "Next.js Compiler",
-          url: "#",
-        },
-        {
-          title: "Supported Browsers",
-          url: "#",
-        },
-        {
-          title: "Turbopack",
-          url: "#",
+          title: "Contract Addresses",
+          url: "#contract-addresses",
         },
       ],
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [activeHash, setActiveHash] = React.useState("#protocol-status");
+
+  React.useEffect(() => {
+    const updateActiveHash = () => {
+      setActiveHash(window.location.hash || "#protocol-status");
+    };
+
+    updateActiveHash();
+
+    window.addEventListener("hashchange", updateActiveHash);
+
+    return () => {
+      window.removeEventListener("hashchange", updateActiveHash);
+    };
+  }, []);
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -157,16 +105,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         />
         <SearchForm />
       </SidebarHeader>
+
       <SidebarContent>
-        {/* We create a SidebarGroup for each parent. */}
-        {data.navMain.map((item) => (
-          <SidebarGroup key={item.title}>
-            <SidebarGroupLabel>{item.title}</SidebarGroupLabel>
+        {data.navMain.map((group) => (
+          <SidebarGroup key={group.title}>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+
             <SidebarGroupContent>
               <SidebarMenu>
-                {item.items.map((item) => (
+                {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={item.isActive}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={activeHash === item.url}
+                    >
                       <a href={item.url}>{item.title}</a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -176,7 +128,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroup>
         ))}
       </SidebarContent>
+
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
