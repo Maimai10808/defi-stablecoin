@@ -7,9 +7,12 @@ import { AppSidebar, type DashboardView } from "@/components/app-sidebar";
 import { ContractAddresses } from "@/components/contract-addresses";
 import { DepositMint } from "@/components/deposit-mint";
 import { Faucet } from "@/components/faucet";
+import { FeatureMap } from "@/components/feature-map";
 import { HealthFactor } from "@/components/health-factor";
+import { HowItWorks } from "@/components/how-it-works";
 import { LiquidationDemo } from "@/components/liquidation-demo";
 import { MyPosition } from "@/components/my-position";
+import { ProjectGuide } from "@/components/project-guide";
 import { ProtocolStatus } from "@/components/protocol-status";
 import { RepayRedeem } from "@/components/repay-redeem";
 import {
@@ -26,6 +29,9 @@ import {
 } from "@/components/ui/sidebar";
 
 const viewTitles: Record<DashboardView, string> = {
+  "project-guide": "Project Guide",
+  "how-it-works": "How It Works",
+  "feature-map": "Feature Map",
   "protocol-status": "Protocol Status",
   "my-position": "My Position",
   faucet: "Faucet",
@@ -37,12 +43,47 @@ const viewTitles: Record<DashboardView, string> = {
   "contract-addresses": "Contract Addresses",
 };
 
+const viewDescriptions: Record<DashboardView, string> = {
+  "project-guide":
+    "A guided introduction to the Decentralized StableCoin local demo.",
+  "how-it-works":
+    "Understand how the local chain, smart contracts, generated hooks, and UI work together.",
+  "feature-map": "A feature-level map of every module in this DSC dashboard.",
+  "protocol-status":
+    "Check whether the local protocol, wallet, network, and deployed contracts are ready.",
+  "my-position":
+    "View your collateral, minted DSC, wallet balances, allowance, and risk status.",
+  faucet:
+    "Mint local mock collateral tokens for testing deposit and mint flows.",
+  "deposit-mint":
+    "Deposit collateral into DSCEngine and mint DSC against your position.",
+  "repay-redeem":
+    "Repay DSC debt and redeem deposited collateral from the protocol.",
+  "health-factor":
+    "Analyze the liquidation risk of your account through the protocol health factor.",
+  "liquidation-demo":
+    "Simulate and understand how unsafe positions can be liquidated.",
+  "activity-log":
+    "Review recent demo operations, frontend actions, and transaction records.",
+  "contract-addresses":
+    "Inspect deployed contract addresses, token mocks, and price feed addresses.",
+};
+
 export default function AppShell() {
   const [activeView, setActiveView] =
-    React.useState<DashboardView>("protocol-status");
+    React.useState<DashboardView>("project-guide");
 
   const renderActiveView = () => {
     switch (activeView) {
+      case "project-guide":
+        return <ProjectGuide />;
+
+      case "how-it-works":
+        return <HowItWorks />;
+
+      case "feature-map":
+        return <FeatureMap />;
+
       case "protocol-status":
         return <ProtocolStatus />;
 
@@ -71,7 +112,7 @@ export default function AppShell() {
         return <ContractAddresses />;
 
       default:
-        return <ProtocolStatus />;
+        return <ProjectGuide />;
     }
   };
 
@@ -102,8 +143,9 @@ export default function AppShell() {
             <h1 className="text-2xl font-semibold tracking-tight">
               {viewTitles[activeView]}
             </h1>
+
             <p className="max-w-3xl text-sm text-muted-foreground">
-              Decentralized StableCoin local demo dashboard.
+              {viewDescriptions[activeView]}
             </p>
           </section>
 

@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/sidebar";
 
 export type DashboardView =
+  | "project-guide"
+  | "how-it-works"
+  | "feature-map"
   | "protocol-status"
   | "my-position"
   | "faucet"
@@ -36,6 +39,23 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
 const versions = ["Local Anvil", "Sepolia", "Mainnet"];
 
 const navMain = [
+  {
+    title: "Introduction",
+    items: [
+      {
+        title: "Project Guide",
+        value: "project-guide",
+      },
+      {
+        title: "How It Works",
+        value: "how-it-works",
+      },
+      {
+        title: "Feature Map",
+        value: "feature-map",
+      },
+    ],
+  },
   {
     title: "Overview",
     items: [
