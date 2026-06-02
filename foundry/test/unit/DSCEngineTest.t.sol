@@ -11,6 +11,7 @@ import {DecentralizedStableCoin} from "../../src/DecentralizedStableCoin.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import {MockFailedMintDSC} from "../mocks/MockFailedMintDSC.sol";
 import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
+import {DSCEngineErrors} from "../../src/engine/DSCEngineErrors.sol";
 
 contract DSCEngineTest is Test {
     HelperConfig public helperConfig;
@@ -120,7 +121,7 @@ contract DSCEngineTest is Test {
         priceFeedAddresses.push(ethUsdPriceFeed);
         priceFeedAddresses.push(btcUsdPriceFeed);
         vm.expectRevert(
-            DSCEngine.DSCEngine__TheAddressListLengthNotMatch.selector
+            DSCEngineErrors.DSCEngine__TheAddressListLengthNotMatch.selector
         );
         new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
     }
@@ -176,7 +177,9 @@ contract DSCEngineTest is Test {
     {
         vm.startPrank(user);
         ERC20Mock(weth).approve(address(dscEngine), AMOUNT_COLLATERAL_10ether);
-        vm.expectRevert(DSCEngine.DSCEngine__AmountMustBeMoreThanZero.selector);
+        vm.expectRevert(
+            DSCEngineErrors.DSCEngine__AmountMustBeMoreThanZero.selector
+        );
         dscEngine.depositCollateral(weth, 0);
         vm.stopPrank();
     }
@@ -186,7 +189,7 @@ contract DSCEngineTest is Test {
     {
         ERC20Mock unapprovedCollateral = new ERC20Mock();
         vm.startPrank(user);
-        vm.expectRevert(DSCEngine.DSCEngine__NotTheAllowedToken.selector);
+        vm.expectRevert(DSCEngineErrors.DSCEngine__NotTheAllowedToken.selector);
         dscEngine.depositCollateral(
             address(unapprovedCollateral),
             AMOUNT_COLLATERAL_10ether
@@ -250,7 +253,7 @@ contract DSCEngineTest is Test {
         vm.startPrank(user);
         vm.expectRevert(
             abi.encodeWithSelector(
-                DSCEngine.DSCEngine__HealthFactorIsBroken.selector,
+                DSCEngineErrors.DSCEngine__HealthFactorIsBroken.selector,
                 (((((uint256(2000e8) * ADDITIONAL_FEED_PRECISION_1e10) /
                     PRECISION_1e18) *
                     AMOUNT_COLLATERAL_10ether *
@@ -278,7 +281,7 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
         vm.startPrank(user);
         ERC20Mock(weth).approve(address(_dscEngine), AMOUNT_COLLATERAL_10ether);
-        vm.expectRevert(DSCEngine.DSCEngine__MintFailed.selector);
+        vm.expectRevert(DSCEngineErrors.DSCEngine__MintFailed.selector);
         _dscEngine.depositCollateralAndMintDsc(
             weth,
             AMOUNT_COLLATERAL_10ether,
@@ -301,7 +304,9 @@ contract DSCEngineTest is Test {
 
     function testRedeemCollateral_ShouldReverts_WhenAmountIsNotEnough() public {
         uint256 amount = 0;
-        vm.expectRevert(DSCEngine.DSCEngine__AmountMustBeMoreThanZero.selector);
+        vm.expectRevert(
+            DSCEngineErrors.DSCEngine__AmountMustBeMoreThanZero.selector
+        );
         dscEngine.redeemCollateral(weth, amount);
     }
 
@@ -372,7 +377,9 @@ contract DSCEngineTest is Test {
         depositedCollateralAndMintedDsc
     {
         vm.startPrank(user);
-        vm.expectRevert(DSCEngine.DSCEngine__AmountMustBeMoreThanZero.selector);
+        vm.expectRevert(
+            DSCEngineErrors.DSCEngine__AmountMustBeMoreThanZero.selector
+        );
         dscEngine.burnDsc(0);
         vm.stopPrank();
     }
@@ -441,7 +448,7 @@ contract DSCEngineTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                DSCEngine.DSCEngine__HealthFactorIsSafe.selector,
+                DSCEngineErrors.DSCEngine__HealthFactorIsSafe.selector,
                 dscEngine.getHealthFactor(user)
             )
         );
@@ -555,9 +562,9 @@ contract DSCEngineTest is Test {
         assertApproxEqAbs(tokenAmount, uint256(amount), 1);
     }
 
-    function testFuzz_DepositCollateral_IncreasesUserBalance(uint96 amount)
-        public
-    {
+    function testFuzz_DepositCollateral_IncreasesUserBalance(
+        uint96 amount
+    ) public {
         vm.assume(amount > 0);
         vm.assume(uint256(amount) <= STARTING_BALANCE_100ether);
 
