@@ -15,6 +15,12 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "contracts:anvil": "cd foundry && anvil",
+    "contracts:deploy": "cd foundry && forge script script/DeployDSC.s.sol:DeployDSC --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast",
+    "contracts:sync": "node scripts/sync-contract-address.js",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:wagmi": "cd frontend && npm run wagmi:generate",
+    "contracts:deploy:all": "npm run contracts:deploy && npm run contracts:sync && npm run frontend:wagmi"
   }
 }
