@@ -2,15 +2,19 @@
 
 import {
   Activity,
+  ArrowRight,
+  Calculator,
   CircleAlert,
   Database,
   Gauge,
   Info,
+  Scale,
   ShieldAlert,
   ShieldCheck,
   TrendingDown,
   Wallet,
 } from "lucide-react";
+import { BlockMath, InlineMath } from "react-katex";
 import { formatEther } from "viem";
 
 import { useHealthFactor } from "@/hooks/use-health-factor";
@@ -128,6 +132,32 @@ function RiskRule({ icon, title, description }: RiskRuleProps) {
   );
 }
 
+type FlowStepProps = {
+  step: string;
+  title: string;
+  formula: string;
+  description: string;
+};
+
+function FlowStep({ step, title, formula, description }: FlowStepProps) {
+  return (
+    <div className="rounded-xl border bg-muted/20 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+          {step}
+        </div>
+        <p className="text-sm font-medium">{title}</p>
+      </div>
+
+      <div className="mb-3 rounded-lg border bg-background/70 px-3 py-2 text-center">
+        <InlineMath math={formula} />
+      </div>
+
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
 export function HealthFactor() {
   const { wallet, risk, status } = useHealthFactor();
 
@@ -209,6 +239,210 @@ export function HealthFactor() {
 
         <div className="space-y-3">
           <div className="flex items-center gap-2">
+            <Calculator className="size-4" />
+            <h3 className="text-sm font-medium">Health Factor Model</h3>
+          </div>
+
+          <div className="grid gap-3 lg:grid-cols-[1fr_1.1fr]">
+            <div className="rounded-xl border bg-muted/20 p-5">
+              <div className="flex items-start gap-3">
+                <div className="rounded-lg border bg-background p-2">
+                  <Scale className="size-5 text-muted-foreground" />
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">
+                    Health Factor is the protocol&apos;s core solvency metric.
+                  </p>
+
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    It measures whether a user&apos;s liquidation-adjusted
+                    collateral value is sufficient to cover their minted DSC
+                    debt. A higher value means the account has more safety
+                    margin. Once the value falls below{" "}
+                    <InlineMath math={"1.0"} />, the position becomes eligible
+                    for liquidation.
+                  </p>
+
+                  <div className="rounded-lg border bg-background/70 px-3 py-2 text-sm text-muted-foreground">
+                    In this demo, the liquidation threshold is{" "}
+                    <InlineMath math={"50\\%"} />, meaning only half of the
+                    collateral value is treated as safe borrowing capacity.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border bg-linear-to-br from-muted/50 via-background to-background p-5 shadow-sm">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Formal Definition
+                  </p>
+                  <p className="mt-1 text-sm font-medium">
+                    Liquidation-adjusted collateral ratio
+                  </p>
+                </div>
+
+                <Badge variant="outline">DSCEngine</Badge>
+              </div>
+
+              <div className="rounded-xl border bg-background/80 px-4 py-6 shadow-sm">
+                <BlockMath
+                  math={
+                    "\\mathrm{HF}(u)=\\frac{V_{c}(u)\\cdot \\lambda}{D_{dsc}(u)}"
+                  }
+                />
+
+                <Separator className="my-4" />
+
+                <div className="grid gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      <InlineMath math={"V_c(u)"} /> = collateral value of user{" "}
+                      <InlineMath math={"u"} />
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      <InlineMath math={"\\lambda"} /> = liquidation threshold
+                    </span>
+                    <Badge variant="secondary">50%</Badge>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span>
+                      <InlineMath math={"D_{dsc}(u)"} /> = total DSC debt
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border bg-muted/20 p-5">
+            <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Expanded Protocol Formula
+            </p>
+
+            <div className="rounded-xl border bg-background/80 px-4 py-6 shadow-sm">
+              <BlockMath
+                math={
+                  "\\mathrm{HF}(u)=\\frac{\\left(\\sum_{i=1}^{n} q_i(u)\\cdot p_i\\right)\\cdot \\lambda}{D_{dsc}(u)}"
+                }
+              />
+
+              <div className="mt-4 grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="font-medium text-foreground">
+                    <InlineMath math={"q_i(u)"} />
+                  </p>
+                  <p className="mt-1">
+                    Amount of collateral token <InlineMath math={"i"} />{" "}
+                    deposited by the user.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="font-medium text-foreground">
+                    <InlineMath math={"p_i"} />
+                  </p>
+                  <p className="mt-1">
+                    USD oracle price of collateral token{" "}
+                    <InlineMath math={"i"} />.
+                  </p>
+                </div>
+
+                <div className="rounded-lg border bg-muted/20 p-3">
+                  <p className="font-medium text-foreground">
+                    <InlineMath math={"D_{dsc}(u)"} />
+                  </p>
+                  <p className="mt-1">
+                    Total DSC minted by the user and not yet repaid.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Activity className="size-4" />
+            <h3 className="text-sm font-medium">Calculation Flow</h3>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <FlowStep
+              step="1"
+              title="Collateral Valuation"
+              formula={"V_c(u)=\\sum q_i(u)\\cdot p_i"}
+              description="DSCEngine converts deposited WETH and WBTC into USD value using price feeds."
+            />
+
+            <FlowStep
+              step="2"
+              title="Risk Adjustment"
+              formula={"V_{adj}(u)=V_c(u)\\cdot \\lambda"}
+              description="The collateral value is multiplied by the liquidation threshold to obtain safe borrowing capacity."
+            />
+
+            <FlowStep
+              step="3"
+              title="Debt Normalization"
+              formula={"\\mathrm{HF}(u)=V_{adj}(u)/D_{dsc}(u)"}
+              description="The adjusted collateral value is divided by minted DSC debt to produce the final health factor."
+            />
+          </div>
+
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-center">
+              <div className="rounded-lg border bg-background px-4 py-3 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Collateral Value
+                </p>
+                <p className="mt-1 font-semibold">
+                  {formatUsdValue(risk.collateralValueInUsd)}
+                </p>
+              </div>
+
+              <ArrowRight className="hidden size-4 text-muted-foreground md:block" />
+
+              <div className="rounded-lg border bg-background px-4 py-3 text-center">
+                <p className="text-xs text-muted-foreground">
+                  Liquidation Threshold
+                </p>
+                <p className="mt-1 font-semibold">
+                  <InlineMath math={"\\times\\ 50\\%"} />
+                </p>
+              </div>
+
+              <ArrowRight className="hidden size-4 text-muted-foreground md:block" />
+
+              <div className="rounded-lg border bg-background px-4 py-3 text-center">
+                <p className="text-xs text-muted-foreground">DSC Debt</p>
+                <p className="mt-1 font-semibold">
+                  {formatDscSupply(risk.totalDscMinted)}
+                </p>
+              </div>
+
+              <ArrowRight className="hidden size-4 text-muted-foreground md:block" />
+
+              <div className="rounded-lg border bg-background px-4 py-3 text-center">
+                <p className="text-xs text-muted-foreground">Health Factor</p>
+                <p className="mt-1 font-semibold">
+                  {formatHealthFactor(risk.healthFactor)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
             {healthFactorState.isSafe ? (
               <ShieldCheck className="size-4" />
             ) : (
@@ -282,8 +516,8 @@ export function HealthFactor() {
           <Info className="mt-0.5 size-4 shrink-0" />
           <p>
             This panel reads risk data directly from DSCEngine. In this demo, a
-            health factor below 1.00 means the account can be used in the
-            liquidation flow.
+            health factor below <InlineMath math={"1.0"} /> means the account
+            can be used in the liquidation flow.
           </p>
         </div>
       </CardContent>
