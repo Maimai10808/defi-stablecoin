@@ -28,7 +28,6 @@ import { isAvailableAddress, toSafeAddress } from "@/lib/format";
 import type {
   DepositMintFormState,
   DepositMintTokenItem,
-  DepositMintTokenSymbol,
 } from "@/types/deposit-mint";
 
 const DEFAULT_FORM: DepositMintFormState = {

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 
 import { useDepositMint } from "@/hooks/use-deposit-mint";
-import { formatTokenAmount, formatDscSupply, shortAddress } from "@/lib/format";
+import { formatTokenAmount, shortAddress } from "@/lib/format";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
