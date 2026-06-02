@@ -38,20 +38,32 @@ function findContractAddress(contractName) {
 const dscEngineAddress = findContractAddress("DSCEngine");
 const dscAddress = findContractAddress("DecentralizedStableCoin");
 
-// 本地链上这些一般是 HelperConfig 部署出来的 Mock
-const wethAddress = findContractAddress("ERC20Mock");
+// HelperConfig 在本地链会部署两个 ERC20Mock：
+// 第一个通常是 WETH，第二个通常是 WBTC。
+const erc20Mocks = transactions.filter(
+  (item) => item.contractName === "ERC20Mock",
+);
+
+const wethAddress = erc20Mocks[0]?.contractAddress || null;
+const wbtcAddress = erc20Mocks[1]?.contractAddress || null;
+
+// HelperConfig 在本地链会部署两个 MockV3Aggregator：
+// 第一个通常是 ETH/USD Price Feed，第二个通常是 BTC/USD Price Feed。
 const mockV3Aggregators = transactions.filter(
   (item) => item.contractName === "MockV3Aggregator",
 );
 
 const ethUsdPriceFeedAddress = mockV3Aggregators[0]?.contractAddress || null;
-
 const btcUsdPriceFeedAddress = mockV3Aggregators[1]?.contractAddress || null;
 
 const missingContracts = [];
 
 if (!dscEngineAddress) missingContracts.push("DSCEngine");
 if (!dscAddress) missingContracts.push("DecentralizedStableCoin");
+if (!wethAddress) missingContracts.push("WETH ERC20Mock");
+if (!wbtcAddress) missingContracts.push("WBTC ERC20Mock");
+if (!ethUsdPriceFeedAddress) missingContracts.push("ETH/USD MockV3Aggregator");
+if (!btcUsdPriceFeedAddress) missingContracts.push("BTC/USD MockV3Aggregator");
 
 if (missingContracts.length > 0) {
   console.log(
@@ -77,10 +89,10 @@ export const CHAIN_ID = ${CHAIN_ID} as const;
 export const CONTRACT_ADDRESSES = {
   dscEngine: "${dscEngineAddress}",
   decentralizedStableCoin: "${dscAddress}",
-  weth: ${wethAddress ? `"${wethAddress}"` : "null"},
-  wbtc: null,
-  ethUsdPriceFeed: ${ethUsdPriceFeedAddress ? `"${ethUsdPriceFeedAddress}"` : "null"},
-  btcUsdPriceFeed: ${btcUsdPriceFeedAddress ? `"${btcUsdPriceFeedAddress}"` : "null"},
+  weth: "${wethAddress}",
+  wbtc: "${wbtcAddress}",
+  ethUsdPriceFeed: "${ethUsdPriceFeedAddress}",
+  btcUsdPriceFeed: "${btcUsdPriceFeedAddress}",
 } as const;
 
 export const DSC_ENGINE_ADDRESS = CONTRACT_ADDRESSES.dscEngine;
@@ -104,7 +116,7 @@ console.log({
   dscEngine: dscEngineAddress,
   decentralizedStableCoin: dscAddress,
   weth: wethAddress,
-  wbtc: null,
+  wbtc: wbtcAddress,
   ethUsdPriceFeed: ethUsdPriceFeedAddress,
   btcUsdPriceFeed: btcUsdPriceFeedAddress,
 });

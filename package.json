@@ -17,10 +17,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "contracts:anvil": "cd foundry && anvil",
-    "contracts:deploy": "cd foundry && forge script script/DeployDSC.s.sol:DeployDSC --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast",
+    "contracts:build": "cd foundry && forge build",
+    "contracts:deploy": "cd foundry && source .env && forge script script/DeployDSC.s.sol:DeployDSC --rpc-url http://127.0.0.1:8545 --private-key $PRIVATE_KEY --broadcast",
     "contracts:sync": "node scripts/sync-contract-address.js",
+    "contracts:abi": "node scripts/sync-contract-abi.js",
     "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
     "frontend:wagmi": "cd frontend && npm run wagmi:generate",
-    "contracts:deploy:all": "npm run contracts:deploy && npm run contracts:sync && npm run frontend:wagmi"
+    "contracts:deploy:all": "npm run contracts:build && npm run contracts:deploy && npm run contracts:sync && npm run contracts:abi && npm run frontend:wagmi"
   }
 }
