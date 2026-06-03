@@ -37,8 +37,10 @@ export function VersionSwitcher({
                 <GalleryVerticalEndIcon className="size-4" />
               </div>
               <div className="flex flex-col gap-0.5 leading-none">
-                <span className="font-medium">Documentation</span>
-                <span className="">v{selectedVersion}</span>
+                <span className="font-semibold">DSC Material</span>
+                <span className="text-xs text-sidebar-foreground/65">
+                  {selectedVersion}
+                </span>
               </div>
               <ChevronsUpDownIcon className="ml-auto" />
             </SidebarMenuButton>

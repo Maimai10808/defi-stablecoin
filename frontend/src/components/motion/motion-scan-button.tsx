@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type HTMLMotionProps } from "framer-motion";
 
-export type MotionScanButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode };
+export type MotionScanButtonProps = HTMLMotionProps<"button"> & {
+  children: React.ReactNode;
+};
 
 export function MotionScanButton({ children, className, disabled, ...props }: MotionScanButtonProps) {
   const reduce = useReducedMotion();

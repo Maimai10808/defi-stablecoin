@@ -20,7 +20,12 @@ function RotatingProtocolGraph({ active = true }: { active?: boolean }) {
       <Motion3DNode position={[2.7, 0, 0]} active={active} />
       {[[-2.7,0,0,-0.9,0.9,0],[-0.9,0.9,0,0.9,0.9,0],[0.9,0.9,0,2.7,0,0]].map((line,index)=>(
         <line key={index}>
-          <bufferGeometry><bufferAttribute attach="attributes-position" count={2} array={new Float32Array(line)} itemSize={3} /></bufferGeometry>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[new Float32Array(line), 3]}
+            />
+          </bufferGeometry>
           <lineBasicMaterial color={active ? "#93c5fd" : "#64748b"} transparent opacity={0.55} />
         </line>
       ))}

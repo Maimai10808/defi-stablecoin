@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 export function useVirtualPrice(initialPrice = 1000) {
   const [price, setPrice] = useState(initialPrice);
   const [history, setHistory] = useState<{ time: number; price: number }[]>([
-    { time: Date.now(), price: initialPrice },
+    { time: 0, price: initialPrice },
   ]);
 
   useEffect(() => {

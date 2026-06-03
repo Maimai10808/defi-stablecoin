@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Activity, ShieldCheck } from "lucide-react";
 
 import { ActivityLog } from "@/components/activity-log";
 import { AppSidebar, type DashboardView } from "@/components/app-sidebar";
@@ -28,6 +29,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 const viewTitles: Record<DashboardView, string> = {
   "project-guide": "Project Guide",
@@ -128,7 +130,7 @@ export default function AppShell() {
       <AppSidebar activeView={activeView} onViewChange={setActiveView} />
 
       <SidebarInset>
-        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+        <header className="material-paper sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-border/70 bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/85">
           <SidebarTrigger className="-ml-1" />
 
           <Separator
@@ -145,19 +147,33 @@ export default function AppShell() {
           </Breadcrumb>
         </header>
 
-        <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-          <section className="space-y-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
+        <main className="flex flex-1 flex-col gap-6 p-4 pb-24 md:p-6 md:pb-24">
+          <section className="rounded-lg border border-border/60 bg-card p-5 shadow-[var(--material-elevation-1)] md:p-6">
+            <div className="mb-3 flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Activity className="size-5" />
+            </div>
+
+            <h1 className="text-2xl font-semibold tracking-normal text-foreground md:text-3xl">
               {viewTitles[activeView]}
             </h1>
 
-            <p className="max-w-3xl text-sm text-muted-foreground">
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
               {viewDescriptions[activeView]}
             </p>
           </section>
 
           {renderActiveView()}
         </main>
+
+        <Button
+          type="button"
+          size="icon-lg"
+          className="material-fab fixed right-5 bottom-5 z-20 hidden size-14 rounded-full sm:inline-flex md:right-7 md:bottom-7"
+          onClick={() => setActiveView("protocol-status")}
+          aria-label="Open protocol status"
+        >
+          <ShieldCheck className="size-6" />
+        </Button>
       </SidebarInset>
     </SidebarProvider>
   );
