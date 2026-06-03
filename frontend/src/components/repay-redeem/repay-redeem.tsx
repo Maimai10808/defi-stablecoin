@@ -13,7 +13,7 @@ import {
 
 import { VirtualPriceChart } from "@/components/virtual-price-chart";
 import { useRepayRedeem } from "@/hooks/use-repay-redeem";
-import { formatDscSupply, formatTokenAmount, shortAddress } from "@/lib/format";
+import { formatTokenAmount, shortAddress } from "@/lib/format";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionErrorShake,
+  MotionNumberText,
+  MotionPressable,
+  MotionValueText,
+} from "@/components/motion";
 
 function formatUsd(value: number) {
   return `$${value.toLocaleString(undefined, {
@@ -43,7 +50,8 @@ export function RepayRedeem() {
   const redeemValueUsd = collateralAmountToRedeem * virtualPrice;
 
   return (
-    <Card id="repay-redeem" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="repay-redeem" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -69,13 +77,15 @@ export function RepayRedeem() {
           </Badge>
         </div>
 
-        {status.hasReadError ? (
+        <MotionErrorShake trigger={status.hasReadError}>
+          {status.hasReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Failed to read repay and redeem data. Please check whether Anvil is
             running, contracts are deployed, and your wallet is connected to the
             local network.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -97,25 +107,37 @@ export function RepayRedeem() {
         <div className="grid gap-3 md:grid-cols-4">
           <div className="rounded-xl border bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">DSC Wallet Balance</p>
-            <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatDscSupply(position.dscWalletBalance)}
-            </p>
+            <div className="mt-2 text-xl font-semibold tracking-tight">
+              <MotionValueText
+                value={position.dscWalletBalance}
+                suffix=" DSC"
+                decimals={2}
+              />
+            </div>
           </div>
 
           <div className="rounded-xl border bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">DSC Minted Debt</p>
-            <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatDscSupply(position.dscMintedAmount)}
-            </p>
+            <div className="mt-2 text-xl font-semibold tracking-tight">
+              <MotionValueText
+                value={position.dscMintedAmount}
+                suffix=" DSC"
+                decimals={2}
+              />
+            </div>
           </div>
 
           <div className="rounded-xl border bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">
               DSCEngine DSC Allowance
             </p>
-            <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatDscSupply(position.dscEngineAllowance)}
-            </p>
+            <div className="mt-2 text-xl font-semibold tracking-tight">
+              <MotionValueText
+                value={position.dscEngineAllowance}
+                suffix=" DSC"
+                decimals={2}
+              />
+            </div>
           </div>
 
           <div className="rounded-xl border bg-muted/20 p-4">
@@ -123,7 +145,7 @@ export function RepayRedeem() {
               Preview Redeem Value
             </p>
             <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatUsd(redeemValueUsd)}
+              <MotionNumberText value={redeemValueUsd} prefix="$" decimals={2} />
             </p>
           </div>
         </div>
@@ -149,25 +171,29 @@ export function RepayRedeem() {
 
               <div className="grid gap-2 sm:grid-cols-2">
                 {tokens.map((token) => (
-                  <Button
+                  <MotionPressable
                     key={token.symbol}
-                    type="button"
-                    variant={
-                      form.collateralToken === token.symbol
-                        ? "default"
-                        : "outline"
-                    }
-                    className="justify-start"
                     disabled={!wallet.hasWallet || !token.isAvailable}
-                    onClick={() =>
-                      actions.updateField("collateralToken", token.symbol)
-                    }
                   >
-                    <span>{token.symbol}</span>
-                    <span className="ml-auto text-xs opacity-70">
-                      {token.isAvailable ? "Available" : "Missing"}
-                    </span>
-                  </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        form.collateralToken === token.symbol
+                          ? "default"
+                          : "outline"
+                      }
+                      className="w-full justify-start"
+                      disabled={!wallet.hasWallet || !token.isAvailable}
+                      onClick={() =>
+                        actions.updateField("collateralToken", token.symbol)
+                      }
+                    >
+                      <span>{token.symbol}</span>
+                      <span className="ml-auto text-xs opacity-70">
+                        {token.isAvailable ? "Available" : "Missing"}
+                      </span>
+                    </Button>
+                  </MotionPressable>
                 ))}
               </div>
             </div>
@@ -205,25 +231,33 @@ export function RepayRedeem() {
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant={status.needsApproval ? "default" : "outline"}
+              <MotionPressable
                 disabled={
                   !wallet.hasWallet ||
                   status.isApproving ||
                   status.isRedeeming ||
                   !status.needsApproval
                 }
-                onClick={actions.approveDscForEngine}
               >
-                {status.isApproving ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : null}
-                Approve DSC
-              </Button>
+                <Button
+                  type="button"
+                  variant={status.needsApproval ? "default" : "outline"}
+                  disabled={
+                    !wallet.hasWallet ||
+                    status.isApproving ||
+                    status.isRedeeming ||
+                    !status.needsApproval
+                  }
+                  onClick={actions.approveDscForEngine}
+                >
+                  {status.isApproving ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : null}
+                  Approve DSC
+                </Button>
+              </MotionPressable>
 
-              <Button
-                type="button"
+              <MotionPressable
                 disabled={
                   !wallet.hasWallet ||
                   !selectedToken?.isAvailable ||
@@ -231,13 +265,24 @@ export function RepayRedeem() {
                   status.isRedeeming ||
                   status.needsApproval
                 }
-                onClick={actions.repayAndRedeem}
               >
-                {status.isRedeeming ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : null}
-                Repay & Redeem
-              </Button>
+                <Button
+                  type="button"
+                  disabled={
+                    !wallet.hasWallet ||
+                    !selectedToken?.isAvailable ||
+                    status.isApproving ||
+                    status.isRedeeming ||
+                    status.needsApproval
+                  }
+                  onClick={actions.repayAndRedeem}
+                >
+                  {status.isRedeeming ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : null}
+                  Repay & Redeem
+                </Button>
+              </MotionPressable>
             </div>
 
             {status.needsApproval ? (
@@ -333,6 +378,7 @@ export function RepayRedeem() {
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

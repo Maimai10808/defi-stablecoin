@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   CircleAlert,
   Coins,
@@ -13,10 +14,8 @@ import { formatEther } from "viem";
 import { useMyPosition } from "@/hooks/use-my-position";
 
 import {
-  formatDscSupply,
   formatHealthFactor,
   formatTokenAmount,
-  formatUsdValue,
   shortAddress,
 } from "@/lib/format";
 
@@ -30,6 +29,13 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionHealthFactor,
+  MotionLiquidProgress,
+  MotionRevealList,
+  MotionValueText,
+} from "@/components/motion";
 
 function getHealthFactorState(value?: bigint) {
   if (value === undefined) {
@@ -81,7 +87,7 @@ function getHealthFactorState(value?: bigint) {
 
 type MetricCardProps = {
   label: string;
-  value: string;
+  value: ReactNode;
   description: string;
 };
 
@@ -89,7 +95,7 @@ function MetricCard({ label, value, description }: MetricCardProps) {
   return (
     <div className="rounded-xl border bg-muted/20 p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+      <div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
     </div>
   );
@@ -101,7 +107,8 @@ export function MyPosition() {
   const healthFactorState = getHealthFactorState(position.healthFactor);
 
   return (
-    <Card id="my-position" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="my-position" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -155,25 +162,45 @@ export function MyPosition() {
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             label="Collateral Value"
-            value={formatUsdValue(position.collateralValueInUsd)}
+            value={
+              <MotionValueText
+                value={position.collateralValueInUsd}
+                prefix="$"
+                decimals={2}
+              />
+            }
             description="Total deposited collateral value in USD."
           />
 
           <MetricCard
             label="DSC Minted"
-            value={formatDscSupply(position.totalDscMinted)}
+            value={
+              <MotionValueText
+                value={position.totalDscMinted}
+                suffix=" DSC"
+                decimals={2}
+              />
+            }
             description="Total debt minted by this wallet."
           />
 
           <MetricCard
             label="Wallet DSC Balance"
-            value={formatDscSupply(position.dscWalletBalance)}
+            value={
+              <MotionValueText
+                value={position.dscWalletBalance}
+                suffix=" DSC"
+                decimals={2}
+              />
+            }
             description="DSC currently held in your wallet."
           />
 
           <MetricCard
             label="Health Factor"
-            value={formatHealthFactor(position.healthFactor)}
+            value={
+              <MotionValueText value={position.healthFactor} decimals={2} />
+            }
             description="Minimum safe value is 1.00."
           />
         </div>
@@ -190,7 +217,14 @@ export function MyPosition() {
             <h3 className="text-sm font-medium">Risk Overview</h3>
           </div>
 
-          <div className="rounded-xl border bg-muted/20 p-4">
+          <MotionHealthFactor
+            value={
+              position.healthFactor === undefined
+                ? undefined
+                : Number(formatEther(position.healthFactor))
+            }
+          >
+            <div className="rounded-xl border bg-muted/20 p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium">{healthFactorState.label}</p>
@@ -207,7 +241,13 @@ export function MyPosition() {
             </div>
 
             <Progress value={healthFactorState.progress} className="mt-4" />
-          </div>
+            <MotionLiquidProgress
+              value={healthFactorState.progress}
+              label="Collateral Safety Buffer"
+              className="mt-4"
+            />
+            </div>
+          </MotionHealthFactor>
         </div>
 
         <Separator />
@@ -218,7 +258,7 @@ export function MyPosition() {
             <h3 className="text-sm font-medium">Collateral Tokens</h3>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
+          <MotionRevealList className="grid gap-3 md:grid-cols-2">
             {position.collateralPositions.map((item) => (
               <div
                 key={item.symbol}
@@ -272,7 +312,7 @@ export function MyPosition() {
                 </div>
               </div>
             ))}
-          </div>
+          </MotionRevealList>
         </div>
 
         <div className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
@@ -284,6 +324,7 @@ export function MyPosition() {
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

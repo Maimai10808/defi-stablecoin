@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   Activity,
   ArrowRight,
@@ -36,6 +37,14 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionErrorShake,
+  MotionHealthFactor,
+  MotionLiquidProgress,
+  MotionRevealList,
+  MotionValueText,
+} from "@/components/motion";
 
 function getHealthFactorState(value?: bigint): HealthFactorState {
   if (value === undefined) {
@@ -100,7 +109,7 @@ function getHealthFactorState(value?: bigint): HealthFactorState {
 
 type RiskMetricProps = {
   label: string;
-  value: string;
+  value: ReactNode;
   description: string;
 };
 
@@ -108,7 +117,7 @@ function RiskMetric({ label, value, description }: RiskMetricProps) {
   return (
     <div className="rounded-xl border bg-muted/20 p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+      <div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
     </div>
   );
@@ -164,7 +173,8 @@ export function HealthFactor() {
   const healthFactorState = getHealthFactorState(risk.healthFactor);
 
   return (
-    <Card id="health-factor" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="health-factor" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -190,13 +200,15 @@ export function HealthFactor() {
           </Badge>
         </div>
 
-        {status.hasReadError ? (
+        <MotionErrorShake trigger={status.hasReadError}>
+          {status.hasReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Failed to read health factor data. Please check whether Anvil is
             running, contracts are deployed, and your wallet is connected to the
             local network.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -218,19 +230,31 @@ export function HealthFactor() {
         <div className="grid gap-3 md:grid-cols-3">
           <RiskMetric
             label="Health Factor"
-            value={formatHealthFactor(risk.healthFactor)}
+            value={<MotionValueText value={risk.healthFactor} decimals={2} />}
             description="A value above 1.00 means the position is above the liquidation threshold."
           />
 
           <RiskMetric
             label="Collateral Value"
-            value={formatUsdValue(risk.collateralValueInUsd)}
+            value={
+              <MotionValueText
+                value={risk.collateralValueInUsd}
+                prefix="$"
+                decimals={2}
+              />
+            }
             description="Total deposited collateral value calculated by DSCEngine."
           />
 
           <RiskMetric
             label="Minted DSC Debt"
-            value={formatDscSupply(risk.totalDscMinted)}
+            value={
+              <MotionValueText
+                value={risk.totalDscMinted}
+                suffix=" DSC"
+                decimals={2}
+              />
+            }
             description="Total DSC minted by this wallet."
           />
         </div>
@@ -451,7 +475,14 @@ export function HealthFactor() {
             <h3 className="text-sm font-medium">Risk Level</h3>
           </div>
 
-          <div className="rounded-xl border bg-muted/20 p-4">
+          <MotionHealthFactor
+            value={
+              risk.healthFactor === undefined
+                ? undefined
+                : Number(formatEther(risk.healthFactor))
+            }
+          >
+            <div className="rounded-xl border bg-muted/20 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-lg font-semibold">
@@ -464,13 +495,18 @@ export function HealthFactor() {
 
               <div className="rounded-lg border bg-background/60 px-3 py-2 text-right">
                 <p className="text-xs text-muted-foreground">Current HF</p>
-                <p className="text-lg font-semibold">
-                  {formatHealthFactor(risk.healthFactor)}
-                </p>
+                <div className="text-lg font-semibold">
+                  <MotionValueText value={risk.healthFactor} decimals={2} />
+                </div>
               </div>
             </div>
 
             <Progress value={healthFactorState.progress} className="mt-4" />
+            <MotionLiquidProgress
+              value={healthFactorState.progress}
+              label="Liquidation Distance"
+              className="mt-4"
+            />
 
             <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
               <span>Liquidatable &lt; 1.00</span>
@@ -478,7 +514,8 @@ export function HealthFactor() {
               <span>Moderate 1.20+</span>
               <span>Healthy 2.00+</span>
             </div>
-          </div>
+            </div>
+          </MotionHealthFactor>
         </div>
 
         <Separator />
@@ -491,7 +528,7 @@ export function HealthFactor() {
             </h3>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
+          <MotionRevealList className="grid gap-3 md:grid-cols-3">
             <RiskRule
               icon={<TrendingDown className="size-4" />}
               title="Repay DSC"
@@ -509,7 +546,7 @@ export function HealthFactor() {
               title="Watch Price Changes"
               description="If collateral prices fall, your health factor can drop even without new actions."
             />
-          </div>
+          </MotionRevealList>
         </div>
 
         <div className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
@@ -521,6 +558,7 @@ export function HealthFactor() {
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

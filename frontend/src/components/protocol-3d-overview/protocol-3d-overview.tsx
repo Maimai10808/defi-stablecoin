@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import type { ReactNode } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import {
   Activity,
@@ -19,9 +20,7 @@ import * as THREE from "three";
 
 import { useMyPosition } from "@/hooks/use-my-position";
 import {
-  formatDscSupply,
   formatHealthFactor,
-  formatUsdValue,
   shortAddress,
 } from "@/lib/format";
 
@@ -34,6 +33,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Motion3DScene,
+  MotionCard,
+  MotionErrorShake,
+  MotionProtocolBeam,
+  MotionRevealList,
+  MotionValueText,
+} from "@/components/motion";
 
 type ProtocolSceneProps = {
   hasWallet: boolean;
@@ -365,7 +372,7 @@ function ProtocolScene({
 type MetricBlockProps = {
   icon: React.ReactNode;
   label: string;
-  value: string;
+  value: ReactNode;
   description: string;
 };
 
@@ -377,7 +384,7 @@ function MetricBlock({ icon, label, value, description }: MetricBlockProps) {
         {label}
       </div>
 
-      <p className="text-xl font-semibold tracking-tight">{value}</p>
+      <div className="text-xl font-semibold tracking-tight">{value}</div>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
     </div>
   );
@@ -439,7 +446,8 @@ export function Protocol3DOverview() {
   const isRisky = isRiskyHealthFactor(position.healthFactor);
 
   return (
-    <Card id="protocol-3d-overview" className="scroll-mt-20 overflow-hidden">
+    <MotionCard>
+      <Card id="protocol-3d-overview" className="scroll-mt-20 overflow-hidden">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -467,12 +475,14 @@ export function Protocol3DOverview() {
           </Badge>
         </div>
 
-        {status.hasReadError ? (
+        <MotionErrorShake trigger={status.hasReadError}>
+          {status.hasReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Failed to read protocol position data. Please check whether Anvil is
             running, contracts are deployed, and your wallet is connected.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -536,29 +546,48 @@ export function Protocol3DOverview() {
             <MetricBlock
               icon={<Landmark className="size-3.5" />}
               label="Collateral Value"
-              value={formatUsdValue(position.collateralValueInUsd)}
+              value={
+                <MotionValueText
+                  value={position.collateralValueInUsd}
+                  prefix="$"
+                  decimals={2}
+                />
+              }
               description="Total deposited collateral value calculated by DSCEngine."
             />
 
             <MetricBlock
               icon={<Coins className="size-3.5" />}
               label="Minted DSC"
-              value={formatDscSupply(position.totalDscMinted)}
+              value={
+                <MotionValueText
+                  value={position.totalDscMinted}
+                  suffix=" DSC"
+                  decimals={2}
+                />
+              }
               description="Stablecoin debt minted against the collateral position."
             />
 
             <MetricBlock
               icon={<Gauge className="size-3.5" />}
               label="Health Factor"
-              value={formatHealthFactor(position.healthFactor)}
+              value={<MotionValueText value={position.healthFactor} decimals={2} />}
               description="Core liquidation safety indicator of the account."
             />
           </div>
         </div>
 
+        <MotionProtocolBeam
+          labels={["Wallet", "Vault", "Engine", "Risk"]}
+          active={hasPosition}
+        />
+
+        <Motion3DScene active={hasPosition} />
+
         <Separator />
 
-        <div className="grid gap-3 md:grid-cols-4">
+        <MotionRevealList className="grid gap-3 md:grid-cols-4">
           <FlowItem
             icon={<Wallet className="size-4" />}
             title="1. Wallet Access"
@@ -582,7 +611,7 @@ export function Protocol3DOverview() {
             title="4. Risk Shield"
             description="Health Factor continuously determines whether the position is safe, risky, or liquidatable."
           />
-        </div>
+        </MotionRevealList>
 
         <div className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
           <Activity className="mt-0.5 size-4 shrink-0" />
@@ -593,6 +622,7 @@ export function Protocol3DOverview() {
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { MotionSidebarIndicator } from "@/components/motion";
 
 export type DashboardView =
   | "project-guide"
@@ -151,7 +152,12 @@ export function AppSidebar({
                       isActive={activeView === item.value}
                       onClick={() => onViewChange(item.value)}
                     >
-                      {item.title}
+                      <MotionSidebarIndicator
+                        active={activeView === item.value}
+                        className="w-full"
+                      >
+                        {item.title}
+                      </MotionSidebarIndicator>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

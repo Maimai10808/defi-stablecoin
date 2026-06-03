@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { MotionCard, MotionRevealList } from "@/components/motion";
 
 const features = [
   {
@@ -59,7 +60,8 @@ const features = [
 
 export function FeatureMap() {
   return (
-    <Card id="feature-map" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="feature-map" className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Map className="size-5" />
@@ -71,7 +73,7 @@ export function FeatureMap() {
       </CardHeader>
 
       <CardContent>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <MotionRevealList className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {features.map((feature) => {
             const Icon = feature.icon;
 
@@ -91,8 +93,9 @@ export function FeatureMap() {
               </div>
             );
           })}
-        </div>
+        </MotionRevealList>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

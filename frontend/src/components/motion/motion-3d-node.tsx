@@ -4,13 +4,14 @@ import * as React from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-export type Motion3DNodeProps = { position: [number, number, number]; radius?: number; active?: boolean; label?: string };
+export type Motion3DNodeProps = { position: [number, number, number]; radius?: number; active?: boolean; label?: string; reduceMotion?: boolean };
 
-export function Motion3DNode({ position, radius = 0.42, active = false }: Motion3DNodeProps) {
+export function Motion3DNode({ position, radius = 0.42, active = false, reduceMotion = false }: Motion3DNodeProps) {
   const groupRef = React.useRef<THREE.Group>(null);
   const meshRef = React.useRef<THREE.Mesh>(null);
   useFrame((state) => {
     if (!groupRef.current || !meshRef.current) return;
+    if (reduceMotion) return;
     const t = state.clock.elapsedTime;
     groupRef.current.position.y = position[1] + Math.sin(t * 1.2 + position[0]) * 0.08;
     meshRef.current.rotation.x += 0.004;

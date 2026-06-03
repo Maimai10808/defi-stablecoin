@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { MotionCard, MotionRevealList } from "@/components/motion";
 
 const guideItems = [
   {
@@ -33,7 +34,8 @@ const guideItems = [
 
 export function ProjectGuide() {
   return (
-    <Card id="project-guide" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="project-guide" className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="size-5" />
@@ -54,7 +56,7 @@ export function ProjectGuide() {
           </p>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
+        <MotionRevealList className="grid gap-3 md:grid-cols-3">
           {guideItems.map((item) => {
             const Icon = item.icon;
 
@@ -74,8 +76,9 @@ export function ProjectGuide() {
               </div>
             );
           })}
-        </div>
+        </MotionRevealList>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

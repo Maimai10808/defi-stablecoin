@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { MotionCard, MotionProtocolBeam, MotionRevealList } from "@/components/motion";
 
 const flowItems = [
   {
@@ -39,7 +40,8 @@ const flowItems = [
 
 export function HowItWorks() {
   return (
-    <Card id="how-it-works" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="how-it-works" className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Code2 className="size-5" />
@@ -51,7 +53,12 @@ export function HowItWorks() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="grid gap-3 lg:grid-cols-4">
+        <MotionProtocolBeam
+          labels={["Foundry", "Sync", "Wagmi", "Dashboard"]}
+          className="mb-4"
+        />
+
+        <MotionRevealList className="grid gap-3 lg:grid-cols-4">
           {flowItems.map((item, index) => {
             const Icon = item.icon;
 
@@ -80,8 +87,9 @@ export function HowItWorks() {
               </div>
             );
           })}
-        </div>
+        </MotionRevealList>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

@@ -23,12 +23,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionCopyButton,
+  MotionPressable,
+  MotionRevealList,
+} from "@/components/motion";
 
 export function Faucet() {
   const { wallet, tokens, amounts, status, actions } = useFaucet();
 
   return (
-    <Card id="faucet" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="faucet" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -85,7 +92,7 @@ export function Faucet() {
             <h3 className="text-sm font-medium">Mint Test Collateral</h3>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
+          <MotionRevealList className="grid gap-3 md:grid-cols-2">
             {tokens.map((token) => (
               <div
                 key={token.symbol}
@@ -124,32 +131,52 @@ export function Faucet() {
                       disabled={!wallet.hasWallet || !token.isAvailable}
                     />
 
-                    <Button
-                      type="button"
-                      onClick={() => actions.mintToken(token.symbol)}
+                    <MotionPressable
                       disabled={
                         !wallet.hasWallet ||
                         !token.isAvailable ||
                         status.isMinting
                       }
                     >
-                      {status.isMinting ? (
-                        <Loader2 className="mr-2 size-4 animate-spin" />
-                      ) : null}
-                      Mint
-                    </Button>
+                      <Button
+                        type="button"
+                        onClick={() => actions.mintToken(token.symbol)}
+                        disabled={
+                          !wallet.hasWallet ||
+                          !token.isAvailable ||
+                          status.isMinting
+                        }
+                      >
+                        {status.isMinting ? (
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : null}
+                        Mint
+                      </Button>
+                    </MotionPressable>
                   </div>
                 </div>
 
                 <div className="mt-4 rounded-lg border bg-background/50 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">Token Address</p>
-                  <p className="mt-1 font-mono text-xs">
-                    {shortAddress(token.tokenAddress)}
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">
+                        Token Address
+                      </p>
+                      <p className="mt-1 font-mono text-xs">
+                        {shortAddress(token.tokenAddress)}
+                      </p>
+                    </div>
+
+                    <MotionCopyButton
+                      value={token.tokenAddress}
+                      label="Copy"
+                      className="shrink-0 border-transparent px-2 py-2"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
-          </div>
+          </MotionRevealList>
         </div>
 
         <div className="flex flex-col gap-2 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
@@ -158,14 +185,17 @@ export function Faucet() {
             tokens are mock ERC20 contracts.
           </div>
 
-          <Button type="button" variant="outline" size="sm" asChild>
-            <a href="#deposit-mint">
-              Go to Deposit
-              <ExternalLink className="ml-2 size-4" />
-            </a>
-          </Button>
+          <MotionPressable>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href="#deposit-mint">
+                Go to Deposit
+                <ExternalLink className="ml-2 size-4" />
+              </a>
+            </Button>
+          </MotionPressable>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

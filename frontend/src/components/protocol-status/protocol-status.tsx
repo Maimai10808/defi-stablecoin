@@ -5,7 +5,6 @@ import {
   Activity,
   CheckCircle2,
   CircleAlert,
-  Copy,
   Database,
   ExternalLink,
   Link2,
@@ -15,11 +14,7 @@ import {
 } from "lucide-react";
 
 import { useProtocolStatus } from "@/hooks/use-protocol-status";
-import {
-  formatDscSupply,
-  formatHealthFactor,
-  shortAddress,
-} from "@/lib/format";
+import { shortAddress } from "@/lib/format";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +26,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { copyToClipboard } from "@/lib/clipboard";
+import {
+  MotionCard,
+  MotionCopyButton,
+  MotionErrorShake,
+  MotionOracleBeam,
+  MotionPressable,
+  MotionSuccessBurst,
+  MotionValueText,
+} from "@/components/motion";
 
 type StatusBadgeProps = {
   ready: boolean;
@@ -48,6 +51,7 @@ function StatusBadge({ ready, readyText, pendingText }: StatusBadgeProps) {
         <CircleAlert className="size-3" />
       )}
       {ready ? readyText : pendingText}
+      <MotionSuccessBurst show={ready} particleCount={8} />
     </Badge>
   );
 }
@@ -65,16 +69,11 @@ function AddressRow({ label, value }: AddressRowProps) {
         <p className="truncate font-mono text-sm">{shortAddress(value)}</p>
       </div>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="shrink-0"
-        onClick={() => copyToClipboard(label, value)}
-        disabled={!value}
-      >
-        <Copy className="size-4" />
-      </Button>
+      <MotionCopyButton
+        value={value}
+        label="Copy"
+        className="shrink-0 border-transparent px-2 py-2"
+      />
     </div>
   );
 }
@@ -98,7 +97,8 @@ export function ProtocolStatus() {
     useProtocolStatus();
 
   return (
-    <Card id="protocol-status" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="protocol-status" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -118,13 +118,15 @@ export function ProtocolStatus() {
           />
         </div>
 
-        {status.hasProtocolReadError ? (
+        <MotionErrorShake trigger={status.hasProtocolReadError}>
+          {status.hasProtocolReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Failed to read some protocol data. Please check whether Anvil is
             running, contracts are deployed, and wallet is connected to the
             correct local network.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -223,6 +225,12 @@ export function ProtocolStatus() {
               value={addresses.btcUsdPriceFeed}
             />
           </div>
+
+          <MotionOracleBeam
+            fromLabel="Mock Price Feeds"
+            toLabel="DSCEngine"
+            active={addresses.contractAddressesReady}
+          />
         </div>
 
         <Separator />
@@ -240,7 +248,12 @@ export function ProtocolStatus() {
             />
             <InfoItem
               label="Minimum Health Factor"
-              value={formatHealthFactor(protocolData.minHealthFactor.data)}
+              value={
+                <MotionValueText
+                  value={protocolData.minHealthFactor.data}
+                  decimals={2}
+                />
+              }
             />
             <InfoItem
               label="DSC Name"
@@ -252,7 +265,13 @@ export function ProtocolStatus() {
             />
             <InfoItem
               label="DSC Total Supply"
-              value={formatDscSupply(protocolData.totalSupply.data)}
+              value={
+                <MotionValueText
+                  value={protocolData.totalSupply.data}
+                  suffix=" DSC"
+                  decimals={2}
+                />
+              }
             />
             <InfoItem
               label="DSC Owner"
@@ -267,14 +286,17 @@ export function ProtocolStatus() {
             use.
           </div>
 
-          <Button type="button" variant="outline" size="sm" asChild>
-            <a href="#contract-addresses">
-              View Addresses
-              <ExternalLink className="ml-2 size-4" />
-            </a>
-          </Button>
+          <MotionPressable>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href="#contract-addresses">
+                View Addresses
+                <ExternalLink className="ml-2 size-4" />
+              </a>
+            </Button>
+          </MotionPressable>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

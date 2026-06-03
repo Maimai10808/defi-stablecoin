@@ -5,7 +5,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -13,6 +12,11 @@ import {
 import { Activity, TrendingUp } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import {
+  MotionNumberText,
+  MotionPriceSweep,
+  MotionSkeleton,
+} from "@/components/motion";
 
 type PricePoint = {
   time: string;
@@ -80,6 +84,30 @@ export function VirtualPriceChart({
   const [priceHistory, setPriceHistory] = React.useState<PricePoint[]>(() =>
     createInitialPriceHistory(tokenSymbol),
   );
+  const [chartReady, setChartReady] = React.useState(false);
+  const chartContainerRef = React.useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = React.useState(0);
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setChartReady(true);
+    }, 480);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    const element = chartContainerRef.current;
+    if (!element) return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      setChartWidth(Math.floor(entry.contentRect.width));
+    });
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
 
   React.useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -128,7 +156,7 @@ export function VirtualPriceChart({
   const isUp = priceChange >= 0;
 
   return (
-    <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
+    <MotionPriceSweep className="space-y-4 rounded-xl border bg-muted/20 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -153,7 +181,7 @@ export function VirtualPriceChart({
         <div className="rounded-lg border bg-background/50 px-3 py-2">
           <p className="text-xs text-muted-foreground">Current Unit Price</p>
           <p className="mt-1 text-lg font-semibold">
-            {formatUsdPrice(latestPrice)}
+            <MotionNumberText value={latestPrice} prefix="$" decimals={2} />
           </p>
         </div>
 
@@ -161,14 +189,21 @@ export function VirtualPriceChart({
           <p className="text-xs text-muted-foreground">Last Tick</p>
           <p className="mt-1 text-lg font-semibold">
             {isUp ? "+" : ""}
-            {priceChangePercent.toFixed(2)}%
+            <MotionNumberText
+              value={priceChangePercent}
+              suffix="%"
+              decimals={2}
+            />
           </p>
         </div>
       </div>
 
-      <div className="h-[220px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={priceHistory}>
+      <div
+        ref={chartContainerRef}
+        className="h-[220px] min-h-[220px] w-full min-w-0"
+      >
+        {chartReady && chartWidth > 0 ? (
+            <AreaChart data={priceHistory} width={chartWidth} height={220}>
             <defs>
               <linearGradient
                 id={`price-fill-${tokenSymbol}`}
@@ -221,14 +256,16 @@ export function VirtualPriceChart({
               dot={false}
               activeDot={{ r: 4 }}
             />
-          </AreaChart>
-        </ResponsiveContainer>
+            </AreaChart>
+        ) : (
+          <MotionSkeleton className="h-full w-full rounded-lg" />
+        )}
       </div>
 
       <p className="text-xs leading-5 text-muted-foreground">
         This virtual price does not rewrite contract state. It only estimates
         the USD value of the collateral amount you are about to deposit.
       </p>
-    </div>
+    </MotionPriceSweep>
   );
 }

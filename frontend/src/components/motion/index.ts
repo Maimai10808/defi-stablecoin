@@ -18,3 +18,4 @@ export * from "./motion-card-glow";
 export * from "./motion-reveal-list";
 export * from "./motion-protocol-beam";
 export * from "./motion-pressable";
+export * from "./motion-values";

@@ -23,6 +23,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionCopyButton,
+  MotionNumberText,
+  MotionPressable,
+  MotionStreamRow,
+} from "@/components/motion";
 
 function formatTime(timestamp: number) {
   return new Intl.DateTimeFormat(undefined, {
@@ -65,7 +72,7 @@ type ActivityLogRowProps = {
 
 function ActivityLogRow({ item, onRemove }: ActivityLogRowProps) {
   return (
-    <div className="rounded-xl border bg-muted/20 p-4">
+    <MotionStreamRow className="p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -93,28 +100,34 @@ function ActivityLogRow({ item, onRemove }: ActivityLogRowProps) {
           </div>
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0"
-          onClick={() => onRemove(item.id)}
-        >
-          <X className="size-4" />
-        </Button>
+        <MotionPressable>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={() => onRemove(item.id)}
+          >
+            <X className="size-4" />
+          </Button>
+        </MotionPressable>
       </div>
 
       {item.txHash ? (
-        <div className="mt-3">
-          <Button type="button" variant="outline" size="sm" asChild>
-            <a href={`#tx-${item.txHash}`}>
-              View Transaction
-              <ExternalLink className="ml-2 size-4" />
-            </a>
-          </Button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <MotionPressable>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href={`#tx-${item.txHash}`}>
+                View Transaction
+                <ExternalLink className="ml-2 size-4" />
+              </a>
+            </Button>
+          </MotionPressable>
+
+          <MotionCopyButton value={item.txHash} label="Copy Tx" />
         </div>
       ) : null}
-    </div>
+    </MotionStreamRow>
   );
 }
 
@@ -134,7 +147,8 @@ export function ActivityLog() {
   }
 
   return (
-    <Card id="activity-log" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="activity-log" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -150,7 +164,7 @@ export function ActivityLog() {
 
           <Badge variant={hasLogs ? "default" : "secondary"} className="gap-1">
             <Database className="size-3" />
-            {logs.length} Records
+            <MotionNumberText value={logs.length} decimals={0} /> Records
           </Badge>
         </div>
       </CardHeader>
@@ -163,25 +177,29 @@ export function ActivityLog() {
           </p>
 
           <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addDemoLog}
-            >
-              Add Demo Log
-            </Button>
+            <MotionPressable>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addDemoLog}
+              >
+                Add Demo Log
+              </Button>
+            </MotionPressable>
 
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={clearLogs}
-              disabled={!hasLogs}
-            >
-              <Trash2 className="mr-2 size-4" />
-              Clear
-            </Button>
+            <MotionPressable disabled={!hasLogs}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={clearLogs}
+                disabled={!hasLogs}
+              >
+                <Trash2 className="mr-2 size-4" />
+                Clear
+              </Button>
+            </MotionPressable>
           </div>
         </div>
 
@@ -206,6 +224,7 @@ export function ActivityLog() {
           </div>
         )}
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

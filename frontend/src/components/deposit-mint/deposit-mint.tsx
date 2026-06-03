@@ -26,6 +26,12 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionErrorShake,
+  MotionNumberText,
+  MotionPressable,
+} from "@/components/motion";
 
 const LIQUIDATION_THRESHOLD = 0.5;
 const SAFE_MINT_RATIO = 0.8;
@@ -96,7 +102,8 @@ export function DepositMint() {
     dscAmountToMint > maxMintableDscFromDeposit;
 
   return (
-    <Card id="deposit-mint" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="deposit-mint" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -124,13 +131,15 @@ export function DepositMint() {
           </Badge>
         </div>
 
-        {status.hasReadError ? (
+        <MotionErrorShake trigger={status.hasReadError}>
+          {status.hasReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Failed to read collateral data. Please check whether Anvil is
             running, contracts are deployed, and your wallet is on the local
             network.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -160,7 +169,7 @@ export function DepositMint() {
               Current Unit Price
             </p>
             <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatUsd(virtualPrice)}
+              <MotionNumberText value={virtualPrice} prefix="$" decimals={2} />
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Simulated price for 1 {selectedSymbol}.
@@ -172,7 +181,11 @@ export function DepositMint() {
               This Deposit Value
             </p>
             <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatUsd(depositCollateralValueUsd)}
+              <MotionNumberText
+                value={depositCollateralValueUsd}
+                prefix="$"
+                decimals={2}
+              />
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {depositCollateralAmount || 0} {selectedSymbol} × current price.
@@ -184,7 +197,11 @@ export function DepositMint() {
               Max Mint From Deposit
             </p>
             <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatDscPreview(maxMintableDscFromDeposit)}
+              <MotionNumberText
+                value={maxMintableDscFromDeposit}
+                suffix=" DSC"
+                decimals={2}
+              />
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Estimated with 50% liquidation threshold.
@@ -194,7 +211,11 @@ export function DepositMint() {
           <div className="rounded-xl border bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">Suggested Safe Mint</p>
             <p className="mt-2 text-xl font-semibold tracking-tight">
-              {formatDscPreview(suggestedSafeMintDsc)}
+              <MotionNumberText
+                value={suggestedSafeMintDsc}
+                suffix=" DSC"
+                decimals={2}
+              />
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               UI-only conservative suggestion.
@@ -213,12 +234,14 @@ export function DepositMint() {
           </div>
         ) : null}
 
-        {isMintTooHigh ? (
+        <MotionErrorShake trigger={isMintTooHigh}>
+          {isMintTooHigh ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Your mint amount is higher than the estimated max mintable DSC from
             this deposit. Reduce the DSC amount or deposit more collateral.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
 
         <Separator />
 
@@ -236,25 +259,29 @@ export function DepositMint() {
 
               <div className="grid gap-2 sm:grid-cols-2">
                 {tokens.map((token) => (
-                  <Button
+                  <MotionPressable
                     key={token.symbol}
-                    type="button"
-                    variant={
-                      form.collateralToken === token.symbol
-                        ? "default"
-                        : "outline"
-                    }
-                    className="justify-start"
                     disabled={!wallet.hasWallet || !token.isAvailable}
-                    onClick={() =>
-                      actions.updateField("collateralToken", token.symbol)
-                    }
                   >
-                    <span>{token.symbol}</span>
-                    <span className="ml-auto text-xs opacity-70">
-                      {token.isAvailable ? "Available" : "Missing"}
-                    </span>
-                  </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        form.collateralToken === token.symbol
+                          ? "default"
+                          : "outline"
+                      }
+                      className="w-full justify-start"
+                      disabled={!wallet.hasWallet || !token.isAvailable}
+                      onClick={() =>
+                        actions.updateField("collateralToken", token.symbol)
+                      }
+                    >
+                      <span>{token.symbol}</span>
+                      <span className="ml-auto text-xs opacity-70">
+                        {token.isAvailable ? "Available" : "Missing"}
+                      </span>
+                    </Button>
+                  </MotionPressable>
                 ))}
               </div>
             </div>
@@ -308,9 +335,7 @@ export function DepositMint() {
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant={status.needsApproval ? "default" : "outline"}
+              <MotionPressable
                 disabled={
                   !wallet.hasWallet ||
                   !selectedToken?.isAvailable ||
@@ -318,16 +343,27 @@ export function DepositMint() {
                   status.isDepositing ||
                   !status.needsApproval
                 }
-                onClick={actions.approveSelectedToken}
               >
-                {status.isApproving ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : null}
-                Approve {form.collateralToken}
-              </Button>
+                <Button
+                  type="button"
+                  variant={status.needsApproval ? "default" : "outline"}
+                  disabled={
+                    !wallet.hasWallet ||
+                    !selectedToken?.isAvailable ||
+                    status.isApproving ||
+                    status.isDepositing ||
+                    !status.needsApproval
+                  }
+                  onClick={actions.approveSelectedToken}
+                >
+                  {status.isApproving ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : null}
+                  Approve {form.collateralToken}
+                </Button>
+              </MotionPressable>
 
-              <Button
-                type="button"
+              <MotionPressable
                 disabled={
                   !wallet.hasWallet ||
                   !selectedToken?.isAvailable ||
@@ -336,13 +372,25 @@ export function DepositMint() {
                   status.needsApproval ||
                   isMintTooHigh
                 }
-                onClick={actions.depositCollateralAndMintDsc}
               >
-                {status.isDepositing ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : null}
-                Deposit & Mint
-              </Button>
+                <Button
+                  type="button"
+                  disabled={
+                    !wallet.hasWallet ||
+                    !selectedToken?.isAvailable ||
+                    status.isApproving ||
+                    status.isDepositing ||
+                    status.needsApproval ||
+                    isMintTooHigh
+                  }
+                  onClick={actions.depositCollateralAndMintDsc}
+                >
+                  {status.isDepositing ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : null}
+                  Deposit & Mint
+                </Button>
+              </MotionPressable>
             </div>
 
             {status.needsApproval ? (
@@ -449,6 +497,7 @@ export function DepositMint() {
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

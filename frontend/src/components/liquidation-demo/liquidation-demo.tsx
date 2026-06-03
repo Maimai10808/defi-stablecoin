@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   AlertTriangle,
   CircleAlert,
@@ -14,9 +15,7 @@ import {
 
 import { useLiquidationDemo } from "@/hooks/use-liquidation-demo";
 import {
-  formatHealthFactor,
   formatTokenAmount,
-  formatDscSupply,
   shortAddress,
 } from "@/lib/format";
 
@@ -31,10 +30,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionErrorShake,
+  MotionHealthFactor,
+  MotionPressable,
+  MotionProtocolBeam,
+  MotionValueText,
+} from "@/components/motion";
+import { formatEther } from "viem";
 
 type MetricItemProps = {
   label: string;
-  value: string;
+  value: ReactNode;
   description: string;
 };
 
@@ -42,9 +50,9 @@ function MetricItem({ label, value, description }: MetricItemProps) {
   return (
     <div className="rounded-xl border bg-muted/20 p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-2 break-all text-xl font-semibold tracking-tight">
+      <div className="mt-2 break-all text-xl font-semibold tracking-tight">
         {value}
-      </p>
+      </div>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
     </div>
   );
@@ -55,7 +63,8 @@ export function LiquidationDemo() {
     useLiquidationDemo();
 
   return (
-    <Card id="liquidation-demo" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="liquidation-demo" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -81,12 +90,14 @@ export function LiquidationDemo() {
           </Badge>
         </div>
 
-        {status.hasReadError ? (
+        <MotionErrorShake trigger={status.hasReadError}>
+          {status.hasReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Failed to prepare liquidation data. The target account may be safe,
             inputs may be invalid, or the local chain may not be ready.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -161,16 +172,26 @@ export function LiquidationDemo() {
           </div>
 
           <div className="flex items-end">
-            <Button
-              type="button"
+            <MotionPressable
               className="w-full"
               disabled={!liquidation.canSubmit || liquidation.isSubmitting}
-              onClick={liquidation.liquidate}
             >
-              {liquidation.isSubmitting ? "Submitting..." : "Liquidate"}
-            </Button>
+              <Button
+                type="button"
+                className="w-full"
+                disabled={!liquidation.canSubmit || liquidation.isSubmitting}
+                onClick={liquidation.liquidate}
+              >
+                {liquidation.isSubmitting ? "Submitting..." : "Liquidate"}
+              </Button>
+            </MotionPressable>
           </div>
         </div>
+
+        <MotionProtocolBeam
+          labels={["Liquidator", "Debt", "Engine", "Collateral"]}
+          active={liquidation.canSubmit}
+        />
 
         <Separator />
 
@@ -189,7 +210,20 @@ export function LiquidationDemo() {
 
             <MetricItem
               label="Target Health Factor"
-              value={formatHealthFactor(liquidation.targetHealthFactor)}
+              value={
+                <MotionHealthFactor
+                  value={
+                    liquidation.targetHealthFactor === undefined
+                      ? undefined
+                      : Number(formatEther(liquidation.targetHealthFactor))
+                  }
+                >
+                  <MotionValueText
+                    value={liquidation.targetHealthFactor}
+                    decimals={2}
+                  />
+                </MotionHealthFactor>
+              }
               description="Liquidation is only valid below the safe threshold."
             />
 
@@ -204,7 +238,13 @@ export function LiquidationDemo() {
 
             <MetricItem
               label="Debt To Cover"
-              value={formatDscSupply(liquidation.debtToCoverInWei)}
+              value={
+                <MotionValueText
+                  value={liquidation.debtToCoverInWei}
+                  suffix=" DSC"
+                  decimals={2}
+                />
+              }
               description="DSC amount that the liquidator will repay."
             />
           </div>
@@ -284,6 +324,7 @@ export function LiquidationDemo() {
           </p>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

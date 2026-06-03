@@ -3,7 +3,6 @@
 import {
   CheckCircle2,
   CircleAlert,
-  Copy,
   Database,
   ExternalLink,
   FileCode2,
@@ -22,7 +21,6 @@ import {
   BTC_USD_PRICE_FEED_ADDRESS,
 } from "@/constants/contracts";
 import {
-  copyToClipboard,
   isAvailableAddress,
   shortAddress,
 } from "@/lib/format";
@@ -37,6 +35,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  MotionCard,
+  MotionCopyButton,
+  MotionErrorShake,
+  MotionNumberText,
+  MotionOracleBeam,
+  MotionPressable,
+  MotionRevealList,
+} from "@/components/motion";
 
 type ContractAddressItem = {
   label: string;
@@ -128,16 +135,11 @@ function AddressCard({ item }: AddressCardProps) {
           <p className="text-sm text-muted-foreground">{item.description}</p>
         </div>
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0"
-          disabled={!available}
-          onClick={() => copyToClipboard(item.label, item.value)}
-        >
-          <Copy className="size-4" />
-        </Button>
+        <MotionCopyButton
+          value={available ? item.value : undefined}
+          label="Copy"
+          className="shrink-0 border-transparent px-2 py-2"
+        />
       </div>
 
       <div className="mt-4 rounded-lg border bg-background px-3 py-2">
@@ -156,7 +158,8 @@ export function ContractAddresses() {
   const allReady = availableCount === totalCount;
 
   return (
-    <Card id="contract-addresses" className="scroll-mt-20">
+    <MotionCard>
+      <Card id="contract-addresses" className="scroll-mt-20">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -187,7 +190,9 @@ export function ContractAddresses() {
               <Network className="size-4" />
               Chain
             </div>
-            <p className="text-2xl font-semibold tracking-tight">{CHAIN_ID}</p>
+            <p className="text-2xl font-semibold tracking-tight">
+              <MotionNumberText value={CHAIN_ID} decimals={0} />
+            </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Current generated deployment chain ID.
             </p>
@@ -199,7 +204,7 @@ export function ContractAddresses() {
               Contracts
             </div>
             <p className="text-2xl font-semibold tracking-tight">
-              {availableCount}
+              <MotionNumberText value={availableCount} decimals={0} />
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               Available addresses synced from Foundry deployment output.
@@ -220,12 +225,20 @@ export function ContractAddresses() {
           </div>
         </div>
 
-        {!allReady ? (
+        <MotionOracleBeam
+          fromLabel="Deployment Sync"
+          toLabel="Frontend Constants"
+          active={allReady}
+        />
+
+        <MotionErrorShake trigger={!allReady}>
+          {!allReady ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             Some contract addresses are missing. Run deployment and address sync
             again before using all dashboard features.
           </div>
-        ) : null}
+          ) : null}
+        </MotionErrorShake>
 
         <Separator />
 
@@ -235,11 +248,11 @@ export function ContractAddresses() {
             <h3 className="text-sm font-medium">Synced Contract Addresses</h3>
           </div>
 
-          <div className="grid gap-3 xl:grid-cols-2">
+          <MotionRevealList className="grid gap-3 xl:grid-cols-2">
             {contractAddressItems.map((item) => (
               <AddressCard key={item.label} item={item} />
             ))}
-          </div>
+          </MotionRevealList>
         </div>
 
         <Separator />
@@ -253,14 +266,17 @@ export function ContractAddresses() {
             .
           </div>
 
-          <Button type="button" variant="outline" size="sm" asChild>
-            <a href="#activity-log">
-              View Activity Log
-              <ExternalLink className="ml-2 size-4" />
-            </a>
-          </Button>
+          <MotionPressable>
+            <Button type="button" variant="outline" size="sm" asChild>
+              <a href="#activity-log">
+                View Activity Log
+                <ExternalLink className="ml-2 size-4" />
+              </a>
+            </Button>
+          </MotionPressable>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </MotionCard>
   );
 }

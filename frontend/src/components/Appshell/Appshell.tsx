@@ -30,6 +30,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { MotionPage } from "@/components/motion";
 
 const viewTitles: Record<DashboardView, string> = {
   "project-guide": "Project Guide",
@@ -162,7 +163,9 @@ export default function AppShell() {
             </p>
           </section>
 
-          {renderActiveView()}
+          <MotionPage viewKey={activeView} className="space-y-6">
+            {renderActiveView()}
+          </MotionPage>
         </main>
 
         <Button
