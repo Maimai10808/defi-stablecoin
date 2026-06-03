@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   ArrowDownUp,
   CircleAlert,
@@ -10,6 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { VirtualPriceChart } from "@/components/virtual-price-chart";
 import { useRepayRedeem } from "@/hooks/use-repay-redeem";
 import { formatDscSupply, formatTokenAmount, shortAddress } from "@/lib/format";
 
@@ -25,9 +27,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
+function formatUsd(value: number) {
+  return `$${value.toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 export function RepayRedeem() {
   const { wallet, form, tokens, selectedToken, position, status, actions } =
     useRepayRedeem();
+
+  const [virtualPrice, setVirtualPrice] = React.useState(0);
+
+  const collateralAmountToRedeem = Number(form.collateralAmount || 0);
+  const redeemValueUsd = collateralAmountToRedeem * virtualPrice;
 
   return (
     <Card id="repay-redeem" className="scroll-mt-20">
@@ -39,7 +52,7 @@ export function RepayRedeem() {
               Repay & Redeem
             </CardTitle>
             <CardDescription>
-              Decentralized StableCoin local demo dashboard.
+              Repay DSC debt and redeem deposited collateral from the protocol.
             </CardDescription>
           </div>
 
@@ -81,7 +94,7 @@ export function RepayRedeem() {
           </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-4">
           <div className="rounded-xl border bg-muted/20 p-4">
             <p className="text-xs text-muted-foreground">DSC Wallet Balance</p>
             <p className="mt-2 text-xl font-semibold tracking-tight">
@@ -104,7 +117,21 @@ export function RepayRedeem() {
               {formatDscSupply(position.dscEngineAllowance)}
             </p>
           </div>
+
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <p className="text-xs text-muted-foreground">
+              Preview Redeem Value
+            </p>
+            <p className="mt-2 text-xl font-semibold tracking-tight">
+              {formatUsd(redeemValueUsd)}
+            </p>
+          </div>
         </div>
+
+        <VirtualPriceChart
+          tokenSymbol={selectedToken?.symbol ?? form.collateralToken}
+          onPriceChange={setVirtualPrice}
+        />
 
         <Separator />
 
@@ -270,6 +297,15 @@ export function RepayRedeem() {
               </div>
 
               <div className="rounded-lg border bg-background/50 px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  Preview Redeem Value
+                </p>
+                <p className="mt-1 text-sm font-medium">
+                  {formatUsd(redeemValueUsd)}
+                </p>
+              </div>
+
+              <div className="rounded-lg border bg-background/50 px-3 py-2">
                 <p className="text-xs text-muted-foreground">DSC to Burn</p>
                 <p className="mt-1 text-sm font-medium">
                   {form.dscAmountToBurn
@@ -291,9 +327,9 @@ export function RepayRedeem() {
         <div className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
           <Wallet className="mt-0.5 size-4 shrink-0" />
           <p>
-            This panel performs the reverse flow of Deposit & Mint. Approve DSC
-            first, then burn DSC debt and redeem the selected collateral from
-            DSCEngine.
+            This panel performs the reverse flow of Deposit & Mint. The preview
+            estimates the USD value of the collateral you are about to redeem
+            using the virtual market price.
           </p>
         </div>
       </CardContent>

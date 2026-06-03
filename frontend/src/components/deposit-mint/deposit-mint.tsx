@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import {
   ArrowRightLeft,
   CircleAlert,
@@ -10,6 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { VirtualPriceChart } from "@/components/virtual-price-chart";
 import { useDepositMint } from "@/hooks/use-deposit-mint";
 import { formatTokenAmount, shortAddress } from "@/lib/format";
 
@@ -25,9 +27,43 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
+const LIQUIDATION_THRESHOLD = 0.5;
+const SAFE_MINT_RATIO = 0.8;
+
+function formatUsd(value: number) {
+  return `$${value.toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatDscPreview(value: number) {
+  return `${value.toLocaleString(undefined, {
+    maximumFractionDigits: 2,
+  })} DSC`;
+}
+
 export function DepositMint() {
   const { wallet, form, tokens, selectedToken, status, actions } =
     useDepositMint();
+
+  const [virtualPrice, setVirtualPrice] = React.useState(0);
+
+  const collateralAmount = Number(form.collateralAmount || 0);
+  const dscAmountToMint = Number(form.dscAmountToMint || 0);
+
+  const collateralValueUsd = collateralAmount * virtualPrice;
+
+  const maxMintableDsc = collateralValueUsd * LIQUIDATION_THRESHOLD;
+
+  const recommendedSafeMintDsc = maxMintableDsc * SAFE_MINT_RATIO;
+
+  const previewHealthFactor =
+    dscAmountToMint > 0 ? maxMintableDsc / dscAmountToMint : undefined;
+
+  const isMintTooHigh =
+    dscAmountToMint > 0 &&
+    maxMintableDsc > 0 &&
+    dscAmountToMint > maxMintableDsc;
 
   return (
     <Card id="deposit-mint" className="scroll-mt-20">
@@ -39,7 +75,8 @@ export function DepositMint() {
               Deposit & Mint
             </CardTitle>
             <CardDescription>
-              Decentralized StableCoin local demo dashboard.
+              Deposit collateral into DSCEngine and mint DSC against your
+              position.
             </CardDescription>
           </div>
 
@@ -80,6 +117,54 @@ export function DepositMint() {
             </Badge>
           </div>
         </div>
+
+        <VirtualPriceChart
+          tokenSymbol={selectedToken?.symbol ?? form.collateralToken}
+          onPriceChange={setVirtualPrice}
+        />
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <p className="text-xs text-muted-foreground">
+              Preview Collateral Value
+            </p>
+            <p className="mt-2 text-xl font-semibold tracking-tight">
+              {formatUsd(collateralValueUsd)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <p className="text-xs text-muted-foreground">Max Mintable DSC</p>
+            <p className="mt-2 text-xl font-semibold tracking-tight">
+              {formatDscPreview(maxMintableDsc)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <p className="text-xs text-muted-foreground">Suggested Safe Mint</p>
+            <p className="mt-2 text-xl font-semibold tracking-tight">
+              {formatDscPreview(recommendedSafeMintDsc)}
+            </p>
+          </div>
+
+          <div className="rounded-xl border bg-muted/20 p-4">
+            <p className="text-xs text-muted-foreground">
+              Preview Health Factor
+            </p>
+            <p className="mt-2 text-xl font-semibold tracking-tight">
+              {previewHealthFactor === undefined
+                ? "Not set"
+                : previewHealthFactor.toFixed(2)}
+            </p>
+          </div>
+        </div>
+
+        {isMintTooHigh ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            Your mint amount is higher than the preview max mintable DSC. Reduce
+            the DSC amount or deposit more collateral.
+          </div>
+        ) : null}
 
         <Separator />
 
@@ -178,7 +263,8 @@ export function DepositMint() {
                   !selectedToken?.isAvailable ||
                   status.isApproving ||
                   status.isDepositing ||
-                  status.needsApproval
+                  status.needsApproval ||
+                  isMintTooHigh
                 }
                 onClick={actions.depositCollateralAndMintDsc}
               >
@@ -235,13 +321,19 @@ export function DepositMint() {
 
               <div className="rounded-lg border bg-background/50 px-3 py-2">
                 <p className="text-xs text-muted-foreground">
-                  Engine Allowance
+                  Preview Collateral Value
                 </p>
                 <p className="mt-1 text-sm font-medium">
-                  {formatTokenAmount(
-                    selectedToken?.allowance,
-                    selectedToken?.symbol,
-                  )}
+                  {formatUsd(collateralValueUsd)}
+                </p>
+              </div>
+
+              <div className="rounded-lg border bg-background/50 px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  Max Mintable DSC
+                </p>
+                <p className="mt-1 text-sm font-medium">
+                  {formatDscPreview(maxMintableDsc)}
                 </p>
               </div>
 
@@ -269,9 +361,9 @@ export function DepositMint() {
         <div className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
           <Wallet className="mt-0.5 size-4 shrink-0" />
           <p>
-            This panel writes to the DSCEngine contract. The normal flow is:
-            mint mock collateral from Faucet, approve DSCEngine, then deposit
-            collateral and mint DSC.
+            This panel writes to the DSCEngine contract. The preview uses the
+            virtual market price to estimate collateral value and max mintable
+            DSC before you send the transaction.
           </p>
         </div>
       </CardContent>
