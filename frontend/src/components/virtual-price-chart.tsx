@@ -29,21 +29,36 @@ const BASE_PRICE_MAP: Record<string, number> = {
   WBTC: 42000,
 };
 
-function getNextPrice(previousPrice: number, tokenSymbol: string) {
-  const volatility = tokenSymbol === "WBTC" ? 0.012 : 0.018;
-  const randomChange = (Math.random() - 0.5) * 2 * volatility;
-  const trend = Math.sin(Date.now() / 12000) * 0.002;
+const VOLATILITY_MAP: Record<string, number> = {
+  WETH: 0.012,
+  WBTC: 0.008,
+};
 
-  return Math.max(previousPrice * (1 + randomChange + trend), 1);
+function getBasePrice(tokenSymbol: string) {
+  return BASE_PRICE_MAP[tokenSymbol] ?? BASE_PRICE_MAP.WETH;
+}
+
+function getVolatility(tokenSymbol: string) {
+  return VOLATILITY_MAP[tokenSymbol] ?? VOLATILITY_MAP.WETH;
+}
+
+function getNextPrice(previousPrice: number, tokenSymbol: string) {
+  const volatility = getVolatility(tokenSymbol);
+
+  const randomNoise = (Math.random() - 0.5) * 2 * volatility;
+  const softTrend = Math.sin(Date.now() / 14000) * 0.0018;
+  const nextPrice = previousPrice * (1 + randomNoise + softTrend);
+
+  return Math.max(nextPrice, 1);
 }
 
 function createInitialPriceHistory(tokenSymbol: string): PricePoint[] {
-  const basePrice = BASE_PRICE_MAP[tokenSymbol] ?? 2000;
+  const basePrice = getBasePrice(tokenSymbol);
 
-  return Array.from({ length: 24 }).map((_, index) => {
-    const drift = Math.sin(index / 3) * 0.015;
-    const noise = (Math.random() - 0.5) * 0.02;
-    const price = basePrice * (1 + drift + noise);
+  return Array.from({ length: 24 }, (_, index) => {
+    const wave = Math.sin(index / 3) * 0.012;
+    const noise = (Math.random() - 0.5) * 0.012;
+    const price = basePrice * (1 + wave + noise);
 
     return {
       time: `${index + 1}`,
@@ -71,21 +86,22 @@ export function VirtualPriceChart({
     setPriceHistory(createInitialPriceHistory(tokenSymbol));
   }, [tokenSymbol]);
 
-  React.useEffect(() => {
-    const latestPrice = priceHistory[priceHistory.length - 1]?.price;
+  const latestPrice = priceHistory[priceHistory.length - 1]?.price ?? 0;
+  const previousPrice =
+    priceHistory[priceHistory.length - 2]?.price ?? latestPrice;
 
-    if (latestPrice) {
+  React.useEffect(() => {
+    if (latestPrice > 0) {
       onPriceChange?.(latestPrice);
     }
-  }, [priceHistory, onPriceChange]);
+  }, [latestPrice, onPriceChange]);
 
   React.useEffect(() => {
     const timer = window.setInterval(() => {
       setPriceHistory((currentHistory) => {
         const lastPrice =
           currentHistory[currentHistory.length - 1]?.price ??
-          BASE_PRICE_MAP[tokenSymbol] ??
-          2000;
+          getBasePrice(tokenSymbol);
 
         const nextPrice = getNextPrice(lastPrice, tokenSymbol);
 
@@ -105,10 +121,6 @@ export function VirtualPriceChart({
     return () => window.clearInterval(timer);
   }, [tokenSymbol]);
 
-  const latestPrice = priceHistory[priceHistory.length - 1]?.price ?? 0;
-  const previousPrice =
-    priceHistory[priceHistory.length - 2]?.price ?? latestPrice;
-
   const priceChange = latestPrice - previousPrice;
   const priceChangePercent =
     previousPrice > 0 ? (priceChange / previousPrice) * 100 : 0;
@@ -121,10 +133,13 @@ export function VirtualPriceChart({
         <div>
           <div className="flex items-center gap-2">
             <Activity className="size-4" />
-            <h3 className="text-sm font-medium">Virtual Collateral Price</h3>
+            <h3 className="text-sm font-medium">
+              Virtual Collateral Market Price
+            </h3>
           </div>
+
           <p className="mt-1 text-xs text-muted-foreground">
-            Simulated live market price for demo interaction.
+            Simulated live price used only for the current deposit preview.
           </p>
         </div>
 
@@ -136,7 +151,7 @@ export function VirtualPriceChart({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border bg-background/50 px-3 py-2">
-          <p className="text-xs text-muted-foreground">Current Price</p>
+          <p className="text-xs text-muted-foreground">Current Unit Price</p>
           <p className="mt-1 text-lg font-semibold">
             {formatUsdPrice(latestPrice)}
           </p>
@@ -172,6 +187,7 @@ export function VirtualPriceChart({
             </defs>
 
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
+
             <XAxis
               dataKey="time"
               tickLine={false}
@@ -179,6 +195,7 @@ export function VirtualPriceChart({
               minTickGap={24}
               tick={{ fontSize: 11 }}
             />
+
             <YAxis
               tickLine={false}
               axisLine={false}
@@ -186,13 +203,15 @@ export function VirtualPriceChart({
               tick={{ fontSize: 11 }}
               tickFormatter={(value) => `$${Number(value).toLocaleString()}`}
             />
+
             <Tooltip
               formatter={(value) => [
                 formatUsdPrice(Number(value)),
-                `${tokenSymbol} Price`,
+                `${tokenSymbol} Unit Price`,
               ]}
               labelFormatter={(label) => `Time: ${label}`}
             />
+
             <Area
               type="monotone"
               dataKey="price"
@@ -207,8 +226,8 @@ export function VirtualPriceChart({
       </div>
 
       <p className="text-xs leading-5 text-muted-foreground">
-        This price feed is virtual for demo preview. It helps estimate
-        collateral value and minting capacity before writing to the contract.
+        This virtual price does not rewrite contract state. It only estimates
+        the USD value of the collateral amount you are about to deposit.
       </p>
     </div>
   );

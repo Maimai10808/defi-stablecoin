@@ -24,6 +24,7 @@
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build",
     "frontend:wagmi": "cd frontend && npm run wagmi:generate",
-    "contracts:deploy:all": "npm run contracts:build && npm run contracts:deploy && npm run contracts:sync && npm run contracts:abi && npm run frontend:wagmi"
+    "contracts:deploy:all": "npm run contracts:build && npm run contracts:deploy && npm run contracts:sync && npm run contracts:abi && npm run frontend:wagmi",
+    "scan:contracts": "node scripts/scan-wrong-contract-address-usage.mjs"
   }
 }

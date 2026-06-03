@@ -4,12 +4,12 @@
 export const CHAIN_ID = 31337 as const;
 
 export const CONTRACT_ADDRESSES = {
-  dscEngine: "0x7a2088a1bfc9d81c55368ae168c2c02570cb814f",
-  decentralizedStableCoin: "0x4a679253410272dd5232b3ff7cf5dbb88f295319",
-  weth: "0x4ed7c70f96b99c776995fb64377f0d4ab3b0e1c1",
-  wbtc: "0xa85233c63b9ee964add6f2cffe00fd84eb32338f",
-  ethUsdPriceFeed: "0x59b670e9fa9d0a427751af201d676719a970857b",
-  btcUsdPriceFeed: "0x322813fd9a801c5507c9de605d63cea4f2ce6c44",
+  dscEngine: "0x5fc8d32690cc91d4c39d9d3abcbd16989f875707",
+  decentralizedStableCoin: "0xdc64a140aa3e981100a9beca4e685f962f0cf6c9",
+  weth: "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512",
+  wbtc: "0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9",
+  ethUsdPriceFeed: "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+  btcUsdPriceFeed: "0x9fe46736679d2d9a65f0992f2272de9f3c7fa6e0",
 } as const;
 
 export const DSC_ENGINE_ADDRESS = CONTRACT_ADDRESSES.dscEngine;
