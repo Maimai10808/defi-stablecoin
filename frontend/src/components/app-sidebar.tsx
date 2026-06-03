@@ -23,6 +23,7 @@ export type DashboardView =
   | "feature-map"
   | "protocol-status"
   | "my-position"
+  | "protocol-3d-overview"
   | "faucet"
   | "deposit-mint"
   | "repay-redeem"
@@ -66,6 +67,10 @@ const navMain = [
       {
         title: "My Position",
         value: "my-position",
+      },
+      {
+        title: "3D Overview",
+        value: "protocol-3d-overview",
       },
     ],
   },
@@ -142,6 +147,7 @@ export function AppSidebar({
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.value}>
                     <SidebarMenuButton
+                      type="button"
                       isActive={activeView === item.value}
                       onClick={() => onViewChange(item.value)}
                     >

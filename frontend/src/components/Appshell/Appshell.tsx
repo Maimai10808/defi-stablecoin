@@ -13,6 +13,7 @@ import { HowItWorks } from "@/components/how-it-works";
 import { LiquidationDemo } from "@/components/liquidation-demo";
 import { MyPosition } from "@/components/my-position";
 import { ProjectGuide } from "@/components/project-guide";
+import { Protocol3DOverview } from "@/components/protocol-3d-overview";
 import { ProtocolStatus } from "@/components/protocol-status";
 import { RepayRedeem } from "@/components/repay-redeem";
 import {
@@ -34,6 +35,7 @@ const viewTitles: Record<DashboardView, string> = {
   "feature-map": "Feature Map",
   "protocol-status": "Protocol Status",
   "my-position": "My Position",
+  "protocol-3d-overview": "3D Overview",
   faucet: "Faucet",
   "deposit-mint": "Deposit & Mint",
   "repay-redeem": "Repay & Redeem",
@@ -53,6 +55,8 @@ const viewDescriptions: Record<DashboardView, string> = {
     "Check whether the local protocol, wallet, network, and deployed contracts are ready.",
   "my-position":
     "View your collateral, minted DSC, wallet balances, allowance, and risk status.",
+  "protocol-3d-overview":
+    "Visualize the DSC protocol flow from wallet collateral to minting and liquidation risk.",
   faucet:
     "Mint local mock collateral tokens for testing deposit and mint flows.",
   "deposit-mint":
@@ -89,6 +93,9 @@ export default function AppShell() {
 
       case "my-position":
         return <MyPosition />;
+
+      case "protocol-3d-overview":
+        return <Protocol3DOverview />;
 
       case "faucet":
         return <Faucet />;
