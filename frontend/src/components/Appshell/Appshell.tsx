@@ -16,6 +16,7 @@ import { MyPosition } from "@/components/my-position";
 import { ProjectGuide } from "@/components/project-guide";
 import { Protocol3DOverview } from "@/components/protocol-3d-overview";
 import { ProtocolStatus } from "@/components/protocol-status";
+import { ProtocolWorkspace } from "@/components/protocol";
 import { RepayRedeem } from "@/components/repay-redeem";
 import {
   Breadcrumb,
@@ -34,6 +35,7 @@ import { MotionPage } from "@/components/motion";
 
 const viewTitles: Record<DashboardView, string> = {
   "project-guide": "Project Guide",
+  "protocol-flow": "Protocol Flow",
   "how-it-works": "How It Works",
   "feature-map": "Feature Map",
   "protocol-status": "Protocol Status",
@@ -51,6 +53,8 @@ const viewTitles: Record<DashboardView, string> = {
 const viewDescriptions: Record<DashboardView, string> = {
   "project-guide":
     "A guided introduction to the Decentralized StableCoin local demo.",
+  "protocol-flow":
+    "Follow the stablecoin lifecycle one focused action at a time.",
   "how-it-works":
     "Understand how the local chain, smart contracts, generated hooks, and UI work together.",
   "feature-map": "A feature-level map of every module in this DSC dashboard.",
@@ -84,6 +88,9 @@ export default function AppShell() {
     switch (activeView) {
       case "project-guide":
         return <ProjectGuide />;
+
+      case "protocol-flow":
+        return <ProtocolWorkspace />;
 
       case "how-it-works":
         return <HowItWorks />;

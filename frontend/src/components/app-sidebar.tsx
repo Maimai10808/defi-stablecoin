@@ -20,6 +20,7 @@ import { MotionSidebarIndicator } from "@/components/motion";
 
 export type DashboardView =
   | "project-guide"
+  | "protocol-flow"
   | "how-it-works"
   | "feature-map"
   | "protocol-status"
@@ -42,72 +43,33 @@ const versions = ["Local Anvil", "Sepolia", "Mainnet"];
 
 const navMain = [
   {
-    title: "Introduction",
+    title: "Demo Flow",
     items: [
       {
         title: "Project Guide",
         value: "project-guide",
       },
       {
-        title: "How It Works",
-        value: "how-it-works",
+        title: "Protocol Flow",
+        value: "protocol-flow",
       },
       {
-        title: "Feature Map",
-        value: "feature-map",
-      },
-    ],
-  },
-  {
-    title: "Overview",
-    items: [
-      {
-        title: "Protocol Status",
-        value: "protocol-status",
-      },
-      {
-        title: "My Position",
+        title: "Account Overview",
         value: "my-position",
       },
-      {
-        title: "3D Overview",
-        value: "protocol-3d-overview",
-      },
     ],
   },
   {
-    title: "Actions",
+    title: "Supporting Tools",
     items: [
       {
         title: "Faucet",
         value: "faucet",
       },
       {
-        title: "Deposit & Mint",
-        value: "deposit-mint",
+        title: "Protocol Status",
+        value: "protocol-status",
       },
-      {
-        title: "Repay & Redeem",
-        value: "repay-redeem",
-      },
-    ],
-  },
-  {
-    title: "Risk",
-    items: [
-      {
-        title: "Health Factor",
-        value: "health-factor",
-      },
-      {
-        title: "Liquidation Demo",
-        value: "liquidation-demo",
-      },
-    ],
-  },
-  {
-    title: "Dev Tools",
-    items: [
       {
         title: "Activity Log",
         value: "activity-log",

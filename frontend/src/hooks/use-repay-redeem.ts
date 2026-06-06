@@ -11,9 +11,12 @@ import {
   useReadDecentralizedStableCoinBalanceOf,
   useReadDscEngineGetCollateralBalanceOfUser,
   useReadDscEngineGetDscMintedAmount,
+  useReadDscEngineGetUsdValue,
   useReadWbtcMockBalanceOf,
   useReadWethMockBalanceOf,
   useWriteDecentralizedStableCoinApprove,
+  useWriteDscEngineBurnDsc,
+  useWriteDscEngineRedeemCollateral,
   useWriteDscEngineRedeemCollateralForDsc,
 } from "@/generated/wagmi";
 
@@ -100,6 +103,8 @@ export function useRepayRedeem() {
   });
 
   const approveDsc = useWriteDecentralizedStableCoinApprove();
+  const burnDsc = useWriteDscEngineBurnDsc();
+  const redeemCollateral = useWriteDscEngineRedeemCollateral();
   const redeemCollateralForDsc = useWriteDscEngineRedeemCollateralForDsc();
 
   const tokens: RepayRedeemTokenItem[] = [
@@ -137,6 +142,13 @@ export function useRepayRedeem() {
     form.dscAmountToBurn && Number(form.dscAmountToBurn) > 0
       ? parseEther(form.dscAmountToBurn)
       : BigInt(0);
+
+  const selectedCollateralUsdValue = useReadDscEngineGetUsdValue({
+    args: [selectedTokenAddress, collateralAmountBigInt],
+    query: {
+      enabled: selectedToken?.isAvailable && collateralAmountBigInt > BigInt(0),
+    },
+  });
 
   const needsApproval =
     dscAmountToBurnBigInt > BigInt(0) &&
@@ -218,6 +230,97 @@ export function useRepayRedeem() {
     }
   }
 
+  async function repayDsc() {
+    if (!hasWallet) {
+      toast.error("Please connect wallet first");
+      return;
+    }
+
+    if (dscAmountToBurnBigInt <= BigInt(0)) {
+      toast.error("Please enter a valid DSC amount");
+      return;
+    }
+
+    if (
+      dscWalletBalance.data !== undefined &&
+      dscAmountToBurnBigInt > dscWalletBalance.data
+    ) {
+      toast.error("Insufficient DSC balance");
+      return;
+    }
+
+    if (
+      dscMintedAmount.data !== undefined &&
+      dscAmountToBurnBigInt > dscMintedAmount.data
+    ) {
+      toast.error("Amount exceeds current debt");
+      return;
+    }
+
+    if (needsApproval) {
+      toast.error("Please approve DSC first");
+      return;
+    }
+
+    try {
+      await burnDsc.writeContractAsync({
+        args: [dscAmountToBurnBigInt],
+      });
+
+      await Promise.all([
+        dscWalletBalance.refetch(),
+        dscMintedAmount.refetch(),
+        dscEngineAllowance.refetch(),
+      ]);
+      toast.success("DSC repaid successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("DSC repayment failed");
+    }
+  }
+
+  async function redeemSelectedCollateral() {
+    if (!hasWallet) {
+      toast.error("Please connect wallet first");
+      return;
+    }
+
+    if (!selectedToken?.isAvailable) {
+      toast.error(`${form.collateralToken} address is not available`);
+      return;
+    }
+
+    if (collateralAmountBigInt <= BigInt(0)) {
+      toast.error("Please enter a valid collateral amount");
+      return;
+    }
+
+    if (
+      selectedToken.depositedAmount !== undefined &&
+      collateralAmountBigInt > selectedToken.depositedAmount
+    ) {
+      toast.error("Amount exceeds deposited collateral");
+      return;
+    }
+
+    try {
+      await redeemCollateral.writeContractAsync({
+        args: [selectedTokenAddress as Address, collateralAmountBigInt],
+      });
+
+      await Promise.all([
+        wethDepositedAmount.refetch(),
+        wbtcDepositedAmount.refetch(),
+        wethWalletBalance.refetch(),
+        wbtcWalletBalance.refetch(),
+      ]);
+      toast.success("Collateral redeemed successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Collateral redemption failed. Check your Health Factor");
+    }
+  }
+
   const hasReadError =
     dscWalletBalance.isError ||
     dscEngineAllowance.isError ||
@@ -225,10 +328,13 @@ export function useRepayRedeem() {
     wethWalletBalance.isError ||
     wbtcWalletBalance.isError ||
     wethDepositedAmount.isError ||
-    wbtcDepositedAmount.isError;
+    wbtcDepositedAmount.isError ||
+    selectedCollateralUsdValue.isError;
 
   const isApproving = approveDsc.isPending;
-  const isRedeeming = redeemCollateralForDsc.isPending;
+  const isRepaying = burnDsc.isPending;
+  const isRedeeming =
+    redeemCollateralForDsc.isPending || redeemCollateral.isPending;
 
   return {
     wallet: {
@@ -243,11 +349,13 @@ export function useRepayRedeem() {
       dscWalletBalance: dscWalletBalance.data,
       dscEngineAllowance: dscEngineAllowance.data,
       dscMintedAmount: dscMintedAmount.data,
+      selectedCollateralUsdValue: selectedCollateralUsdValue.data,
     },
     status: {
       hasReadError,
       needsApproval,
       isApproving,
+      isRepaying,
       isRedeeming,
       hasWeth,
       hasWbtc,
@@ -255,6 +363,8 @@ export function useRepayRedeem() {
     actions: {
       updateField,
       approveDscForEngine,
+      repayDsc,
+      redeemSelectedCollateral,
       repayAndRedeem,
     },
   };

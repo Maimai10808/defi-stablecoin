@@ -10,7 +10,6 @@ import {
   PlayCircle,
   ShieldCheck,
   Sparkles,
-  Workflow,
 } from "lucide-react";
 
 import {
@@ -37,9 +36,9 @@ const guideItems = [
     icon: PlayCircle,
   },
   {
-    title: "Deposit and Mint",
+    title: "Follow the Protocol Flow",
     description:
-      "Deposit collateral into DSCEngine and mint DSC based on your collateral value.",
+      "Deposit, mint, monitor risk, repay or redeem, then explore liquidation as separate actions.",
     icon: Layers,
   },
 ];
@@ -62,12 +61,6 @@ const overviewItems = [
     description:
       "If a user's collateral value falls too much, the protocol allows liquidation to protect the system from bad debt.",
     icon: ShieldCheck,
-  },
-  {
-    title: "Full DeFi Lifecycle",
-    description:
-      "The demo covers deposit, mint, burn, redeem, price-feed valuation, health-factor checks, and liquidation flow.",
-    icon: Workflow,
   },
 ];
 
@@ -96,7 +89,7 @@ export function ProjectGuide() {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <div className="rounded-2xl border bg-muted/20 p-5">
+          <div className="rounded-lg border bg-muted/20 p-5">
             <div className="mb-3 flex items-center gap-2">
               <div className="flex size-9 items-center justify-center rounded-xl border bg-background">
                 <LockKeyhole className="size-4 text-muted-foreground" />
@@ -112,31 +105,16 @@ export function ProjectGuide() {
 
             <div className="space-y-3 text-sm leading-6 text-muted-foreground">
               <p>
-                This project is an overcollateralized decentralized stablecoin
-                protocol demo. In simple terms, users deposit crypto assets such
-                as WETH or WBTC into the smart contract as collateral, and the
-                protocol allows them to mint DSC stablecoins based on the USD
-                value of that collateral.
-              </p>
-
-              <p>
-                DSC is designed to stay close to 1 USD, but it is not backed by
-                money in a bank account. Instead, it is backed by collateral
-                locked on-chain. The protocol uses price feeds to calculate the
-                dollar value of each user&apos;s collateral position.
-              </p>
-
-              <p>
-                The core idea is risk control. Users cannot mint unlimited DSC.
-                Each account has a Health Factor, which measures whether the
-                collateral is enough to cover the debt. If the Health Factor
-                becomes too low, the position becomes risky and can be
-                liquidated by another user.
+                This demo shows the core lifecycle of an overcollateralized
+                stablecoin protocol: users deposit WETH or WBTC as collateral,
+                the protocol calculates the USD value through price feeds, users
+                mint DSC against that collateral, and the Health Factor
+                determines whether the position is safe, risky, or liquidatable.
               </p>
             </div>
           </div>
 
-          <MotionRevealList className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <MotionRevealList className="grid gap-3 md:grid-cols-3">
             {overviewItems.map((item) => {
               const Icon = item.icon;
 
@@ -161,11 +139,11 @@ export function ProjectGuide() {
             })}
           </MotionRevealList>
 
-          <div className="rounded-2xl border bg-background p-5">
+          <div className="rounded-lg border bg-background p-5">
             <div className="mb-4">
               <p className="text-sm font-semibold">How to use this demo</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Follow these steps to complete the local stablecoin protocol flow.
+                Complete each action independently so the effect on your position is clear.
               </p>
             </div>
 
@@ -194,10 +172,8 @@ export function ProjectGuide() {
 
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-sm leading-6 text-muted-foreground">
             <span className="font-medium text-foreground">In one sentence: </span>
-            this demo shows how a DeFi protocol can use collateral deposits,
-            Chainlink-style price feeds, health-factor checks, and liquidation
-            rules to support the minting and risk management of an
-            overcollateralized stablecoin.
+            Collateral Deposit → Mint DSC → Monitor Health Factor → Repay /
+            Redeem → Liquidation.
           </div>
         </CardContent>
       </Card>

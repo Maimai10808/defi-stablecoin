@@ -7,6 +7,7 @@ import { useAccount } from "wagmi";
 import { toast } from "sonner";
 
 import {
+  useReadDecentralizedStableCoinBalanceOf,
   useReadDscEngineGetCollateralBalanceOfUser,
   useReadDscEngineGetHealthFactor,
   useReadDscEngineGetTokenAmountFromUsd,
@@ -70,6 +71,13 @@ export function useLiquidationDemo() {
     },
   });
 
+  const liquidatorDscBalance = useReadDecentralizedStableCoinBalanceOf({
+    args: [toSafeAddress(address)],
+    query: {
+      enabled: hasWallet,
+    },
+  });
+
   const targetCollateralBalance = useReadDscEngineGetCollateralBalanceOfUser({
     args: [targetAddress, collateralToken],
     query: {
@@ -97,6 +105,7 @@ export function useLiquidationDemo() {
     targetHealthFactor.isError ||
     targetCollateralBalance.isError ||
     collateralNeeded.isError ||
+    liquidatorDscBalance.isError ||
     liquidationPreview.isError;
 
   const isReading =
@@ -152,6 +161,7 @@ export function useLiquidationDemo() {
       targetHealthFactor: targetHealthFactor.data,
       targetCollateralBalance: targetCollateralBalance.data,
       collateralNeeded: collateralNeeded.data,
+      liquidatorDscBalance: liquidatorDscBalance.data,
       canPrepareLiquidation,
       canSubmit: Boolean(liquidationPreview.data?.request),
       isSubmitting: liquidationAction.isPending,

@@ -8,11 +8,14 @@ import { toast } from "sonner";
 
 import {
   useReadDscEngineGetCollateralBalanceOfUser,
+  useReadDscEngineGetUsdValue,
   useReadWbtcMockAllowance,
   useReadWbtcMockBalanceOf,
   useReadWethMockAllowance,
   useReadWethMockBalanceOf,
   useWriteDscEngineDepositCollateralAndMintDsc,
+  useWriteDscEngineDepositCollateral,
+  useWriteDscEngineMintDsc,
   useWriteWbtcMockApprove,
   useWriteWethMockApprove,
 } from "@/generated/wagmi";
@@ -95,6 +98,8 @@ export function useDepositMint() {
   const wethApprove = useWriteWethMockApprove();
   const wbtcApprove = useWriteWbtcMockApprove();
   const depositAndMint = useWriteDscEngineDepositCollateralAndMintDsc();
+  const depositCollateral = useWriteDscEngineDepositCollateral();
+  const mintDsc = useWriteDscEngineMintDsc();
 
   const tokens: DepositMintTokenItem[] = [
     {
@@ -136,6 +141,13 @@ export function useDepositMint() {
     form.dscAmountToMint && Number(form.dscAmountToMint) > 0
       ? parseEther(form.dscAmountToMint)
       : BigInt(0);
+
+  const selectedCollateralUsdValue = useReadDscEngineGetUsdValue({
+    args: [selectedTokenAddress, collateralAmountBigInt],
+    query: {
+      enabled: selectedToken?.isAvailable && collateralAmountBigInt > BigInt(0),
+    },
+  });
 
   const needsApproval =
     collateralAmountBigInt > BigInt(0) &&
@@ -230,16 +242,89 @@ export function useDepositMint() {
     }
   }
 
+  async function depositSelectedCollateral() {
+    if (!hasWallet) {
+      toast.error("Please connect wallet first");
+      return;
+    }
+
+    if (!selectedToken?.isAvailable) {
+      toast.error(`${form.collateralToken} address is not available`);
+      return;
+    }
+
+    if (collateralAmountBigInt <= BigInt(0)) {
+      toast.error("Please enter a valid collateral amount");
+      return;
+    }
+
+    if (
+      selectedToken.walletBalance !== undefined &&
+      collateralAmountBigInt > selectedToken.walletBalance
+    ) {
+      toast.error(`Insufficient ${form.collateralToken} balance`);
+      return;
+    }
+
+    if (needsApproval) {
+      toast.error("Please approve collateral first");
+      return;
+    }
+
+    try {
+      await depositCollateral.writeContractAsync({
+        args: [selectedTokenAddress as Address, collateralAmountBigInt],
+      });
+
+      await Promise.all([
+        wethWalletBalance.refetch(),
+        wbtcWalletBalance.refetch(),
+        wethDepositedAmount.refetch(),
+        wbtcDepositedAmount.refetch(),
+      ]);
+      toast.success("Collateral deposited successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("Collateral deposit failed");
+    }
+  }
+
+  async function mintOnlyDsc() {
+    if (!hasWallet) {
+      toast.error("Please connect wallet first");
+      return;
+    }
+
+    if (dscAmountToMintBigInt <= BigInt(0)) {
+      toast.error("Please enter a valid DSC amount");
+      return;
+    }
+
+    try {
+      await mintDsc.writeContractAsync({
+        args: [dscAmountToMintBigInt],
+      });
+
+      toast.success("DSC minted successfully");
+    } catch (error) {
+      console.error(error);
+      toast.error("DSC mint failed. Check your Health Factor");
+    }
+  }
+
   const hasReadError =
     wethWalletBalance.isError ||
     wbtcWalletBalance.isError ||
     wethDepositedAmount.isError ||
     wbtcDepositedAmount.isError ||
     wethAllowance.isError ||
-    wbtcAllowance.isError;
+    wbtcAllowance.isError ||
+    selectedCollateralUsdValue.isError;
 
   const isApproving = wethApprove.isPending || wbtcApprove.isPending;
-  const isDepositing = depositAndMint.isPending;
+  const isDepositing =
+    depositAndMint.isPending || depositCollateral.isPending;
+  const isMinting = mintDsc.isPending;
 
   return {
     wallet: {
@@ -251,10 +336,16 @@ export function useDepositMint() {
     tokens,
     selectedToken,
     selectedAllowance,
+    preview: {
+      collateralAmountBigInt,
+      collateralUsdValue: selectedCollateralUsdValue.data,
+      dscAmountToMintBigInt,
+    },
     status: {
       hasReadError,
       isApproving,
       isDepositing,
+      isMinting,
       needsApproval,
       hasWeth,
       hasWbtc,
@@ -262,6 +353,8 @@ export function useDepositMint() {
     actions: {
       updateField,
       approveSelectedToken,
+      depositSelectedCollateral,
+      mintOnlyDsc,
       depositCollateralAndMintDsc,
     },
   };
