@@ -20,8 +20,11 @@ import {
 
 const LOCAL_CHAIN_ID = 31337;
 const DEFAULT_ANVIL_RPC_URL = "http://127.0.0.1:8545";
-const DEFAULT_ANVIL_PRIVATE_KEY =
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+// Anvil account #1 is reserved for server-side oracle updates. The seeded demo
+// wallet uses account #0, so user transactions and oracle ticks never compete
+// for the same nonce.
+const DEFAULT_ORACLE_UPDATER_PRIVATE_KEY =
+  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const MIN_DEMO_PRICE_USD = 1;
 const STEP_DROP_RATIO = 0.75;
 const MAX_TICK_CHANGE_RATIO = 0.01;
@@ -45,6 +48,22 @@ export type MockOraclePrices = {
   updatedAt: number;
 };
 
+declare global {
+  var mockOracleWriteQueue: Promise<void> | undefined;
+}
+
+function queueOracleWrite<T>(operation: () => Promise<T>) {
+  const previous = globalThis.mockOracleWriteQueue ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(operation);
+
+  globalThis.mockOracleWriteQueue = current.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return current;
+}
+
 function getRpcUrl() {
   return process.env.ANVIL_RPC_URL ?? DEFAULT_ANVIL_RPC_URL;
 }
@@ -64,8 +83,8 @@ function createClients() {
 
   const transport = http(getRpcUrl());
   const publicClient = createPublicClient({ chain: localAnvil, transport });
-  const privateKey = (process.env.ANVIL_PRIVATE_KEY ??
-    DEFAULT_ANVIL_PRIVATE_KEY) as Hex;
+  const privateKey = (process.env.ORACLE_UPDATER_PRIVATE_KEY ??
+    DEFAULT_ORACLE_UPDATER_PRIVATE_KEY) as Hex;
   const account = privateKeyToAccount(privateKey);
   const walletClient = createWalletClient({
     account,
@@ -131,7 +150,7 @@ async function updatePrice(address: Address, price: string) {
   await publicClient.waitForTransactionReceipt({ hash });
 }
 
-export async function updateMockOraclePrices(input: {
+async function updateMockOraclePricesDirect(input: {
   wethUsd: string;
   wbtcUsd: string;
 }) {
@@ -139,6 +158,13 @@ export async function updateMockOraclePrices(input: {
   await updatePrice(ETH_USD_PRICE_FEED_ADDRESS, input.wethUsd);
   await updatePrice(BTC_USD_PRICE_FEED_ADDRESS, input.wbtcUsd);
   return getMockOraclePrices();
+}
+
+export function updateMockOraclePrices(input: {
+  wethUsd: string;
+  wbtcUsd: string;
+}) {
+  return queueOracleWrite(() => updateMockOraclePricesDirect(input));
 }
 
 function nextStepDown(price: string) {
@@ -157,20 +183,24 @@ function nextFluctuatingPrice(price: string) {
   ).toFixed(2);
 }
 
-export async function stepDownMockOraclePrices() {
-  const current = await getMockOraclePrices();
+export function stepDownMockOraclePrices() {
+  return queueOracleWrite(async () => {
+    const current = await getMockOraclePrices();
 
-  return updateMockOraclePrices({
-    wethUsd: nextStepDown(current.wethUsd),
-    wbtcUsd: nextStepDown(current.wbtcUsd),
+    return updateMockOraclePricesDirect({
+      wethUsd: nextStepDown(current.wethUsd),
+      wbtcUsd: nextStepDown(current.wbtcUsd),
+    });
   });
 }
 
-export async function tickMockOraclePrices() {
-  const current = await getMockOraclePrices();
+export function tickMockOraclePrices() {
+  return queueOracleWrite(async () => {
+    const current = await getMockOraclePrices();
 
-  return updateMockOraclePrices({
-    wethUsd: nextFluctuatingPrice(current.wethUsd),
-    wbtcUsd: nextFluctuatingPrice(current.wbtcUsd),
+    return updateMockOraclePricesDirect({
+      wethUsd: nextFluctuatingPrice(current.wethUsd),
+      wbtcUsd: nextFluctuatingPrice(current.wbtcUsd),
+    });
   });
 }

@@ -58,5 +58,8 @@ Suggested video flow:
 6. Click **Reset Prices** to restore the default feed values.
 
 Mock oracle mutations are restricted to chain ID `31337` and a localhost Anvil
-RPC endpoint. The local Anvil private key is only used by server-side API routes
-or CLI scripts and must never use a `NEXT_PUBLIC_` environment variable.
+RPC endpoint. Oracle writes use a dedicated Anvil service account instead of
+the demo wallet, preventing automatic price ticks from competing with user
+transactions for the same nonce. The service key is only used by server-side
+API routes or CLI scripts and must never use a `NEXT_PUBLIC_` environment
+variable.
