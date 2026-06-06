@@ -2,6 +2,7 @@ export { AccountPositionOverview } from "./AccountPositionOverview";
 export { CollateralDepositPanel } from "./CollateralDepositPanel";
 export { LiquidationPanel } from "./LiquidationPanel";
 export { MintDscPanel } from "./MintDscPanel";
+export { OraclePricePanel } from "./OraclePricePanel";
 export { ProtocolExplainer } from "./ProtocolExplainer";
 export { ProtocolFlowTabs } from "./ProtocolFlowTabs";
 export { ProtocolWorkspace } from "./ProtocolWorkspace";

@@ -25,6 +25,10 @@
     "frontend:build": "cd frontend && npm run build",
     "frontend:wagmi": "cd frontend && npm run wagmi:generate",
     "contracts:deploy:all": "npm run contracts:build && npm run contracts:deploy && npm run contracts:sync && npm run contracts:abi && npm run frontend:wagmi",
-    "scan:contracts": "node scripts/scan-wrong-contract-address-usage.mjs"
+    "scan:contracts": "node scripts/scan-wrong-contract-address-usage.mjs",
+    "oracle:show:local": "cd frontend && node scripts/mock-oracle-local.mjs show",
+    "oracle:update:local": "cd frontend && node scripts/mock-oracle-local.mjs update",
+    "oracle:drop:local": "cd frontend && node scripts/mock-oracle-local.mjs drop",
+    "oracle:recover:local": "cd frontend && node scripts/mock-oracle-local.mjs recover"
   }
 }

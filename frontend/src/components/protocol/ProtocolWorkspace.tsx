@@ -1,6 +1,7 @@
 "use client";
 
 import { AccountPositionOverview } from "./AccountPositionOverview";
+import { OraclePricePanel } from "./OraclePricePanel";
 import { ProtocolExplainer } from "./ProtocolExplainer";
 import { ProtocolFlowTabs } from "./ProtocolFlowTabs";
 
@@ -11,6 +12,7 @@ export function ProtocolWorkspace() {
         <ProtocolExplainer />
         <AccountPositionOverview />
       </div>
+      <OraclePricePanel />
       <ProtocolFlowTabs />
     </div>
   );

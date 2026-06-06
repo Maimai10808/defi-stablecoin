@@ -40,7 +40,6 @@ export function MintDscPanel() {
     wallet.hasWallet &&
     mintAmount > 0 &&
     !noCollateral &&
-    !unsafeMint &&
     !status.isMinting;
 
   return (
@@ -98,7 +97,9 @@ export function MintDscPanel() {
           <Notice>Please deposit collateral first.</Notice>
         ) : unsafeMint && mintAmount > 0 ? (
           <Notice destructive>
-            Mint amount is too high and may break your Health Factor.
+            Warning: this amount exceeds the estimated safe mint capacity. You
+            may still submit it, but DSCEngine will revert if the resulting
+            Health Factor is below the protocol minimum.
           </Notice>
         ) : (
           <Notice>
