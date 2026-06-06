@@ -40,7 +40,7 @@ export type Motion3DSceneProps = { active?: boolean; className?: string };
 export function Motion3DScene({ active = true, className }: Motion3DSceneProps) {
   const reduceMotion = useReducedMotion();
   return (
-    <div className={`h-[360px] overflow-hidden rounded-xl border bg-muted/20 ${className ?? ""}`}>
+    <div className={`h-[360px] w-full min-w-0 max-w-full overflow-hidden rounded-xl border bg-muted/20 [contain:layout_paint] ${className ?? ""}`}>
       <Canvas camera={{ position: [0, 2.1, 6.2], fov: 45 }}>
         <ambientLight intensity={0.75} />
         <directionalLight position={[4, 5, 6]} intensity={1.7} />

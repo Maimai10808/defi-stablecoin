@@ -447,7 +447,7 @@ export function Protocol3DOverview() {
 
   return (
     <MotionCard>
-      <Card id="protocol-3d-overview" className="scroll-mt-20 overflow-hidden">
+      <Card id="protocol-3d-overview" className="w-full min-w-0 scroll-mt-20 overflow-hidden">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -486,10 +486,10 @@ export function Protocol3DOverview() {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-          <div className="overflow-hidden rounded-2xl border bg-background">
+        <div className="grid w-full min-w-0 gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.65fr)]">
+          <div className="min-w-0 overflow-hidden rounded-2xl border bg-background">
             <div className="flex flex-col gap-3 border-b bg-muted/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-medium">
                   DSC Collateral Risk Engine
                 </p>
@@ -499,7 +499,7 @@ export function Protocol3DOverview() {
                 </p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex shrink-0 gap-2">
                 <Badge variant="outline">
                   {hasPosition ? "Position Active" : "No Position"}
                 </Badge>
@@ -509,7 +509,7 @@ export function Protocol3DOverview() {
               </div>
             </div>
 
-            <div className="relative h-[460px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.18),transparent_38%),radial-gradient(circle_at_20%_25%,rgba(34,197,94,0.12),transparent_32%),radial-gradient(circle_at_80%_30%,rgba(245,158,11,0.12),transparent_32%)]">
+            <div className="relative h-[460px] w-full min-w-0 overflow-hidden [contain:layout_paint] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.18),transparent_38%),radial-gradient(circle_at_20%_25%,rgba(34,197,94,0.12),transparent_32%),radial-gradient(circle_at_80%_30%,rgba(245,158,11,0.12),transparent_32%)]">
               <Canvas camera={{ position: [0, 2.45, 7.6], fov: 44 }}>
                 <ProtocolScene
                   hasWallet={wallet.hasWallet}
@@ -535,7 +535,7 @@ export function Protocol3DOverview() {
             </div>
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid min-w-0 gap-3">
             <MetricBlock
               icon={<Wallet className="size-3.5" />}
               label="Connected Account"
@@ -583,7 +583,7 @@ export function Protocol3DOverview() {
           active={hasPosition}
         />
 
-        <Motion3DScene active={hasPosition} />
+        <Motion3DScene active={hasPosition} className="w-full min-w-0 max-w-full" />
 
         <Separator />
 

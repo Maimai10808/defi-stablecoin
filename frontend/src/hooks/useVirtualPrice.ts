@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 export function useVirtualPrice(initialPrice = 1000) {
   const [price, setPrice] = useState(initialPrice);
   const [history, setHistory] = useState<{ time: number; price: number }[]>([
-    { time: 0, price: initialPrice },
+    // eslint-disable-next-line react-hooks/purity
+    { time: Date.now(), price: initialPrice },
   ]);
 
   useEffect(() => {

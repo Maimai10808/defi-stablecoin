@@ -148,7 +148,7 @@ export default function AppShell() {
           </Breadcrumb>
         </header>
 
-        <main className="flex flex-1 flex-col gap-6 p-4 pb-24 md:p-6 md:pb-24">
+        <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-x-hidden p-4 pb-24 md:p-6 md:pb-24">
           <section className="rounded-lg border border-border/60 bg-card p-5 shadow-[var(--material-elevation-1)] md:p-6">
             <div className="mb-3 flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Activity className="size-5" />
@@ -163,7 +163,7 @@ export default function AppShell() {
             </p>
           </section>
 
-          <MotionPage viewKey={activeView} className="space-y-6">
+          <MotionPage viewKey={activeView} className="w-full min-w-0 space-y-6">
             {renderActiveView()}
           </MotionPage>
         </main>
