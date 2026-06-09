@@ -96,39 +96,67 @@ function WalletConnectionButton() {
   return (
     <MotionPressable className="ml-auto">
       <Button
-        type="button"
-        size="sm"
-        variant={isConnected ? "outline" : "default"}
-        className="group h-10 gap-2 border-primary/30 px-3 shadow-[0_6px_20px_-10px_hsl(var(--primary))] transition-colors hover:border-primary/60 hover:bg-primary/10"
-        onClick={() => open()}
-        aria-label={
-          isConnected
-            ? `Open connected wallet ${shortAddress(address)}`
-            : "Connect wallet"
-        }
-      >
-        <span className="relative flex size-7 items-center justify-center rounded-md bg-primary/12 text-primary">
-          {isConnected ? (
-            <WalletCards className="size-4" />
-          ) : (
-            <Wallet className="size-4" />
-          )}
-          <span
-            className={`absolute -right-0.5 -bottom-0.5 size-2 rounded-full border-2 border-background ${
-              isConnected ? "bg-emerald-500" : "bg-amber-400"
-            }`}
-          />
-        </span>
-        <span className="hidden min-w-0 text-left sm:block">
-          <span className="block text-[10px] leading-none text-muted-foreground">
-            {isConnected ? "Connected wallet" : "Wallet access"}
-          </span>
-          <span className="mt-1 block font-mono text-xs font-semibold leading-none">
-            {isConnected ? shortAddress(address) : "Connect wallet"}
-          </span>
-        </span>
-        <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
-      </Button>
+  type="button"
+  size="sm"
+  variant={isConnected ? "outline" : "default"}
+  className={`group h-11 gap-2 px-3 transition-all ${
+    isConnected
+      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 shadow-[0_8px_24px_-12px_rgb(16_185_129)] hover:border-emerald-500 hover:bg-emerald-500/15"
+      : "border-primary/30 shadow-[0_6px_20px_-10px_hsl(var(--primary))] hover:border-primary/60 hover:bg-primary/10"
+  }`}
+  onClick={() => open()}
+  aria-label={
+    isConnected
+      ? `Open connected wallet ${shortAddress(address)}`
+      : "Connect wallet"
+  }
+>
+  <span
+    className={`relative flex size-8 items-center justify-center rounded-lg ${
+      isConnected
+        ? "bg-emerald-500 text-white"
+        : "bg-primary/12 text-primary"
+    }`}
+  >
+    {isConnected ? (
+      <WalletCards className="size-4" />
+    ) : (
+      <Wallet className="size-4" />
+    )}
+
+    <span
+      className={`absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-background ${
+        isConnected ? "bg-emerald-400" : "bg-amber-400"
+      }`}
+    />
+  </span>
+
+  <span className="hidden min-w-0 text-left sm:block">
+    <span
+      className={`block text-[10px] font-medium leading-none ${
+        isConnected ? "text-emerald-600/80" : "text-muted-foreground"
+      }`}
+    >
+      {isConnected ? "Wallet connected" : "Wallet access"}
+    </span>
+
+    <span
+      className={`mt-1 block rounded-md font-mono text-xs font-bold leading-none ${
+        isConnected
+          ? "bg-emerald-500/15 px-2 py-1 text-emerald-700"
+          : "text-foreground"
+      }`}
+    >
+      {isConnected ? shortAddress(address) : "Connect wallet"}
+    </span>
+  </span>
+
+  <ChevronDown
+    className={`size-3.5 transition-transform group-hover:translate-y-0.5 ${
+      isConnected ? "text-emerald-600" : "text-muted-foreground"
+    }`}
+  />
+</Button>
     </MotionPressable>
   );
 }
