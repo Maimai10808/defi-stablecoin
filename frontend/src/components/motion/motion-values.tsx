@@ -4,6 +4,7 @@ import { formatEther } from "viem";
 
 import { MotionCountUp } from "@/components/motion/motion-countup";
 import { MotionSkeleton } from "@/components/motion/motion-skeleton";
+import { isInfiniteHealthFactor } from "@/lib/format";
 
 type MotionValueTextProps = {
   value?: bigint;
@@ -36,6 +37,36 @@ export function MotionValueText({
       prefix={prefix}
       suffix={suffix}
       decimals={decimals}
+      className={className}
+    />
+  );
+}
+
+type MotionHealthFactorTextProps = {
+  value?: bigint;
+  className?: string;
+};
+
+export function MotionHealthFactorText({
+  value,
+  className,
+}: MotionHealthFactorTextProps) {
+  if (value === undefined) {
+    return <MotionSkeleton className={className ?? "h-6 w-16"} />;
+  }
+
+  if (isInfiniteHealthFactor(value)) {
+    return (
+      <span className={className} title="No debt, so the position has no liquidation risk">
+        ∞
+      </span>
+    );
+  }
+
+  return (
+    <MotionCountUp
+      value={Number(formatEther(value))}
+      decimals={2}
       className={className}
     />
   );

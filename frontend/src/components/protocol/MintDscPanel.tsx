@@ -2,7 +2,7 @@
 
 import { CircleAlert, Coins, Loader2 } from "lucide-react";
 
-import { MotionNumberText, MotionPressable, MotionValueText } from "@/components/motion";
+import { MotionHealthFactorText, MotionNumberText, MotionPressable, MotionValueText } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,7 +71,7 @@ export function MintDscPanel() {
             <MotionNumberText value={maxMintableDsc} suffix=" DSC" decimals={2} />
           </Metric>
           <Metric label="Health Factor before">
-            <MotionValueText value={position.healthFactor} decimals={2} />
+            <MotionHealthFactorText value={position.healthFactor} />
           </Metric>
         </div>
 

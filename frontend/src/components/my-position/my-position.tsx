@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import {
+  AlertTriangle,
   CircleAlert,
   Coins,
   Database,
@@ -12,6 +13,7 @@ import {
 import { formatEther } from "viem";
 
 import { useMyPosition } from "@/hooks/use-my-position";
+import { useSelectedLocalDemoAccount } from "@/hooks/use-local-demo-account";
 
 import {
   formatHealthFactor,
@@ -32,6 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   MotionCard,
   MotionHealthFactor,
+  MotionHealthFactorText,
   MotionLiquidProgress,
   MotionRevealList,
   MotionValueText,
@@ -101,8 +104,45 @@ function MetricCard({ label, value, description }: MetricCardProps) {
   );
 }
 
+function AccountIdentity({
+  label,
+  address,
+  description,
+}: {
+  label: string;
+  address?: string;
+  description: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-md border bg-muted/20 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate font-mono text-sm font-medium">
+        {shortAddress(address)}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
 export function MyPosition() {
-  const { wallet, position, status } = useMyPosition();
+  const {
+    accounts,
+    displayAddress,
+    isLocalDemo,
+    selectedAccount,
+    selectedAddress,
+    setSelectedAddress,
+  } = useSelectedLocalDemoAccount();
+
+  const { wallet, position, status } = useMyPosition(displayAddress);
+  const isViewingConnectedWallet =
+    Boolean(wallet.address) &&
+    wallet.address?.toLowerCase() === selectedAccount.address.toLowerCase();
+  const selectedAccountName = `${selectedAccount.label}${
+    "role" in selectedAccount && selectedAccount.role
+      ? ` · ${selectedAccount.role}`
+      : ""
+  }`;
 
   const healthFactorState = getHealthFactorState(position.healthFactor);
 
@@ -143,21 +183,76 @@ export function MyPosition() {
         ) : null}
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        <div className="rounded-xl border bg-muted/20 p-4">
+      {isLocalDemo ? (
+        <div className="rounded-xl border border-border/70 bg-muted/20 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium">Connected Account</p>
-              <p className="mt-1 font-mono text-sm text-muted-foreground">
-                {shortAddress(wallet.address)}
+              <p className="text-sm font-medium">Local Demo Account</p>
+              <p className="text-sm text-muted-foreground">
+                Choose a read-only demo account position to inspect.
               </p>
             </div>
-
-            <Badge variant="outline">
-              {wallet.isConnected ? "Active Position View" : "No Wallet"}
-            </Badge>
+            <select
+              value={selectedAddress}
+              onChange={(event) =>
+                setSelectedAddress(event.target.value as typeof selectedAddress)
+              }
+              className="h-9 min-w-[240px] rounded-md border border-input bg-card px-3 py-1 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              {accounts.map((account) => (
+                <option key={account.address} value={account.address}>
+                  {'role' in account && account.role
+                    ? `${account.label} · ${account.role} · ${shortAddress(account.address)}`
+                    : `${account.label} · ${shortAddress(account.address)}`}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
+      ) : null}
+
+      <CardContent className="space-y-6">
+        {isLocalDemo ? (
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <AccountIdentity
+                label="Connected wallet"
+                address={wallet.address}
+                description="Signs and submits every transaction."
+              />
+              <AccountIdentity
+                label="Viewing account"
+                address={selectedAccount.address}
+                description={`${selectedAccountName} · Read-only position data.`}
+              />
+            </div>
+            {!wallet.hasWallet ? (
+              <div className="flex items-start gap-2 rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+                <CircleAlert className="mt-0.5 size-4 shrink-0" />
+                Connect or switch your wallet before submitting transactions.
+              </div>
+            ) : !isViewingConnectedWallet ? (
+              <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                <p>
+                  You are viewing this demo account only. Transactions are still
+                  signed by the connected wallet.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+                Viewing account matches the connected wallet.
+              </div>
+            )}
+          </div>
+        ) : (
+          <AccountIdentity
+            label="Connected wallet"
+            address={wallet.address}
+            description="Current account used for reads and transactions."
+          />
+        )}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
@@ -199,7 +294,11 @@ export function MyPosition() {
           <MetricCard
             label="Health Factor"
             value={
-              <MotionValueText value={position.healthFactor} decimals={2} />
+              position.totalDscMinted === BigInt(0) ? (
+                "No debt"
+              ) : (
+                <MotionHealthFactorText value={position.healthFactor} />
+              )
             }
             description="Minimum safe value is 1.00."
           />

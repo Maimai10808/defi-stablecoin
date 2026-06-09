@@ -24,7 +24,8 @@ const DEFAULT_ANVIL_RPC_URL = "http://127.0.0.1:8545";
 // wallet uses account #0, so user transactions and oracle ticks never compete
 // for the same nonce.
 const DEFAULT_ORACLE_UPDATER_PRIVATE_KEY =
-  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as Hex;
+const PRIVATE_KEY_PATTERN = /^0x[a-fA-F0-9]{64}$/;
 const MIN_DEMO_PRICE_USD = 1;
 const STEP_DROP_RATIO = 0.75;
 const MAX_TICK_CHANGE_RATIO = 0.01;
@@ -68,6 +69,14 @@ function getRpcUrl() {
   return process.env.ANVIL_RPC_URL ?? DEFAULT_ANVIL_RPC_URL;
 }
 
+function getOracleUpdaterPrivateKey(): Hex {
+  const configuredPrivateKey = process.env.ORACLE_UPDATER_PRIVATE_KEY?.trim();
+
+  return configuredPrivateKey && PRIVATE_KEY_PATTERN.test(configuredPrivateKey)
+    ? (configuredPrivateKey as Hex)
+    : DEFAULT_ORACLE_UPDATER_PRIVATE_KEY;
+}
+
 function assertLocalConfiguration() {
   const rpcUrl = getRpcUrl();
   const isLocalRpc =
@@ -83,8 +92,7 @@ function createClients() {
 
   const transport = http(getRpcUrl());
   const publicClient = createPublicClient({ chain: localAnvil, transport });
-  const privateKey = (process.env.ORACLE_UPDATER_PRIVATE_KEY ??
-    DEFAULT_ORACLE_UPDATER_PRIVATE_KEY) as Hex;
+  const privateKey = getOracleUpdaterPrivateKey();
   const account = privateKeyToAccount(privateKey);
   const walletClient = createWalletClient({
     account,

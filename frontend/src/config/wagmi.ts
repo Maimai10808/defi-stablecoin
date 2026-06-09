@@ -1,28 +1,27 @@
-"use client";
+import { cookieStorage, createStorage } from "@wagmi/core";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { anvil, type AppKitNetwork } from "@reown/appkit/networks";
 
-import { createConfig, http } from "wagmi";
-import { injected } from "wagmi/connectors";
+export const projectId =
+  process.env.NEXT_PUBLIC_PROJECT_ID ??
+  "b56e18d47c72ab683b10814fe9495694";
 
-const anvil = {
-  id: 31337,
-  name: "Anvil",
-  nativeCurrency: {
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: ["http://127.0.0.1:8545"],
-    },
-  },
-} as const;
+export const networks: [AppKitNetwork, ...AppKitNetwork[]] = [anvil];
 
-export const wagmiConfig = createConfig({
-  chains: [anvil],
-  connectors: [injected()],
-  transports: {
-    [anvil.id]: http("http://127.0.0.1:8545"),
-  },
+export const wagmiAdapter = new WagmiAdapter({
+  networks,
+  projectId,
   ssr: true,
+  storage: createStorage({
+    storage: cookieStorage,
+  }),
 });
+
+export const wagmiConfig = wagmiAdapter.wagmiConfig;
+
+export const appKitMetadata = {
+  name: "DSC Material Dashboard",
+  description: "Local Anvil overcollateralized stablecoin protocol demo.",
+  url: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  icons: [],
+};

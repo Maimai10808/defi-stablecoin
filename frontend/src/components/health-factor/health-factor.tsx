@@ -41,6 +41,7 @@ import {
   MotionCard,
   MotionErrorShake,
   MotionHealthFactor,
+  MotionHealthFactorText,
   MotionLiquidProgress,
   MotionRevealList,
   MotionValueText,
@@ -230,7 +231,7 @@ export function HealthFactor() {
         <div className="grid gap-3 md:grid-cols-3">
           <RiskMetric
             label="Health Factor"
-            value={<MotionValueText value={risk.healthFactor} decimals={2} />}
+            value={<MotionHealthFactorText value={risk.healthFactor} />}
             description="A value above 1.00 means the position is above the liquidation threshold."
           />
 
@@ -496,7 +497,7 @@ export function HealthFactor() {
               <div className="rounded-lg border bg-background/60 px-3 py-2 text-right">
                 <p className="text-xs text-muted-foreground">Current HF</p>
                 <div className="text-lg font-semibold">
-                  <MotionValueText value={risk.healthFactor} decimals={2} />
+                  <MotionHealthFactorText value={risk.healthFactor} />
                 </div>
               </div>
             </div>

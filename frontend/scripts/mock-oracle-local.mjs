@@ -11,9 +11,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const rpcUrl = process.env.ANVIL_RPC_URL ?? "http://127.0.0.1:8545";
-const privateKey =
-  process.env.ORACLE_UPDATER_PRIVATE_KEY ??
+const defaultPrivateKey =
   "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+const configuredPrivateKey = process.env.ORACLE_UPDATER_PRIVATE_KEY?.trim();
+const privateKey = /^0x[a-fA-F0-9]{64}$/.test(configuredPrivateKey ?? "")
+  ? configuredPrivateKey
+  : defaultPrivateKey;
 const constantsPath = resolve(import.meta.dirname, "../src/constants/contracts.ts");
 
 function readAddress(key) {

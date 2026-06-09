@@ -1,7 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Activity, ShieldCheck } from "lucide-react";
+import {
+  Activity,
+  ChevronDown,
+  ShieldCheck,
+  Wallet,
+  WalletCards,
+} from "lucide-react";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount } from "wagmi";
 
 import { ActivityLog } from "@/components/activity-log";
 import { AppSidebar, type DashboardView } from "@/components/app-sidebar";
@@ -31,7 +39,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { MotionPage } from "@/components/motion";
+import { MotionPage, MotionPressable } from "@/components/motion";
+import { shortAddress } from "@/lib/format";
 
 const viewTitles: Record<DashboardView, string> = {
   "project-guide": "Project Guide",
@@ -47,7 +56,7 @@ const viewTitles: Record<DashboardView, string> = {
   "health-factor": "Health Factor",
   "liquidation-demo": "Liquidation Demo",
   "activity-log": "Activity Log",
-  "contract-addresses": "Contract Addresses",
+  "contract-addresses": "Addresses & Test Accounts",
 };
 
 const viewDescriptions: Record<DashboardView, string> = {
@@ -77,8 +86,52 @@ const viewDescriptions: Record<DashboardView, string> = {
   "activity-log":
     "Review recent demo operations, frontend actions, and transaction records.",
   "contract-addresses":
-    "Inspect deployed contract addresses, token mocks, and price feed addresses.",
+    "Inspect deployed contracts, price feeds, and local Anvil test credentials.",
 };
+
+function WalletConnectionButton() {
+  const { open } = useAppKit();
+  const { address, isConnected } = useAccount();
+
+  return (
+    <MotionPressable className="ml-auto">
+      <Button
+        type="button"
+        size="sm"
+        variant={isConnected ? "outline" : "default"}
+        className="group h-10 gap-2 border-primary/30 px-3 shadow-[0_6px_20px_-10px_hsl(var(--primary))] transition-colors hover:border-primary/60 hover:bg-primary/10"
+        onClick={() => open()}
+        aria-label={
+          isConnected
+            ? `Open connected wallet ${shortAddress(address)}`
+            : "Connect wallet"
+        }
+      >
+        <span className="relative flex size-7 items-center justify-center rounded-md bg-primary/12 text-primary">
+          {isConnected ? (
+            <WalletCards className="size-4" />
+          ) : (
+            <Wallet className="size-4" />
+          )}
+          <span
+            className={`absolute -right-0.5 -bottom-0.5 size-2 rounded-full border-2 border-background ${
+              isConnected ? "bg-emerald-500" : "bg-amber-400"
+            }`}
+          />
+        </span>
+        <span className="hidden min-w-0 text-left sm:block">
+          <span className="block text-[10px] leading-none text-muted-foreground">
+            {isConnected ? "Connected wallet" : "Wallet access"}
+          </span>
+          <span className="mt-1 block font-mono text-xs font-semibold leading-none">
+            {isConnected ? shortAddress(address) : "Connect wallet"}
+          </span>
+        </span>
+        <ChevronDown className="size-3.5 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
+      </Button>
+    </MotionPressable>
+  );
+}
 
 export default function AppShell() {
   const [activeView, setActiveView] =
@@ -153,6 +206,8 @@ export default function AppShell() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+
+          <WalletConnectionButton />
         </header>
 
         <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-x-hidden p-4 pb-24 md:p-6 md:pb-24">

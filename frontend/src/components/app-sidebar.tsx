@@ -54,7 +54,7 @@ const navMain = [
         value: "protocol-flow",
       },
       {
-        title: "Account Overview",
+        title: "My Position",
         value: "my-position",
       },
     ],
@@ -75,7 +75,7 @@ const navMain = [
         value: "activity-log",
       },
       {
-        title: "Contract Addresses",
+        title: "Addresses & Test Accounts",
         value: "contract-addresses",
       },
     ],

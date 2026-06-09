@@ -4,6 +4,9 @@ import { toast } from "sonner";
 
 export const ZERO_ADDRESS =
   "0x0000000000000000000000000000000000000000" as const;
+const INFINITE_HEALTH_FACTOR_THRESHOLD = BigInt(
+  "1000000000000000000000000",
+);
 
 export function shortAddress(address?: string | null) {
   if (!address) return "Not available";
@@ -12,7 +15,12 @@ export function shortAddress(address?: string | null) {
 
 export function formatHealthFactor(value?: bigint) {
   if (value === undefined) return "Loading...";
+  if (isInfiniteHealthFactor(value)) return "∞";
   return Number(formatEther(value)).toFixed(2);
+}
+
+export function isInfiniteHealthFactor(value?: bigint) {
+  return value !== undefined && value >= INFINITE_HEALTH_FACTOR_THRESHOLD;
 }
 
 export function formatDscSupply(value?: bigint) {

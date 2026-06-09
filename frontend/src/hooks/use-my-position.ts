@@ -1,7 +1,7 @@
 "use client";
 
 import type { Address } from "viem";
-import { useAccount } from "wagmi";
+import { useAccount, useChainId } from "wagmi";
 
 import {
   useReadDecentralizedStableCoinBalanceOf,
@@ -25,92 +25,95 @@ import {
 import type { CollateralPositionItem } from "@/types/my-position";
 import { isAvailableAddress, toSafeAddress } from "@/lib/format";
 
-export function useMyPosition() {
+export function useMyPosition(displayAddress?: Address) {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const isLocalDemo = chainId === 31337;
 
-  const userAddress = toSafeAddress(address);
+  const userAddress = displayAddress ?? toSafeAddress(address);
   const wethAddress = toSafeAddress(WETH_ADDRESS);
   const wbtcAddress = toSafeAddress(WBTC_ADDRESS);
   const dscEngineAddress = toSafeAddress(DSC_ENGINE_ADDRESS);
 
   const hasWallet = isConnected && Boolean(address);
+  const shouldRead = hasWallet || (isLocalDemo && displayAddress !== undefined);
   const hasWeth = isAvailableAddress(WETH_ADDRESS);
   const hasWbtc = isAvailableAddress(WBTC_ADDRESS);
 
   const accountInformationRead = useReadDscEngineGetAccountInformation({
     args: [userAddress],
     query: {
-      enabled: hasWallet,
+      enabled: shouldRead,
     },
   });
 
   const accountCollateralValueRead = useReadDscEngineGetAccountCollateralValue({
     args: [userAddress],
     query: {
-      enabled: hasWallet,
+      enabled: shouldRead,
     },
   });
 
   const dscMintedAmountRead = useReadDscEngineGetDscMintedAmount({
     args: [userAddress],
     query: {
-      enabled: hasWallet,
+      enabled: shouldRead,
     },
   });
 
   const healthFactorRead = useReadDscEngineGetHealthFactor({
     args: [userAddress],
     query: {
-      enabled: hasWallet,
+      enabled: shouldRead,
     },
   });
 
   const dscWalletBalanceRead = useReadDecentralizedStableCoinBalanceOf({
     args: [userAddress],
     query: {
-      enabled: hasWallet,
+      enabled: shouldRead,
     },
   });
 
   const wethWalletBalanceRead = useReadWethMockBalanceOf({
     args: [userAddress],
     query: {
-      enabled: hasWallet && hasWeth,
+      enabled: shouldRead && hasWeth,
     },
   });
 
   const wbtcWalletBalanceRead = useReadWbtcMockBalanceOf({
     args: [userAddress],
     query: {
-      enabled: hasWallet && hasWbtc,
+      enabled: shouldRead && hasWbtc,
     },
   });
 
   const wethDepositedAmountRead = useReadDscEngineGetCollateralBalanceOfUser({
     args: [userAddress, wethAddress],
     query: {
-      enabled: hasWallet && hasWeth,
+      enabled: shouldRead && hasWeth,
     },
   });
 
   const wbtcDepositedAmountRead = useReadDscEngineGetCollateralBalanceOfUser({
     args: [userAddress, wbtcAddress],
     query: {
-      enabled: hasWallet && hasWbtc,
+      enabled: shouldRead && hasWbtc,
     },
   });
 
   const wethAllowanceRead = useReadWethMockAllowance({
     args: [userAddress, dscEngineAddress as Address],
     query: {
-      enabled: hasWallet && hasWeth,
+      enabled: shouldRead && hasWeth,
     },
   });
 
   const wbtcAllowanceRead = useReadWbtcMockAllowance({
     args: [userAddress, dscEngineAddress as Address],
     query: {
-      enabled: hasWallet && hasWbtc,
+      enabled: shouldRead && hasWbtc,
     },
   });
 

@@ -37,6 +37,7 @@ import {
   Motion3DScene,
   MotionCard,
   MotionErrorShake,
+  MotionHealthFactorText,
   MotionProtocolBeam,
   MotionRevealList,
   MotionValueText,
@@ -572,7 +573,7 @@ export function Protocol3DOverview() {
             <MetricBlock
               icon={<Gauge className="size-3.5" />}
               label="Health Factor"
-              value={<MotionValueText value={position.healthFactor} decimals={2} />}
+              value={<MotionHealthFactorText value={position.healthFactor} />}
               description="Core liquidation safety indicator of the account."
             />
           </div>

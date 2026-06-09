@@ -34,6 +34,7 @@ import {
   MotionCard,
   MotionErrorShake,
   MotionHealthFactor,
+  MotionHealthFactorText,
   MotionPressable,
   MotionProtocolBeam,
   MotionValueText,
@@ -218,10 +219,7 @@ export function LiquidationDemo() {
                       : Number(formatEther(liquidation.targetHealthFactor))
                   }
                 >
-                  <MotionValueText
-                    value={liquidation.targetHealthFactor}
-                    decimals={2}
-                  />
+                  <MotionHealthFactorText value={liquidation.targetHealthFactor} />
                 </MotionHealthFactor>
               }
               description="Liquidation is only valid below the safe threshold."

@@ -2,7 +2,7 @@
 
 import { CircleAlert, Loader2, Undo2 } from "lucide-react";
 
-import { MotionNumberText, MotionPressable, MotionValueText } from "@/components/motion";
+import { MotionHealthFactorText, MotionNumberText, MotionPressable } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,7 +85,7 @@ export function RedeemCollateralPanel() {
         <div className="grid gap-3 sm:grid-cols-3">
           <Metric label="Deposited amount" value={formatTokenAmount(selectedToken?.depositedAmount, form.collateralToken)} />
           <Metric label="Estimated USD to redeem"><MotionNumberText value={estimatedUsdValue} prefix="$" decimals={2} /></Metric>
-          <Metric label="Health Factor before"><MotionValueText value={position.healthFactor} decimals={2} /></Metric>
+          <Metric label="Health Factor before"><MotionHealthFactorText value={position.healthFactor} /></Metric>
         </div>
 
         <div className="space-y-2">

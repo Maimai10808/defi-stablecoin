@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { formatEther } from "viem";
 
-import { MotionPressable, MotionValueText } from "@/components/motion";
+import { MotionHealthFactorText, MotionPressable, MotionValueText } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -111,10 +111,7 @@ export function LiquidationPanel() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Target Health Factor">
-              <MotionValueText
-                value={liquidation.targetHealthFactor}
-                decimals={2}
-              />
+              <MotionHealthFactorText value={liquidation.targetHealthFactor} />
             </Metric>
             <Metric label="Target DSC debt">
               <MotionValueText
