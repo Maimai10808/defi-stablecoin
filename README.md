@@ -63,3 +63,4 @@ the demo wallet, preventing automatic price ticks from competing with user
 transactions for the same nonce. The service key is only used by server-side
 API routes or CLI scripts and must never use a `NEXT_PUBLIC_` environment
 variable.
+

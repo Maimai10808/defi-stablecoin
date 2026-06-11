@@ -1,5 +1,6 @@
 "use client";
 
+import { CompactAccountSummary } from "./CompactAccountSummary";
 import { OraclePricePanel } from "./OraclePricePanel";
 import { ProtocolExplainer } from "./ProtocolExplainer";
 import { ProtocolFlowTabs } from "./ProtocolFlowTabs";
@@ -9,6 +10,7 @@ export function ProtocolWorkspace() {
     <div className="w-full min-w-0 space-y-6">
       <ProtocolExplainer />
       <OraclePricePanel />
+      <CompactAccountSummary />
       <ProtocolFlowTabs />
     </div>
   );

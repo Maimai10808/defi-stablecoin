@@ -284,7 +284,7 @@ export const dscEngineAbi = [
  *
  */
 export const dscEngineAddress = {
-  31337: '0x5FC8d32690cc91D4c39d9d3abcBD16989F875707',
+  31337: '0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E',
 } as const
 
 /**
@@ -564,7 +564,7 @@ export const decentralizedStableCoinAbi = [
  *
  */
 export const decentralizedStableCoinAddress = {
-  31337: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+  31337: '0x67d269191c92Caf3cD7723F116c85e6E9bf55933',
 } as const
 
 /**
@@ -764,7 +764,7 @@ export const wbtcMockAbi = [
  *
  */
 export const wbtcMockAddress = {
-  31337: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
+  31337: '0xc5a5C42992dECbae36851359345FE25997F5C42d',
 } as const
 
 /**
@@ -964,7 +964,7 @@ export const wethMockAbi = [
  *
  */
 export const wethMockAddress = {
-  31337: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+  31337: '0x7a2088a1bFc9d81c55368AE168C2C02570cB814F',
 } as const
 
 /**

@@ -20,7 +20,16 @@ import { formatTokenAmount } from "@/lib/format";
 import { bigintToNumber, parsePositiveAmount } from "./protocol-calculations";
 
 export function CollateralDepositPanel() {
-  const { wallet, form, tokens, selectedToken, preview, status, actions } = useDepositMint();
+  const {
+    wallet,
+    form,
+    tokens,
+    selectedToken,
+    selectedAllowance,
+    preview,
+    status,
+    actions,
+  } = useDepositMint();
   const amount = parsePositiveAmount(form.collateralAmount);
   const estimatedUsdValue = bigintToNumber(preview.collateralUsdValue);
   const walletBalance =
@@ -28,13 +37,16 @@ export function CollateralDepositPanel() {
       ? 0
       : Number(selectedToken.walletBalance) / 1e18;
   const insufficientBalance = amount > walletBalance && amount > 0;
-  const canDeposit =
+  const isSubmitting =
+    status.isApproving ||
+    status.isDepositing ||
+    status.isGuidedDepositPending;
+  const canSubmit =
     wallet.hasWallet &&
     amount > 0 &&
     !insufficientBalance &&
-    !status.needsApproval &&
-    !status.isApproving &&
-    !status.isDepositing;
+    selectedAllowance !== undefined &&
+    !isSubmitting;
 
   return (
     <Card className="w-full min-w-0">
@@ -102,30 +114,31 @@ export function CollateralDepositPanel() {
           </Notice>
         ) : status.needsApproval ? (
           <Notice>
-            Approve DSCEngine before depositing {form.collateralToken}.
+            One guided action will request approval first, then deposit{" "}
+            {form.collateralToken}. Your wallet will confirm both transactions.
           </Notice>
         ) : null}
 
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <MotionPressable disabled={!status.needsApproval || status.isApproving}>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={!wallet.hasWallet || !status.needsApproval || status.isApproving}
-              onClick={actions.approveSelectedToken}
-            >
-              {status.isApproving ? <Loader2 className="size-4 animate-spin" /> : <LockKeyhole className="size-4" />}
-              Approve {form.collateralToken}
-            </Button>
-          </MotionPressable>
-
-          <MotionPressable disabled={!canDeposit}>
-            <Button type="button" disabled={!canDeposit} onClick={actions.depositSelectedCollateral}>
-              {status.isDepositing ? <Loader2 className="size-4 animate-spin" /> : null}
-              Deposit Collateral
-            </Button>
-          </MotionPressable>
-        </div>
+        <MotionPressable disabled={!canSubmit}>
+          <Button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => actions.approveAndDepositSelectedCollateral()}
+          >
+            {isSubmitting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : status.needsApproval ? (
+              <LockKeyhole className="size-4" />
+            ) : null}
+            {status.isApproving
+              ? `Approving ${form.collateralToken}...`
+              : status.isDepositing
+                ? "Depositing Collateral..."
+                : status.needsApproval
+                  ? `Approve & Deposit ${form.collateralToken}`
+                  : "Deposit Collateral"}
+          </Button>
+        </MotionPressable>
       </CardContent>
     </Card>
   );
