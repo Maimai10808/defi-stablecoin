@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import {useTranslations} from "next-intl";
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -40,6 +41,7 @@ type OracleError = {
 };
 
 export function OraclePricePanel() {
+  const t = useTranslations("Oracle");
   const queryClient = useQueryClient();
   const [prices, setPrices] = React.useState<OraclePrices>();
   const [error, setError] = React.useState<string>();
@@ -66,7 +68,7 @@ export function OraclePricePanel() {
         const result = (await response.json()) as OraclePrices & OracleError;
 
         if (!response.ok) {
-          throw new Error(result.error ?? "Local mock oracle is unavailable.");
+          throw new Error(result.error ?? t("unavailable"));
         }
 
         setPrices(result);
@@ -74,18 +76,18 @@ export function OraclePricePanel() {
 
         if (action === "drop") {
           toast.success(
-            "Collateral prices stepped down. Click again to continue the decline.",
+            t("dropSuccess"),
           );
         }
         if (action === "recover") {
-          toast.success("Mock oracle prices reset.");
+          toast.success(t("resetSuccess"));
         }
       } catch (requestError) {
         if (!silent) {
           setError(
             requestError instanceof Error
               ? requestError.message
-              : "Local mock oracle is unavailable.",
+              : t("unavailable"),
           );
         }
       } finally {
@@ -94,7 +96,7 @@ export function OraclePricePanel() {
         }
       }
     },
-    [queryClient],
+    [queryClient, t],
   );
 
   React.useEffect(() => {
@@ -120,15 +122,14 @@ export function OraclePricePanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <RadioTower className="size-4" />
-              Local Mock Price Oracle
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Simulate WETH and WBTC price changes to see how collateral value,
-              Health Factor, and liquidation risk respond.
+              {t("description")}
             </CardDescription>
           </div>
           <Badge variant={liveFluctuation ? "default" : "outline"}>
-            {liveFluctuation ? "Live fluctuation" : "Prices paused"}
+            {liveFluctuation ? t("live") : t("paused")}
           </Badge>
         </div>
       </CardHeader>
@@ -146,37 +147,34 @@ export function OraclePricePanel() {
           </div>
         ) : (
           <div className="rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-            When collateral prices drop, your collateral value decreases and
-            your Health Factor may fall. If the Health Factor becomes too low,
-            the position can be liquidated. Repeated price-drop clicks reduce
-            both assets by 25% per step, down to a $1 demo floor.
+            {t("risk")}
           </div>
         )}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <OracleButton
-            label={liveFluctuation ? "Pause Live Prices" : "Resume Live Prices"}
+            label={liveFluctuation ? t("pause") : t("resume")}
             pending={false}
             disabled={pendingAction !== undefined}
             icon={Waves}
             onClick={() => setLiveFluctuation((current) => !current)}
           />
           <OracleButton
-            label="Refresh Prices"
+            label={t("refresh")}
             pending={pendingAction === "refresh"}
             disabled={pendingAction !== undefined}
             icon={RefreshCw}
             onClick={() => void requestPrices("refresh")}
           />
           <OracleButton
-            label="Simulate Price Drop"
+            label={t("drop")}
             pending={pendingAction === "drop"}
             disabled={pendingAction !== undefined}
             icon={ArrowDownRight}
             onClick={() => void requestPrices("drop")}
           />
           <OracleButton
-            label="Reset Prices"
+            label={t("reset")}
             pending={pendingAction === "recover"}
             disabled={pendingAction !== undefined}
             icon={RotateCcw}
@@ -189,6 +187,7 @@ export function OraclePricePanel() {
 }
 
 function PriceMetric({ label, value }: { label: string; value?: string }) {
+  const t = useTranslations("Oracle");
   return (
     <div className="rounded-md border bg-muted/20 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -200,7 +199,7 @@ function PriceMetric({ label, value }: { label: string; value?: string }) {
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Local Mock Price Oracle
+        {t("title")}
       </p>
     </div>
   );

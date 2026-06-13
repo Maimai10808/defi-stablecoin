@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleAlert, Loader2, Undo2 } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import { MotionHealthFactorText, MotionNumberText, MotionPressable } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,8 @@ import {
 } from "./protocol-calculations";
 
 export function RedeemCollateralPanel() {
+  const t = useTranslations("ProtocolFlow.redeem");
+  const tCommon = useTranslations("Common");
   const { form, tokens, selectedToken, position: repayPosition, status, actions } = useRepayRedeem();
   const { wallet, position } = useMyPosition();
   const amount = parsePositiveAmount(form.collateralAmount);
@@ -54,13 +57,13 @@ export function RedeemCollateralPanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Undo2 className="size-4" />
-              Redeem Collateral
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Withdraw deposited collateral without repaying DSC in the same action.
+              {t("description")}
             </CardDescription>
           </div>
-          <Badge variant="outline">Step 4</Badge>
+          <Badge variant="outline">{tCommon("step", {number: 4})}</Badge>
         </div>
       </CardHeader>
 
@@ -83,13 +86,13 @@ export function RedeemCollateralPanel() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <Metric label="Deposited amount" value={formatTokenAmount(selectedToken?.depositedAmount, form.collateralToken)} />
-          <Metric label="Estimated USD to redeem"><MotionNumberText value={estimatedUsdValue} prefix="$" decimals={2} /></Metric>
-          <Metric label="Health Factor before"><MotionHealthFactorText value={position.healthFactor} /></Metric>
+          <Metric label={t("deposited")} value={formatTokenAmount(selectedToken?.depositedAmount, form.collateralToken)} />
+          <Metric label={t("estimatedUsd")}><MotionNumberText value={estimatedUsdValue} prefix="$" decimals={2} /></Metric>
+          <Metric label={t("healthBefore")}><MotionHealthFactorText value={position.healthFactor} /></Metric>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="redeem-collateral-amount">Collateral amount to redeem</Label>
+          <Label htmlFor="redeem-collateral-amount">{t("amount")}</Label>
           <Input
             id="redeem-collateral-amount"
             value={form.collateralAmount}
@@ -99,25 +102,25 @@ export function RedeemCollateralPanel() {
             onChange={(event) => actions.updateField("collateralAmount", event.target.value)}
           />
           <p className="text-xs text-muted-foreground">
-            Estimated Health Factor after redeem:{" "}
+            {t("healthAfter")}{" "}
             <span className="font-medium text-foreground">{formatEstimatedHealthFactor(healthFactorAfter)}</span>
           </p>
         </div>
 
         {noCollateral ? (
-          <Notice>No deposited collateral for {form.collateralToken}.</Notice>
+          <Notice>{t("none", {token: form.collateralToken})}</Notice>
         ) : exceedsDeposit ? (
-          <Notice destructive>Amount exceeds deposited collateral.</Notice>
+          <Notice destructive>{t("exceeds")}</Notice>
         ) : unsafeRedeem ? (
-          <Notice destructive>Redeeming this amount would make your position unsafe.</Notice>
+          <Notice destructive>{t("unsafe")}</Notice>
         ) : currentDebt > 0 ? (
-          <Notice>Redeeming collateral reduces your safety margin while DSC debt remains.</Notice>
+          <Notice>{t("warning")}</Notice>
         ) : null}
 
         <MotionPressable disabled={!canRedeem}>
           <Button type="button" disabled={!canRedeem} onClick={actions.redeemSelectedCollateral}>
             {status.isRedeeming ? <Loader2 className="size-4 animate-spin" /> : null}
-            Redeem Collateral
+            {t("submit")}
           </Button>
         </MotionPressable>
       </CardContent>

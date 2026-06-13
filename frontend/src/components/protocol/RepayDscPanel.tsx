@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleAlert, Flame, Loader2, LockKeyhole } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import { MotionHealthFactorText, MotionPressable, MotionValueText } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,8 @@ import {
 } from "./protocol-calculations";
 
 export function RepayDscPanel() {
+  const t = useTranslations("ProtocolFlow.repay");
+  const tCommon = useTranslations("Common");
   const { form, position: repayPosition, status, actions } = useRepayRedeem();
   const { wallet, position } = useMyPosition();
   const repayAmount = parsePositiveAmount(form.dscAmountToBurn);
@@ -53,31 +56,31 @@ export function RepayDscPanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Flame className="size-4" />
-              Repay DSC
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Burn wallet DSC to reduce debt and improve your Health Factor.
+              {t("description")}
             </CardDescription>
           </div>
-          <Badge variant="outline">Step 4</Badge>
+          <Badge variant="outline">{tCommon("step", {number: 3})}</Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-3">
-          <Metric label="Current DSC debt">
+          <Metric label={t("currentDebt")}>
             <MotionValueText value={position.totalDscMinted} suffix=" DSC" decimals={2} />
           </Metric>
-          <Metric label="Wallet DSC balance">
+          <Metric label={t("walletBalance")}>
             <MotionValueText value={position.dscWalletBalance} suffix=" DSC" decimals={2} />
           </Metric>
-          <Metric label="Health Factor before">
+          <Metric label={t("healthBefore")}>
             <MotionHealthFactorText value={position.healthFactor} />
           </Metric>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="repay-dsc-amount">DSC amount to repay</Label>
+          <Label htmlFor="repay-dsc-amount">{t("amount")}</Label>
           <Input
             id="repay-dsc-amount"
             value={form.dscAmountToBurn}
@@ -87,7 +90,7 @@ export function RepayDscPanel() {
             onChange={(event) => actions.updateField("dscAmountToBurn", event.target.value)}
           />
           <p className="text-xs text-muted-foreground">
-            Estimated Health Factor after repay:{" "}
+            {t("healthAfter")}{" "}
             <span className="font-medium text-foreground">
               {formatEstimatedHealthFactor(healthFactorAfter)}
             </span>
@@ -95,13 +98,13 @@ export function RepayDscPanel() {
         </div>
 
         {noDebt ? (
-          <Notice>No DSC debt to repay.</Notice>
+          <Notice>{t("noDebt")}</Notice>
         ) : exceedsBalance ? (
-          <Notice destructive>Insufficient DSC balance.</Notice>
+          <Notice destructive>{t("insufficient")}</Notice>
         ) : exceedsDebt ? (
-          <Notice destructive>Amount exceeds current debt.</Notice>
+          <Notice destructive>{t("exceeds")}</Notice>
         ) : status.needsApproval ? (
-          <Notice>Approve DSC before the engine can burn it.</Notice>
+          <Notice>{t("approval")}</Notice>
         ) : null}
 
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -113,19 +116,19 @@ export function RepayDscPanel() {
               onClick={actions.approveDscForEngine}
             >
               {status.isApproving ? <Loader2 className="size-4 animate-spin" /> : <LockKeyhole className="size-4" />}
-              Approve DSC
+              {t("approve")}
             </Button>
           </MotionPressable>
           <MotionPressable disabled={!canRepay}>
             <Button type="button" disabled={!canRepay} onClick={actions.repayDsc}>
               {status.isRepaying ? <Loader2 className="size-4 animate-spin" /> : null}
-              Repay DSC
+              {t("submit")}
             </Button>
           </MotionPressable>
         </div>
 
         <p className="text-xs text-muted-foreground">
-          Current engine allowance: {bigintToNumber(repayPosition.dscEngineAllowance).toLocaleString()} DSC
+          {t("allowance", {amount: bigintToNumber(repayPosition.dscEngineAllowance).toLocaleString()})}
         </p>
       </CardContent>
     </Card>

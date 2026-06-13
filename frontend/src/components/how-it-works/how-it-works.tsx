@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, Code2, Database, FileCode2, Wallet } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import {
   Card,
@@ -11,44 +12,26 @@ import {
 } from "@/components/ui/card";
 import { MotionCard, MotionProtocolBeam, MotionRevealList } from "@/components/motion";
 
-const flowItems = [
-  {
-    title: "Foundry Contracts",
-    description:
-      "Deploy DSCEngine, DSC token, mock collateral tokens, and mock price feeds on Anvil.",
-    icon: FileCode2,
-  },
-  {
-    title: "Address and ABI Sync",
-    description:
-      "Sync deployed addresses and contract ABIs into the frontend constants and ABI folders.",
-    icon: Database,
-  },
-  {
-    title: "Wagmi Codegen",
-    description:
-      "Generate typed React hooks from ABI and contract addresses for frontend reads and writes.",
-    icon: Code2,
-  },
-  {
-    title: "Next.js Dashboard",
-    description:
-      "Use generated hooks to build wallet, protocol status, position, risk, and action panels.",
-    icon: Wallet,
-  },
-];
-
 export function HowItWorks() {
+  const t = useTranslations("HowItWorks");
+  const tShell = useTranslations("Shell");
+  const flowItems = [
+    {key: "contracts", icon: FileCode2},
+    {key: "sync", icon: Database},
+    {key: "codegen", icon: Code2},
+    {key: "dashboard", icon: Wallet},
+  ] as const;
+
   return (
     <MotionCard>
       <Card id="how-it-works" className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Code2 className="size-5" />
-          How It Works
+          {tShell("views.how-it-works.title")}
         </CardTitle>
         <CardDescription>
-          How the local chain, contracts, generated hooks, and UI work together.
+          {t("description")}
         </CardDescription>
       </CardHeader>
 
@@ -63,12 +46,12 @@ export function HowItWorks() {
             const Icon = item.icon;
 
             return (
-              <div key={item.title} className="relative">
+              <div key={item.key} className="relative">
                 <div className="h-full rounded-xl border bg-muted/20 p-4">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <Icon className="size-4 text-muted-foreground" />
-                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="text-sm font-medium">{t(`items.${item.key}.title`)}</p>
                     </div>
 
                     <span className="text-xs text-muted-foreground">
@@ -77,7 +60,7 @@ export function HowItWorks() {
                   </div>
 
                   <p className="text-sm leading-6 text-muted-foreground">
-                    {item.description}
+                    {t(`items.${item.key}.description`)}
                   </p>
                 </div>
 

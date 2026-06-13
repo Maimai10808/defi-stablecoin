@@ -4,6 +4,7 @@ import * as React from "react";
 import { parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { toast } from "sonner";
+import {useTranslations} from "next-intl";
 
 import { useWriteWbtcMockMint, useWriteWethMockMint } from "@/generated/wagmi";
 
@@ -13,6 +14,8 @@ import { isAvailableAddress, toSafeAddress } from "@/lib/format";
 import type { FaucetTokenItem, FaucetTokenSymbol } from "@/types/faucet";
 
 export function useFaucet() {
+  const t = useTranslations("Faucet");
+  const tToast = useTranslations("Toast");
   const { address, isConnected } = useAccount();
 
   const [amounts, setAmounts] = React.useState<
@@ -33,7 +36,7 @@ export function useFaucet() {
     {
       symbol: "WETH",
       name: "Wrapped Ether Mock",
-      description: "Mint local WETH test collateral to your wallet.",
+      description: t("wethDescription"),
       tokenAddress: hasWeth ? WETH_ADDRESS : null,
       defaultAmount: "10",
       isAvailable: hasWeth,
@@ -41,7 +44,7 @@ export function useFaucet() {
     {
       symbol: "WBTC",
       name: "Wrapped Bitcoin Mock",
-      description: "Mint local WBTC test collateral to your wallet.",
+      description: t("wbtcDescription"),
       tokenAddress: hasWbtc ? WBTC_ADDRESS : null,
       defaultAmount: "1",
       isAvailable: hasWbtc,
@@ -57,14 +60,14 @@ export function useFaucet() {
 
   async function mintToken(symbol: FaucetTokenSymbol) {
     if (!hasWallet || !address) {
-      toast.error("Please connect wallet first");
+      toast.error(tToast("connectFirst"));
       return;
     }
 
     const rawAmount = amounts[symbol];
 
     if (!rawAmount || Number(rawAmount) <= 0) {
-      toast.error("Please enter a valid mint amount");
+      toast.error(t("invalidAmount"));
       return;
     }
 
@@ -74,7 +77,7 @@ export function useFaucet() {
     try {
       if (symbol === "WETH") {
         if (!hasWeth) {
-          toast.error("WETH address is not available");
+          toast.error(tToast("addressUnavailable", {token: "WETH"}));
           return;
         }
 
@@ -85,7 +88,7 @@ export function useFaucet() {
 
       if (symbol === "WBTC") {
         if (!hasWbtc) {
-          toast.error("WBTC address is not available");
+          toast.error(tToast("addressUnavailable", {token: "WBTC"}));
           return;
         }
 
@@ -94,10 +97,10 @@ export function useFaucet() {
         });
       }
 
-      toast.success(`${rawAmount} ${symbol} minted`);
+      toast.success(t("minted", {amount: rawAmount, token: symbol}));
     } catch (error) {
       console.error(error);
-      toast.error(`Failed to mint ${symbol}`);
+      toast.error(t("mintFailed", {token: symbol}));
     }
   }
 

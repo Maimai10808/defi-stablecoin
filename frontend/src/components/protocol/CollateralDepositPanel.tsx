@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleAlert, Loader2, LockKeyhole, WalletCards } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import { MotionNumberText, MotionPressable } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,8 @@ import { formatTokenAmount } from "@/lib/format";
 import { bigintToNumber, parsePositiveAmount } from "./protocol-calculations";
 
 export function CollateralDepositPanel() {
+  const t = useTranslations("ProtocolFlow.deposit");
+  const tCommon = useTranslations("Common");
   const {
     wallet,
     form,
@@ -55,13 +58,13 @@ export function CollateralDepositPanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <WalletCards className="size-4" />
-              Deposit Collateral
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Lock WETH or WBTC in DSCEngine. This action does not mint DSC.
+              {t("description")}
             </CardDescription>
           </div>
-          <Badge variant="outline">Step 1</Badge>
+          <Badge variant="outline">{tCommon("step", {number: 1})}</Badge>
         </div>
       </CardHeader>
 
@@ -84,7 +87,7 @@ export function CollateralDepositPanel() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="deposit-collateral-amount">Collateral amount</Label>
+          <Label htmlFor="deposit-collateral-amount">{t("amount")}</Label>
           <Input
             id="deposit-collateral-amount"
             value={form.collateralAmount}
@@ -96,26 +99,25 @@ export function CollateralDepositPanel() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3">
-          <Metric label="Selected token" value={form.collateralToken} />
-          <Metric label="Estimated USD value">
+          <Metric label={t("selected")} value={form.collateralToken} />
+          <Metric label={t("estimatedUsd")}>
             <MotionNumberText value={estimatedUsdValue} prefix="$" decimals={2} />
           </Metric>
           <Metric
-            label="Already deposited"
+            label={t("alreadyDeposited")}
             value={formatTokenAmount(selectedToken?.depositedAmount, form.collateralToken)}
           />
         </div>
 
         {!wallet.hasWallet ? (
-          <Notice>Connect Wallet to deposit collateral.</Notice>
+          <Notice>{t("connect")}</Notice>
         ) : insufficientBalance ? (
           <Notice destructive>
-            Insufficient {form.collateralToken} balance.
+            {t("insufficient", {token: form.collateralToken})}
           </Notice>
         ) : status.needsApproval ? (
           <Notice>
-            One guided action will request approval first, then deposit{" "}
-            {form.collateralToken}. Your wallet will confirm both transactions.
+            {t("guided", {token: form.collateralToken})}
           </Notice>
         ) : null}
 
@@ -131,12 +133,12 @@ export function CollateralDepositPanel() {
               <LockKeyhole className="size-4" />
             ) : null}
             {status.isApproving
-              ? `Approving ${form.collateralToken}...`
+              ? t("approving", {token: form.collateralToken})
               : status.isDepositing
-                ? "Depositing Collateral..."
+                ? t("depositing")
                 : status.needsApproval
-                  ? `Approve & Deposit ${form.collateralToken}`
-                  : "Deposit Collateral"}
+                  ? t("approveDeposit", {token: form.collateralToken})
+                  : t("submit")}
           </Button>
         </MotionPressable>
       </CardContent>

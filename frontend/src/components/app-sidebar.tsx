@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import {useTranslations} from "next-intl";
 
 import { SearchForm } from "@/components/search-form";
 import { VersionSwitcher } from "@/components/version-switcher";
@@ -43,47 +44,47 @@ const versions = ["Local Anvil", "Sepolia", "Mainnet"];
 
 const navMain = [
   {
-    title: "Demo Flow",
+    titleKey: "demoFlow",
     items: [
       {
-        title: "Project Guide",
+        titleKey: "projectGuide",
         value: "project-guide",
       },
       {
-        title: "Protocol Flow",
+        titleKey: "protocolFlow",
         value: "protocol-flow",
       },
       {
-        title: "My Position",
+        titleKey: "myPosition",
         value: "my-position",
       },
     ],
   },
   {
-    title: "Supporting Tools",
+    titleKey: "supportingTools",
     items: [
       {
-        title: "Faucet",
+        titleKey: "faucet",
         value: "faucet",
       },
       {
-        title: "Protocol Status",
+        titleKey: "protocolStatus",
         value: "protocol-status",
       },
       {
-        title: "Activity Log",
+        titleKey: "activityLog",
         value: "activity-log",
       },
       {
-        title: "Addresses & Test Accounts",
+        titleKey: "addresses",
         value: "contract-addresses",
       },
     ],
   },
 ] satisfies Array<{
-  title: string;
+  titleKey: string;
   items: Array<{
-    title: string;
+    titleKey: string;
     value: DashboardView;
   }>;
 }>;
@@ -93,6 +94,8 @@ export function AppSidebar({
   onViewChange,
   ...props
 }: AppSidebarProps) {
+  const t = useTranslations("Sidebar");
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -102,8 +105,8 @@ export function AppSidebar({
 
       <SidebarContent>
         {navMain.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+          <SidebarGroup key={group.titleKey}>
+            <SidebarGroupLabel>{t(group.titleKey)}</SidebarGroupLabel>
 
             <SidebarGroupContent>
               <SidebarMenu>
@@ -118,7 +121,7 @@ export function AppSidebar({
                         active={activeView === item.value}
                         className="w-full"
                       >
-                        {item.title}
+                        {t(item.titleKey)}
                       </MotionSidebarIndicator>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

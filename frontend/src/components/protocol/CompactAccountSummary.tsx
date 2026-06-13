@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Gauge, WalletCards } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import {
   MotionHealthFactorText,
@@ -21,6 +22,8 @@ import { formatTokenAmount, shortAddress } from "@/lib/format";
 import { getRiskStatus } from "./protocol-calculations";
 
 export function CompactAccountSummary() {
+  const t = useTranslations("ProtocolFlow.snapshot");
+  const tCommon = useTranslations("Common");
   const { wallet, position, status } = useMyPosition();
   const weth = position.collateralPositions.find(
     (token) => token.symbol === "WETH",
@@ -29,7 +32,7 @@ export function CompactAccountSummary() {
     (token) => token.symbol === "WBTC",
   );
   const hasNoDebt = position.totalDscMinted === BigInt(0);
-  const riskStatus = hasNoDebt ? "Safe" : getRiskStatus(position.healthFactor);
+  const riskStatus = hasNoDebt ? "safe" : getRiskStatus(position.healthFactor).toLowerCase();
 
   return (
     <Card className="w-full min-w-0">
@@ -38,19 +41,18 @@ export function CompactAccountSummary() {
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
               <WalletCards className="size-4" />
-              Current Account Snapshot
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Essential position data for the wallet operating this protocol
-              flow.
+              {t("description")}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="font-mono">
               {shortAddress(wallet.address)}
             </Badge>
-            <Badge variant={riskStatus === "Safe" ? "default" : "secondary"}>
-              {riskStatus}
+            <Badge variant={riskStatus === "safe" ? "default" : "secondary"}>
+              {tCommon(riskStatus)}
             </Badge>
           </div>
         </div>
@@ -59,42 +61,42 @@ export function CompactAccountSummary() {
       <CardContent>
         {!wallet.hasWallet ? (
           <div className="rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-            Connect a wallet to view the current account snapshot.
+            {t("connect")}
           </div>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            <Metric label="Collateral value">
+            <Metric label={t("collateral")}>
               <MotionValueText
                 value={position.collateralValueInUsd}
                 prefix="$"
                 decimals={2}
               />
             </Metric>
-            <Metric label="DSC debt">
+            <Metric label={t("debt")}>
               <MotionValueText
                 value={position.totalDscMinted}
                 suffix=" DSC"
                 decimals={2}
               />
             </Metric>
-            <Metric label="Health Factor">
+            <Metric label={t("health")}>
               {hasNoDebt ? (
-                <span title="No DSC debt">∞</span>
+                <span title={tCommon("noDebt")}>∞</span>
               ) : (
                 <MotionHealthFactorText value={position.healthFactor} />
               )}
             </Metric>
-            <Metric label="Wallet DSC">
+            <Metric label={t("walletDsc")}>
               <MotionValueText
                 value={position.dscWalletBalance}
                 suffix=" DSC"
                 decimals={2}
               />
             </Metric>
-            <Metric label="WETH deposited">
+            <Metric label={t("weth")}>
               {formatTokenAmount(weth?.depositedAmount, "WETH")}
             </Metric>
-            <Metric label="WBTC deposited">
+            <Metric label={t("wbtc")}>
               {formatTokenAmount(wbtc?.depositedAmount, "WBTC")}
             </Metric>
           </div>
@@ -103,7 +105,7 @@ export function CompactAccountSummary() {
         {status.hasReadError ? (
           <p className="mt-3 flex items-center gap-2 text-xs text-destructive">
             <Gauge className="size-3.5" />
-            Some account data could not be refreshed from DSCEngine.
+            {t("readError")}
           </p>
         ) : null}
       </CardContent>

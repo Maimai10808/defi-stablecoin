@@ -6,6 +6,7 @@ import { formatEther, parseEther } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 
 import {
   useReadDecentralizedStableCoinAllowance,
@@ -58,6 +59,8 @@ function parseDebtToCover(value: string) {
 }
 
 export function useLiquidationDemo() {
+  const t = useTranslations("Toast");
+  const tActivity = useTranslations("ActivityLog");
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const queryClient = useQueryClient();
@@ -248,7 +251,7 @@ export function useLiquidationDemo() {
 
   async function approveDsc() {
     if (!canApprove) {
-      toast.error("Approval is not ready. Check the debt amount and liquidator DSC balance.");
+      toast.error(t("liquidationApprovalNotReady"));
       return;
     }
 
@@ -266,17 +269,17 @@ export function useLiquidationDemo() {
       ]);
       addSuccessLog({
         type: "approve",
-        title: "DSC approved for liquidation",
-        description: `${form.debtToCover} DSC approved for DSCEngine.`,
+        title: tActivity("dscApprovedTitle"),
+        description: tActivity("dscApprovedDescription", { amount: form.debtToCover }),
         txHash: hash,
         account: address,
       });
-      toast.success("DSC approved. Liquidation is ready.");
+      toast.success(t("liquidationApprovalReady"));
     } catch (error) {
       const message = getDscApprovalErrorMessage(error);
       addFailedLog({
         type: "approve",
-        title: "DSC approval failed",
+        title: tActivity("dscApprovalFailed"),
         description: message,
         account: address,
       });
@@ -287,19 +290,19 @@ export function useLiquidationDemo() {
   async function liquidate() {
     if (!canLiquidate) {
       if (isSelfLiquidation) {
-        toast.error("Switch to another wallet account before liquidating.");
+        toast.error(t("switchLiquidator"));
       } else if (!isTargetLiquidatable) {
-        toast.error("Target position is healthy and cannot be liquidated.");
+        toast.error(t("targetHealthy"));
       } else if (debtExceedsTarget) {
-        toast.error("Debt to cover exceeds target user's debt.");
+        toast.error(t("targetDebtExceeded"));
       } else if (!hasEnoughLiquidatorDsc) {
-        toast.error("Insufficient DSC balance to cover this debt.");
+        toast.error(t("liquidatorDscInsufficient"));
       } else if (needsDscApproval) {
-        toast.error("Please approve enough DSC before liquidation.");
+        toast.error(t("approveEnoughDsc"));
       } else if (!isLiquidatorHealthy) {
-        toast.error("Your own position is unsafe. Repay DSC or add collateral first.");
+        toast.error(t("liquidatorUnsafe"));
       } else {
-        toast.error("Please connect wallet and complete liquidation inputs.");
+        toast.error(t("completeLiquidation"));
       }
       return;
     }
@@ -315,17 +318,20 @@ export function useLiquidationDemo() {
       await Promise.all([refresh(), queryClient.invalidateQueries()]);
       addSuccessLog({
         type: "liquidation",
-        title: "Liquidation executed",
-        description: `${form.debtToCover} DSC covered for ${form.userToLiquidate}.`,
+        title: tActivity("liquidationExecuted"),
+        description: tActivity("liquidationDescription", {
+          amount: form.debtToCover,
+          account: form.userToLiquidate,
+        }),
         txHash: hash,
         account: address,
       });
-      toast.success("Liquidation executed successfully.");
+      toast.success(t("liquidationSuccess"));
     } catch (error) {
       const message = getLiquidationErrorMessage(error);
       addFailedLog({
         type: "liquidation",
-        title: "Liquidation failed",
+        title: tActivity("liquidationFailed"),
         description: message,
         account: address,
       });

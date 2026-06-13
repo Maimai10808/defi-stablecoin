@@ -1,6 +1,7 @@
 "use client";
 
 import { CircleAlert, Coins, Loader2 } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import { MotionHealthFactorText, MotionNumberText, MotionPressable, MotionValueText } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,8 @@ import {
 } from "./protocol-calculations";
 
 export function MintDscPanel() {
+  const t = useTranslations("ProtocolFlow.mint");
+  const tCommon = useTranslations("Common");
   const { form, status, actions } = useDepositMint();
   const { wallet, position } = useMyPosition();
   const collateralUsd = bigintToNumber(position.collateralValueInUsd);
@@ -49,34 +52,34 @@ export function MintDscPanel() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Coins className="size-4" />
-              Mint DSC
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Mint stablecoin debt against collateral already deposited in DSCEngine.
+              {t("description")}
             </CardDescription>
           </div>
-          <Badge variant="outline">Step 2</Badge>
+          <Badge variant="outline">{tCommon("step", {number: 2})}</Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric label="Current collateral">
+          <Metric label={t("currentCollateral")}>
             <MotionValueText value={position.collateralValueInUsd} prefix="$" decimals={2} />
           </Metric>
-          <Metric label="Current minted DSC">
+          <Metric label={t("currentMinted")}>
             <MotionValueText value={position.totalDscMinted} suffix=" DSC" decimals={2} />
           </Metric>
-          <Metric label="Estimated max mintable">
+          <Metric label={t("maxMintable")}>
             <MotionNumberText value={maxMintableDsc} suffix=" DSC" decimals={2} />
           </Metric>
-          <Metric label="Health Factor before">
+          <Metric label={t("healthBefore")}>
             <MotionHealthFactorText value={position.healthFactor} />
           </Metric>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="mint-dsc-amount">DSC amount to mint</Label>
+          <Label htmlFor="mint-dsc-amount">{t("amount")}</Label>
           <Input
             id="mint-dsc-amount"
             value={form.dscAmountToMint}
@@ -86,7 +89,7 @@ export function MintDscPanel() {
             onChange={(event) => actions.updateField("dscAmountToMint", event.target.value)}
           />
           <p className="text-xs text-muted-foreground">
-            Estimated Health Factor after mint:{" "}
+            {t("healthAfter")}{" "}
             <span className="font-medium text-foreground">
               {formatEstimatedHealthFactor(healthFactorAfter)}
             </span>
@@ -94,23 +97,21 @@ export function MintDscPanel() {
         </div>
 
         {noCollateral ? (
-          <Notice>Please deposit collateral first.</Notice>
+          <Notice>{t("depositFirst")}</Notice>
         ) : unsafeMint && mintAmount > 0 ? (
           <Notice destructive>
-            Warning: this amount exceeds the estimated safe mint capacity. You
-            may still submit it, but DSCEngine will revert if the resulting
-            Health Factor is below the protocol minimum.
+            {t("unsafe")}
           </Notice>
         ) : (
           <Notice>
-            DSC is minted from your existing collateral capacity, not created without backing.
+            {t("backed")}
           </Notice>
         )}
 
         <MotionPressable disabled={!canMint}>
           <Button type="button" disabled={!canMint} onClick={actions.mintOnlyDsc}>
             {status.isMinting ? <Loader2 className="size-4 animate-spin" /> : null}
-            Mint DSC
+            {t("submit")}
           </Button>
         </MotionPressable>
       </CardContent>

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ShieldCheck, Users, Wallet } from "lucide-react";
 import { formatEther } from "viem";
 import { useAccount, useBalance } from "wagmi";
+import { useTranslations } from "next-intl";
 
 import { MotionHealthFactor, MotionHealthFactorText, MotionValueText } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ function LocalDemoAccountsOverview({
 }: {
   accounts: readonly LocalDemoAccount[];
 }) {
+  const t = useTranslations("MyPosition");
   const { address } = useAccount();
 
   return (
@@ -45,16 +47,16 @@ function LocalDemoAccountsOverview({
           <div>
             <CardTitle className="flex items-center gap-2">
               <Users className="size-4" />
-              Local Demo Accounts Overview
+              {t("allAccounts")}
             </CardTitle>
             <CardDescription>
-              Read-only position summary for every configured Anvil demo account.
+              {t("allAccountsDescription")}
             </CardDescription>
           </div>
-          <Badge variant="secondary">{accounts.length} demo accounts</Badge>
+          <Badge variant="secondary">{t("accountCount", { count: accounts.length })}</Badge>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/20 px-3 py-2 text-sm">
-          <span className="text-muted-foreground">Connected wallet</span>
+          <span className="text-muted-foreground">{t("connectedWallet")}</span>
           <span className="font-mono text-xs">{shortAddress(address)}</span>
         </div>
       </CardHeader>
@@ -82,6 +84,8 @@ function LocalDemoAccountSummary({
   account: LocalDemoAccount;
   isConnected: boolean;
 }) {
+  const t = useTranslations("MyPosition");
+  const tCommon = useTranslations("Common");
   const { position, status } = useMyPosition(account.address);
   const nativeBalance = useBalance({
     address: account.address,
@@ -109,57 +113,57 @@ function LocalDemoAccountSummary({
             {"role" in account && account.role ? (
               <Badge variant="outline">{account.role}</Badge>
             ) : null}
-            {isConnected ? <Badge>Connected wallet</Badge> : null}
+            {isConnected ? <Badge>{t("connectedWallet")}</Badge> : null}
           </div>
           <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
             {shortAddress(account.address)}
           </p>
         </div>
         <Badge variant={riskStatus === "Safe" ? "default" : "secondary"}>
-          {riskStatus}
+          {tCommon(riskStatus.toLowerCase() as "loading" | "safe" | "watch" | "risky" | "liquidatable")}
         </Badge>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        <CompactMetric label="Native balance">
+        <CompactMetric label={t("nativeBalance")}>
           {nativeBalance.data
             ? `${Number(formatEther(nativeBalance.data.value)).toLocaleString(
                 undefined,
                 { maximumFractionDigits: 3 }
               )} ${nativeBalance.data.symbol}`
-            : "Loading..."}
+            : tCommon("loading")}
         </CompactMetric>
-        <CompactMetric label="Collateral value">
+        <CompactMetric label={t("collateralValue")}>
           <MotionValueText
             value={position.collateralValueInUsd}
             prefix="$"
             decimals={2}
           />
         </CompactMetric>
-        <CompactMetric label="DSC debt">
+        <CompactMetric label={t("dscDebt")}>
           <MotionValueText
             value={position.totalDscMinted}
             suffix=" DSC"
             decimals={2}
           />
         </CompactMetric>
-        <CompactMetric label="Wallet DSC">
+        <CompactMetric label={t("walletDsc")}>
           <MotionValueText
             value={position.dscWalletBalance}
             suffix=" DSC"
             decimals={2}
           />
         </CompactMetric>
-        <CompactMetric label="Health Factor">
+        <CompactMetric label={t("healthFactor")}>
           {position.totalDscMinted === BigInt(0) ? (
-            "No debt"
+            tCommon("noDebt")
           ) : (
             <MotionHealthFactor value={bigintToNumber(position.healthFactor)}>
               <MotionHealthFactorText value={position.healthFactor} />
             </MotionHealthFactor>
           )}
         </CompactMetric>
-        <CompactMetric label="Deposited collateral">
+        <CompactMetric label={t("depositedCollateral")}>
           <span className="block">
             {formatTokenAmount(weth?.depositedAmount, "WETH")}
           </span>
@@ -172,7 +176,7 @@ function LocalDemoAccountSummary({
       {status.hasReadError || nativeBalance.isError ? (
         <p className="flex items-start gap-2 text-xs text-destructive">
           <ShieldCheck className="mt-0.5 size-3 shrink-0" />
-          Some account data is unavailable. Check the local Anvil chain.
+          {t("accountDataUnavailable")}
         </p>
       ) : null}
     </article>
@@ -180,6 +184,8 @@ function LocalDemoAccountSummary({
 }
 
 function ConnectedAccountOverview() {
+  const t = useTranslations("MyPosition");
+  const tCommon = useTranslations("Common");
   const { wallet, position, status } = useMyPosition();
   const riskStatus =
     position.totalDscMinted === BigInt(0)
@@ -193,51 +199,51 @@ function ConnectedAccountOverview() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wallet className="size-4" />
-              Account Position
+              {t("accountPosition")}
             </CardTitle>
             <CardDescription>
-              Current collateral, debt, and liquidation safety.
+              {t("accountPositionDescription")}
             </CardDescription>
           </div>
           <Badge variant={riskStatus === "Safe" ? "default" : "secondary"}>
-            {riskStatus}
+            {tCommon(riskStatus.toLowerCase() as "loading" | "safe" | "watch" | "risky" | "liquidatable")}
           </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/20 px-3 py-2">
-          <span className="text-xs text-muted-foreground">Connected wallet</span>
+          <span className="text-xs text-muted-foreground">{t("connectedWallet")}</span>
           <span className="font-mono text-xs">
             {shortAddress(wallet.address)}
           </span>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Metric label="Collateral value">
+          <Metric label={t("collateralValue")}>
             <MotionValueText
               value={position.collateralValueInUsd}
               prefix="$"
               decimals={2}
             />
           </Metric>
-          <Metric label="DSC minted">
+          <Metric label={t("dscMinted")}>
             <MotionValueText
               value={position.totalDscMinted}
               suffix=" DSC"
               decimals={2}
             />
           </Metric>
-          <Metric label="Wallet DSC">
+          <Metric label={t("walletDsc")}>
             <MotionValueText
               value={position.dscWalletBalance}
               suffix=" DSC"
               decimals={2}
             />
           </Metric>
-          <Metric label="Health Factor">
+          <Metric label={t("healthFactor")}>
             {position.totalDscMinted === BigInt(0) ? (
-              "No debt"
+              tCommon("noDebt")
             ) : (
               <MotionHealthFactor value={bigintToNumber(position.healthFactor)}>
                 <MotionHealthFactorText value={position.healthFactor} />
@@ -253,7 +259,7 @@ function ConnectedAccountOverview() {
               className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
             >
               <span className="text-muted-foreground">
-                {token.symbol} deposited
+                {t("tokenDeposited", { token: token.symbol })}
               </span>
               <span className="font-medium">
                 {formatTokenAmount(token.depositedAmount, token.symbol)}

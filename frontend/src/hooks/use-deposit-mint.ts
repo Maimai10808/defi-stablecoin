@@ -4,6 +4,7 @@ import * as React from "react";
 import type { Address } from "viem";
 import { parseEther } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
+import {useTranslations} from "next-intl";
 import { useAccount, usePublicClient } from "wagmi";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ const DEFAULT_FORM: DepositMintFormState = {
 };
 
 export function useDepositMint() {
+  const t = useTranslations("Toast");
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const queryClient = useQueryClient();
@@ -171,17 +173,17 @@ export function useDepositMint() {
 
   async function approveSelectedToken() {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (!selectedToken?.isAvailable) {
-      toast.error(`${form.collateralToken} address is not available`);
+      toast.error(t("addressUnavailable", {token: form.collateralToken}));
       return;
     }
 
     if (collateralAmountBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid collateral amount");
+      toast.error(t("invalidCollateral"));
       return;
     }
 
@@ -201,38 +203,38 @@ export function useDepositMint() {
       }
 
       await Promise.all([wethAllowance.refetch(), wbtcAllowance.refetch()]);
-      toast.success(`${form.collateralToken} approved`);
+      toast.success(t("approved", {token: form.collateralToken}));
       return true;
     } catch (error) {
       console.error(error);
-      toast.error(`Failed to approve ${form.collateralToken}`);
+      toast.error(t("approveFailed", {token: form.collateralToken}));
       return false;
     }
   }
 
   async function depositCollateralAndMintDsc() {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (!selectedToken?.isAvailable) {
-      toast.error(`${form.collateralToken} address is not available`);
+      toast.error(t("addressUnavailable", {token: form.collateralToken}));
       return;
     }
 
     if (collateralAmountBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid collateral amount");
+      toast.error(t("invalidCollateral"));
       return;
     }
 
     if (dscAmountToMintBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid DSC amount");
+      toast.error(t("invalidDsc"));
       return;
     }
 
     if (needsApproval) {
-      toast.error("Please approve collateral first");
+      toast.error(t("approveFirst"));
       return;
     }
 
@@ -245,26 +247,26 @@ export function useDepositMint() {
         ],
       });
 
-      toast.success("Collateral deposited and DSC minted");
+      toast.success(t("depositMintSuccess"));
     } catch (error) {
       console.error(error);
-      toast.error("Deposit & mint failed");
+      toast.error(t("depositMintFailed"));
     }
   }
 
   async function depositSelectedCollateral(options?: { approvalConfirmed?: boolean }) {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (!selectedToken?.isAvailable) {
-      toast.error(`${form.collateralToken} address is not available`);
+      toast.error(t("addressUnavailable", {token: form.collateralToken}));
       return;
     }
 
     if (collateralAmountBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid collateral amount");
+      toast.error(t("invalidCollateral"));
       return;
     }
 
@@ -272,12 +274,12 @@ export function useDepositMint() {
       selectedToken.walletBalance !== undefined &&
       collateralAmountBigInt > selectedToken.walletBalance
     ) {
-      toast.error(`Insufficient ${form.collateralToken} balance`);
+      toast.error(t("insufficient", {token: form.collateralToken}));
       return;
     }
 
     if (needsApproval && !options?.approvalConfirmed) {
-      toast.error("Please approve collateral first");
+      toast.error(t("approveFirst"));
       return;
     }
 
@@ -294,10 +296,10 @@ export function useDepositMint() {
         wbtcDepositedAmount.refetch(),
         queryClient.invalidateQueries(),
       ]);
-      toast.success("Collateral deposited successfully");
+      toast.success(t("depositSuccess"));
     } catch (error) {
       console.error(error);
-      toast.error("Collateral deposit failed");
+      toast.error(t("depositFailed"));
     }
   }
 
@@ -318,12 +320,12 @@ export function useDepositMint() {
 
   async function mintOnlyDsc() {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (dscAmountToMintBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid DSC amount");
+      toast.error(t("invalidDsc"));
       return;
     }
 
@@ -335,10 +337,10 @@ export function useDepositMint() {
 
       setForm((current) => ({ ...current, dscAmountToMint: "" }));
       await queryClient.invalidateQueries();
-      toast.success("DSC minted successfully");
+      toast.success(t("mintSuccess"));
     } catch (error) {
       console.error(error);
-      toast.error("DSC mint failed. Check your Health Factor");
+      toast.error(t("mintFailed"));
     }
   }
 

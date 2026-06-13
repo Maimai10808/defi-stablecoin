@@ -10,6 +10,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { formatEther } from "viem";
+import { useTranslations } from "next-intl";
 
 import { MotionHealthFactorText, MotionPressable, MotionValueText } from "@/components/motion";
 import { Badge } from "@/components/ui/badge";
@@ -34,11 +35,21 @@ import {
 } from "./protocol-calculations";
 
 type ActionStatus = {
-  label: string;
+  label:
+    | "statusUnavailable"
+    | "statusSwitchWallet"
+    | "notLiquidatable"
+    | "liquidatable"
+    | "statusInsufficient"
+    | "statusUnsafe"
+    | "statusApproval"
+    | "statusReady";
   variant: "default" | "secondary" | "destructive" | "outline";
 };
 
 export function LiquidationPanel() {
+  const t = useTranslations("Liquidation");
+  const tCommon = useTranslations("Common");
   const { wallet, form, updateField, liquidation, status } =
     useLiquidationDemo();
   const targetHealthFactor = toHealthFactor(liquidation.targetHealthFactor);
@@ -70,11 +81,10 @@ export function LiquidationPanel() {
           <div className="min-w-0">
             <CardTitle className="flex items-center gap-2">
               <ShieldAlert className="size-4" />
-              Liquidation
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Repay DSC debt for an unsafe account and receive collateral plus
-              the protocol liquidation bonus.
+              {t("description")}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -83,20 +93,20 @@ export function LiquidationPanel() {
                 liquidation.isTargetLiquidatable ? "destructive" : "secondary"
               }
             >
-              Target:{" "}
+              {t("target")}:{" "}
               {liquidation.isTargetLiquidatable
-                ? "Liquidatable"
-                : "Not liquidatable"}
+                ? t("liquidatable")
+                : t("notLiquidatable")}
             </Badge>
-            <Badge variant={actionStatus.variant}>{actionStatus.label}</Badge>
+            <Badge variant={actionStatus.variant}>{t(actionStatus.label)}</Badge>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
-        <Section title="Target account" icon={<ShieldAlert className="size-4" />}>
+        <Section title={t("targetAccount")} icon={<ShieldAlert className="size-4" />}>
           <div className="space-y-2">
-            <Label htmlFor="liquidation-target">User to liquidate</Label>
+            <Label htmlFor="liquidation-target">{t("userToLiquidate")}</Label>
             <Input
               id="liquidation-target"
               value={form.userToLiquidate}
@@ -110,53 +120,53 @@ export function LiquidationPanel() {
             />
           </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric label="Target Health Factor">
+            <Metric label={t("targetHealth")}>
               <MotionHealthFactorText value={liquidation.targetHealthFactor} />
             </Metric>
-            <Metric label="Target DSC debt">
+            <Metric label={t("targetDebt")}>
               <MotionValueText
                 value={liquidation.targetDscDebt}
                 suffix=" DSC"
                 decimals={2}
               />
             </Metric>
-            <Metric label={`${form.collateralSymbol} deposited`}>
+            <Metric label={t("deposited", { token: form.collateralSymbol })}>
               {formatTokenAmount(
                 liquidation.targetCollateralBalance,
                 form.collateralSymbol,
               )}
             </Metric>
-            <Metric label="Risk status">
+            <Metric label={t("riskStatus")}>
               <Badge
                 variant={
                   targetRisk === "Liquidatable" ? "destructive" : "secondary"
                 }
               >
-                {targetRisk}
+                {tCommon(targetRisk.toLowerCase() as "unknown" | "healthy" | "risky" | "liquidatable")}
               </Badge>
             </Metric>
           </div>
         </Section>
 
-        <Section title="Liquidator" icon={<WalletCards className="size-4" />}>
+        <Section title={t("liquidator")} icon={<WalletCards className="size-4" />}>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric label="Connected wallet">
+            <Metric label={t("connectedWallet")}>
               <span className="font-mono text-sm">
                 {shortAddress(wallet.address)}
               </span>
             </Metric>
-            <Metric label="Liquidator DSC">
+            <Metric label={t("liquidatorDsc")}>
               {liquidatorBalance.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
               })}{" "}
               DSC
             </Metric>
-            <Metric label="Liquidator Health Factor">
+            <Metric label={t("liquidatorHealth")}>
               {liquidation.liquidatorDscDebt === BigInt(0)
-                ? "No debt"
-                : liquidatorHealthFactor?.toFixed(2) ?? "Loading..."}
+                ? tCommon("noDebt")
+                : liquidatorHealthFactor?.toFixed(2) ?? tCommon("loading")}
             </Metric>
-            <Metric label="DSC allowance">
+            <Metric label={t("allowance")}>
               {allowance.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
               })}{" "}
@@ -166,13 +176,13 @@ export function LiquidationPanel() {
         </Section>
 
         <Section
-          title="Liquidation estimate"
+          title={t("estimate")}
           icon={<AlertTriangle className="size-4" />}
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="liquidation-token">
-                Collateral token to receive
+                {t("collateralToken")}
               </Label>
               <select
                 id="liquidation-token"
@@ -190,7 +200,7 @@ export function LiquidationPanel() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="liquidation-debt">Debt to cover</Label>
+              <Label htmlFor="liquidation-debt">{t("debtToCover")}</Label>
               <Input
                 id="liquidation-debt"
                 value={form.debtToCover}
@@ -204,35 +214,36 @@ export function LiquidationPanel() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Metric label="Debt to cover">
+            <Metric label={t("debtToCover")}>
               {debtToCover.toLocaleString(undefined, {
                 maximumFractionDigits: 2,
               })}{" "}
               DSC
             </Metric>
-            <Metric label="Collateral without bonus">
+            <Metric label={t("withoutBonus")}>
               {formatCollateral(baseCollateral, form.collateralSymbol)}
             </Metric>
-            <Metric label="Liquidation bonus">
+            <Metric label={t("bonus")}>
               {formatCollateral(bonusCollateral, form.collateralSymbol)} (10%)
             </Metric>
-            <Metric label="Total collateral to receive">
+            <Metric label={t("total")}>
               {formatCollateral(totalCollateral, form.collateralSymbol)}
             </Metric>
           </div>
 
           <Notice>
-            The liquidator repays{" "}
-            {debtToCover.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })}{" "}
-            DSC for the target account and receives about{" "}
-            {formatCollateral(totalCollateral, form.collateralSymbol)} in total,
-            including the 10% liquidation bonus.
+            {t("estimateExplanation", {
+              debt: debtToCover.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+              collateral: formatCollateral(totalCollateral, form.collateralSymbol),
+            })}
           </Notice>
         </Section>
 
-        {notice ? <Notice destructive={notice.destructive}>{notice.text}</Notice> : null}
+        {notice ? (
+          <Notice destructive={notice.destructive}>
+            {"isError" in notice && notice.isError ? notice.text : t(notice.text)}
+          </Notice>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
           <Button
@@ -240,7 +251,7 @@ export function LiquidationPanel() {
             variant="outline"
             onClick={() => updateField("debtToCover", "1000")}
           >
-            Use Demo Debt Amount
+            {t("useDemoAmount")}
           </Button>
           <Button
             type="button"
@@ -251,7 +262,7 @@ export function LiquidationPanel() {
             <RefreshCw
               className={`size-4 ${status.isReading ? "animate-spin" : ""}`}
             />
-            Refresh Target Position
+            {t("refresh")}
           </Button>
           {liquidation.canApprove ? (
             <MotionPressable disabled={liquidation.isApproving}>
@@ -264,7 +275,7 @@ export function LiquidationPanel() {
                 {liquidation.isApproving ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : null}
-                {liquidation.isApproving ? "Approving..." : "Approve DSC"}
+                {liquidation.isApproving ? t("approving") : t("approve")}
               </Button>
             </MotionPressable>
           ) : !liquidation.needsDscApproval &&
@@ -272,7 +283,7 @@ export function LiquidationPanel() {
             liquidation.liquidatorDscAllowance !== undefined ? (
             <Button type="button" variant="outline" disabled>
               <CheckCircle2 className="size-4" />
-              Approved
+              {t("approved")}
             </Button>
           ) : null}
           <MotionPressable disabled={!liquidation.canLiquidate}>
@@ -284,18 +295,18 @@ export function LiquidationPanel() {
               {liquidation.isSubmitting ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : null}
-              Liquidate Position
+              {t("submit")}
             </Button>
           </MotionPressable>
         </div>
 
         <div className="rounded-md border bg-muted/20 p-4 text-sm">
-          <p className="font-medium">Recommended local demo</p>
+          <p className="font-medium">{t("recommended")}</p>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
-            <li>Account A deposits 10 WETH and mints 9000 DSC.</li>
-            <li>Simulate a price drop until Account A is liquidatable.</li>
-            <li>Switch to Account B, which has a safe position and enough DSC.</li>
-            <li>Approve DSC, then liquidate Account A with 1000 DSC.</li>
+            <li>{t("step1")}</li>
+            <li>{t("step2")}</li>
+            <li>{t("step3")}</li>
+            <li>{t("step4")}</li>
           </ol>
         </div>
       </CardContent>
@@ -378,36 +389,36 @@ function getActionStatus(
   hasWallet: boolean,
 ): ActionStatus {
   if (!hasWallet) {
-    return { label: "Liquidation unavailable", variant: "secondary" };
+    return { label: "statusUnavailable", variant: "secondary" };
   }
   if (!liquidation.isTargetAddressValid) {
-    return { label: "Liquidation unavailable", variant: "secondary" };
+    return { label: "statusUnavailable", variant: "secondary" };
   }
   if (liquidation.isSelfLiquidation) {
-    return { label: "Switch wallet required", variant: "destructive" };
+    return { label: "statusSwitchWallet", variant: "destructive" };
   }
   if (!liquidation.isTargetLiquidatable) {
-    return { label: "Not liquidatable", variant: "secondary" };
+    return { label: "notLiquidatable", variant: "secondary" };
   }
   if (!liquidation.hasDebtToCover) {
-    return { label: "Liquidatable", variant: "destructive" };
+    return { label: "liquidatable", variant: "destructive" };
   }
   if (liquidation.debtExceedsTarget) {
-    return { label: "Liquidation unavailable", variant: "destructive" };
+    return { label: "statusUnavailable", variant: "destructive" };
   }
   if (!liquidation.hasEnoughLiquidatorDsc) {
-    return { label: "Insufficient DSC", variant: "destructive" };
+    return { label: "statusInsufficient", variant: "destructive" };
   }
   if (!liquidation.isLiquidatorHealthy) {
-    return { label: "Unsafe liquidator", variant: "destructive" };
+    return { label: "statusUnsafe", variant: "destructive" };
   }
   if (liquidation.needsDscApproval) {
-    return { label: "Approval required", variant: "secondary" };
+    return { label: "statusApproval", variant: "secondary" };
   }
   if (liquidation.canLiquidate) {
-    return { label: "Ready to liquidate", variant: "default" };
+    return { label: "statusReady", variant: "default" };
   }
-  return { label: "Liquidatable", variant: "destructive" };
+  return { label: "liquidatable", variant: "destructive" };
 }
 
 function getNotice(
@@ -419,25 +430,25 @@ function getNotice(
   if (!hasWallet) {
     return {
       destructive: false,
-      text: "Connect a liquidator wallet to check DSC balance, allowance, and liquidation readiness.",
+      text: "noticeConnect" as const,
     };
   }
   if (!liquidation.isTargetAddressValid) {
     return {
       destructive: false,
-      text: "Enter a valid EVM address to inspect the target position.",
+      text: "noticeAddress" as const,
     };
   }
   if (hasReadError) {
     return {
       destructive: true,
-      text: "Unable to read liquidation data. Check the local chain and contract state, then refresh the target position.",
+      text: "noticeRead" as const,
     };
   }
   if (liquidation.isSelfLiquidation) {
     return {
       destructive: true,
-      text: "You cannot liquidate the same wallet that is currently connected. Switch to another wallet account as the liquidator.",
+      text: "noticeSelf" as const,
     };
   }
   if (
@@ -447,13 +458,13 @@ function getNotice(
   ) {
     return {
       destructive: false,
-      text: "Position is healthy and cannot be liquidated.",
+      text: "noticeHealthy" as const,
     };
   }
   if (liquidation.debtExceedsTarget) {
     return {
       destructive: true,
-      text: "Debt to cover exceeds target user's debt.",
+      text: "noticeDebt" as const,
     };
   }
   if (
@@ -462,7 +473,7 @@ function getNotice(
   ) {
     return {
       destructive: true,
-      text: "Insufficient DSC balance to cover this debt.",
+      text: "noticeBalance" as const,
     };
   }
   if (
@@ -471,25 +482,26 @@ function getNotice(
   ) {
     return {
       destructive: true,
-      text: "Your own position is unsafe. Please repay DSC or add collateral before liquidating others.",
+      text: "noticeUnsafe" as const,
     };
   }
   if (liquidation.needsDscApproval) {
     return {
       destructive: false,
-      text: "Approval required. DSCEngine must be allowed to transfer the DSC used to cover the target debt.",
+      text: "noticeApproval" as const,
     };
   }
   if (previewError && liquidation.canLiquidate) {
     return {
       destructive: true,
       text: getLiquidationErrorMessage(previewError),
+      isError: true as const,
     };
   }
   if (liquidation.isTargetLiquidatable) {
     return {
       destructive: false,
-      text: "If liquidation fails because the health factor is not improved, increase the debt to cover.",
+      text: "noticeImprove" as const,
     };
   }
   return null;

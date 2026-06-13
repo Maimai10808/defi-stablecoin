@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Coins, Flame, ShieldAlert, Undo2, WalletCards } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import { MotionPage } from "@/components/motion";
 import { Button } from "@/components/ui/button";
@@ -13,16 +14,17 @@ import { RedeemCollateralPanel } from "./RedeemCollateralPanel";
 import { RepayDscPanel } from "./RepayDscPanel";
 
 const tabs = [
-  { value: "deposit", label: "Deposit", icon: WalletCards },
-  { value: "mint", label: "Mint DSC", icon: Coins },
-  { value: "repay", label: "Repay DSC", icon: Flame },
-  { value: "redeem", label: "Redeem", icon: Undo2 },
-  { value: "liquidation", label: "Liquidation", icon: ShieldAlert },
+  { value: "deposit", icon: WalletCards },
+  { value: "mint", icon: Coins },
+  { value: "repay", icon: Flame },
+  { value: "redeem", icon: Undo2 },
+  { value: "liquidation", icon: ShieldAlert },
 ] as const;
 
 type ProtocolTab = (typeof tabs)[number]["value"];
 
 export function ProtocolFlowTabs() {
+  const t = useTranslations("ProtocolFlow");
   const [activeTab, setActiveTab] = React.useState<ProtocolTab>("deposit");
 
   return (
@@ -44,7 +46,7 @@ export function ProtocolFlowTabs() {
                 {index + 1}
               </span>
               <Icon className="size-4" />
-              <span className="truncate">{tab.label}</span>
+              <span className="truncate">{t(`tabs.${tab.value}`)}</span>
             </Button>
           );
         })}

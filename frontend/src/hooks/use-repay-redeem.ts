@@ -5,6 +5,7 @@ import type { Address } from "viem";
 import { parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import {
   useReadDecentralizedStableCoinAllowance,
@@ -40,6 +41,7 @@ const DEFAULT_FORM: RepayRedeemFormState = {
 };
 
 export function useRepayRedeem() {
+  const t = useTranslations("Toast");
   const { address, isConnected } = useAccount();
 
   const [form, setForm] = React.useState<RepayRedeemFormState>(DEFAULT_FORM);
@@ -167,12 +169,12 @@ export function useRepayRedeem() {
 
   async function approveDscForEngine() {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (dscAmountToBurnBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid DSC amount");
+      toast.error(t("invalidDsc"));
       return;
     }
 
@@ -181,36 +183,36 @@ export function useRepayRedeem() {
         args: [engineAddress, dscAmountToBurnBigInt],
       });
 
-      toast.success("DSC approved");
+      toast.success(t("dscApproved"));
     } catch (error) {
       console.error(error);
-      toast.error("Failed to approve DSC");
+      toast.error(t("approveDscFailed"));
     }
   }
 
   async function repayAndRedeem() {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (!selectedToken?.isAvailable) {
-      toast.error(`${form.collateralToken} address is not available`);
+      toast.error(t("addressUnavailable", { token: form.collateralToken }));
       return;
     }
 
     if (collateralAmountBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid collateral amount");
+      toast.error(t("invalidCollateral"));
       return;
     }
 
     if (dscAmountToBurnBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid DSC amount");
+      toast.error(t("invalidDsc"));
       return;
     }
 
     if (needsApproval) {
-      toast.error("Please approve DSC first");
+      toast.error(t("approveDscFirst"));
       return;
     }
 
@@ -223,21 +225,21 @@ export function useRepayRedeem() {
         ],
       });
 
-      toast.success("DSC repaid and collateral redeemed");
+      toast.success(t("repayRedeemSuccess"));
     } catch (error) {
       console.error(error);
-      toast.error("Repay & redeem failed");
+      toast.error(t("repayRedeemFailed"));
     }
   }
 
   async function repayDsc() {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (dscAmountToBurnBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid DSC amount");
+      toast.error(t("invalidDsc"));
       return;
     }
 
@@ -245,7 +247,7 @@ export function useRepayRedeem() {
       dscWalletBalance.data !== undefined &&
       dscAmountToBurnBigInt > dscWalletBalance.data
     ) {
-      toast.error("Insufficient DSC balance");
+      toast.error(t("insufficientDsc"));
       return;
     }
 
@@ -253,12 +255,12 @@ export function useRepayRedeem() {
       dscMintedAmount.data !== undefined &&
       dscAmountToBurnBigInt > dscMintedAmount.data
     ) {
-      toast.error("Amount exceeds current debt");
+      toast.error(t("exceedsDebt"));
       return;
     }
 
     if (needsApproval) {
-      toast.error("Please approve DSC first");
+      toast.error(t("approveDscFirst"));
       return;
     }
 
@@ -272,26 +274,26 @@ export function useRepayRedeem() {
         dscMintedAmount.refetch(),
         dscEngineAllowance.refetch(),
       ]);
-      toast.success("DSC repaid successfully");
+      toast.success(t("repaySuccess"));
     } catch (error) {
       console.error(error);
-      toast.error("DSC repayment failed");
+      toast.error(t("repayFailed"));
     }
   }
 
   async function redeemSelectedCollateral() {
     if (!hasWallet) {
-      toast.error("Please connect wallet first");
+      toast.error(t("connectFirst"));
       return;
     }
 
     if (!selectedToken?.isAvailable) {
-      toast.error(`${form.collateralToken} address is not available`);
+      toast.error(t("addressUnavailable", { token: form.collateralToken }));
       return;
     }
 
     if (collateralAmountBigInt <= BigInt(0)) {
-      toast.error("Please enter a valid collateral amount");
+      toast.error(t("invalidCollateral"));
       return;
     }
 
@@ -299,7 +301,7 @@ export function useRepayRedeem() {
       selectedToken.depositedAmount !== undefined &&
       collateralAmountBigInt > selectedToken.depositedAmount
     ) {
-      toast.error("Amount exceeds deposited collateral");
+      toast.error(t("exceedsCollateral"));
       return;
     }
 
@@ -314,10 +316,10 @@ export function useRepayRedeem() {
         wethWalletBalance.refetch(),
         wbtcWalletBalance.refetch(),
       ]);
-      toast.success("Collateral redeemed successfully");
+      toast.success(t("redeemSuccess"));
     } catch (error) {
       console.error(error);
-      toast.error("Collateral redemption failed. Check your Health Factor");
+      toast.error(t("redeemFailed"));
     }
   }
 

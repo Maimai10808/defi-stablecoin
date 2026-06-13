@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import {
   Card,
@@ -22,49 +23,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { MotionCard, MotionRevealList } from "@/components/motion";
 
-const guideItems = [
-  {
-    title: "Connect Local Wallet",
-    description:
-      "Connect your wallet to the local Anvil network before interacting with the protocol.",
-    icon: CheckCircle2,
-  },
-  {
-    title: "Get Mock Tokens",
-    description:
-      "Use the Faucet page to mint WETH or WBTC mock tokens for local testing.",
-    icon: PlayCircle,
-  },
-  {
-    title: "Follow the Protocol Flow",
-    description:
-      "Deposit, mint, monitor risk, repay or redeem, then explore liquidation as separate actions.",
-    icon: Layers,
-  },
-];
-
-const overviewItems = [
-  {
-    title: "Overcollateralized Stablecoin",
-    description:
-      "Users deposit crypto assets such as WETH or WBTC as collateral, and mint DSC stablecoins against that collateral.",
-    icon: Coins,
-  },
-  {
-    title: "Health Factor Risk Control",
-    description:
-      "Every position has a Health Factor. A higher value means the account is safer; a lower value means it may be liquidated.",
-    icon: Gauge,
-  },
-  {
-    title: "Liquidation Protection",
-    description:
-      "If a user's collateral value falls too much, the protocol allows liquidation to protect the system from bad debt.",
-    icon: ShieldCheck,
-  },
-];
-
 export function ProjectGuide() {
+  const t = useTranslations("ProjectGuide");
+  const tShell = useTranslations("Shell");
+  const overviewItems = [
+    {key: "stablecoin", icon: Coins},
+    {key: "health", icon: Gauge},
+    {key: "liquidation", icon: ShieldCheck},
+  ] as const;
+  const guideItems = [
+    {key: "wallet", icon: CheckCircle2},
+    {key: "tokens", icon: PlayCircle},
+    {key: "flow", icon: Layers},
+  ] as const;
+
   return (
     <MotionCard>
       <Card id="project-guide" className="scroll-mt-20 overflow-hidden">
@@ -73,17 +45,17 @@ export function ProjectGuide() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="size-5" />
-                Project Guide
+                {tShell("views.project-guide.title")}
               </CardTitle>
 
               <CardDescription>
-                A guided introduction to the Decentralized StableCoin local demo.
+                {tShell("views.project-guide.description")}
               </CardDescription>
             </div>
 
             <Badge variant="outline" className="w-fit gap-1">
               <Sparkles className="size-3" />
-              DeFi Stablecoin Demo
+              {t("badge")}
             </Badge>
           </div>
         </CardHeader>
@@ -96,21 +68,15 @@ export function ProjectGuide() {
               </div>
 
               <div>
-                <p className="text-sm font-semibold">Project Overview</p>
+                <p className="text-sm font-semibold">{t("overviewTitle")}</p>
                 <p className="text-xs text-muted-foreground">
-                  What this protocol is trying to demonstrate
+                  {t("overviewSubtitle")}
                 </p>
               </div>
             </div>
 
             <div className="space-y-3 text-sm leading-6 text-muted-foreground">
-              <p>
-                This demo shows the core lifecycle of an overcollateralized
-                stablecoin protocol: users deposit WETH or WBTC as collateral,
-                the protocol calculates the USD value through price feeds, users
-                mint DSC against that collateral, and the Health Factor
-                determines whether the position is safe, risky, or liquidatable.
-              </p>
+              <p>{t("overview")}</p>
             </div>
           </div>
 
@@ -120,7 +86,7 @@ export function ProjectGuide() {
 
               return (
                 <div
-                  key={item.title}
+                  key={item.key}
                   className="rounded-xl border bg-muted/20 p-4"
                 >
                   <div className="mb-3 flex items-center gap-2">
@@ -128,11 +94,11 @@ export function ProjectGuide() {
                       <Icon className="size-4 text-muted-foreground" />
                     </div>
 
-                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-sm font-medium">{t(`concepts.${item.key}.title`)}</p>
                   </div>
 
                   <p className="text-sm leading-6 text-muted-foreground">
-                    {item.description}
+                    {t(`concepts.${item.key}.description`)}
                   </p>
                 </div>
               );
@@ -141,9 +107,9 @@ export function ProjectGuide() {
 
           <div className="rounded-lg border bg-background p-5">
             <div className="mb-4">
-              <p className="text-sm font-semibold">How to use this demo</p>
+              <p className="text-sm font-semibold">{t("howToTitle")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Complete each action independently so the effect on your position is clear.
+                {t("howToSubtitle")}
               </p>
             </div>
 
@@ -153,16 +119,16 @@ export function ProjectGuide() {
 
                 return (
                   <div
-                    key={item.title}
+                    key={item.key}
                     className="rounded-xl border bg-muted/20 p-4"
                   >
                     <div className="mb-3 flex items-center gap-2">
                       <Icon className="size-4 text-muted-foreground" />
-                      <p className="text-sm font-medium">{item.title}</p>
+                      <p className="text-sm font-medium">{t(`steps.${item.key}.title`)}</p>
                     </div>
 
                     <p className="text-sm leading-6 text-muted-foreground">
-                      {item.description}
+                      {t(`steps.${item.key}.description`)}
                     </p>
                   </div>
                 );
@@ -171,9 +137,8 @@ export function ProjectGuide() {
           </div>
 
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 text-sm leading-6 text-muted-foreground">
-            <span className="font-medium text-foreground">In one sentence: </span>
-            Collateral Deposit → Mint DSC → Monitor Health Factor → Repay /
-            Redeem → Liquidation.
+            <span className="font-medium text-foreground">{t("summaryLabel")} </span>
+            {t("summary")}
           </div>
         </CardContent>
       </Card>

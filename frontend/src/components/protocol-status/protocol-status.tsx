@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Wallet,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { useProtocolStatus } from "@/hooks/use-protocol-status";
 import { shortAddress } from "@/lib/format";
@@ -62,6 +63,7 @@ type AddressRowProps = {
 };
 
 function AddressRow({ label, value }: AddressRowProps) {
+  const t = useTranslations("ProtocolStatus");
   return (
     <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
       <div className="min-w-0">
@@ -71,7 +73,7 @@ function AddressRow({ label, value }: AddressRowProps) {
 
       <MotionCopyButton
         value={value}
-        label="Copy"
+        label={t("copy")}
         className="shrink-0 border-transparent px-2 py-2"
       />
     </div>
@@ -93,6 +95,8 @@ function InfoItem({ label, value }: InfoItemProps) {
 }
 
 export function ProtocolStatus() {
+  const t = useTranslations("ProtocolStatus");
+  const tCommon = useTranslations("Common");
   const { wallet, network, addresses, protocolData, status } =
     useProtocolStatus();
 
@@ -104,26 +108,24 @@ export function ProtocolStatus() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="size-5" />
-              Protocol Status
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Decentralized StableCoin local demo dashboard.
+              {t("description")}
             </CardDescription>
           </div>
 
           <StatusBadge
             ready={status.demoReady}
-            readyText="Demo Ready"
-            pendingText="Setup Required"
+            readyText={t("demoReady")}
+            pendingText={t("setupRequired")}
           />
         </div>
 
         <MotionErrorShake trigger={status.hasProtocolReadError}>
           {status.hasProtocolReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            Failed to read some protocol data. Please check whether Anvil is
-            running, contracts are deployed, and wallet is connected to the
-            correct local network.
+            {t("readError")}
           </div>
           ) : null}
         </MotionErrorShake>
@@ -134,22 +136,22 @@ export function ProtocolStatus() {
           <div className="rounded-xl border bg-muted/20 p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium">
               <Server className="size-4" />
-              Network
+              {t("network")}
             </div>
 
             <div className="space-y-2">
               <InfoItem
-                label="Current Chain ID"
-                value={network.currentChainId || "Not connected"}
+                label={t("currentChain")}
+                value={network.currentChainId || t("notConnected")}
               />
               <InfoItem
-                label="Expected Chain ID"
+                label={t("expectedChain")}
                 value={network.expectedChainId}
               />
               <StatusBadge
                 ready={network.isCorrectNetwork}
-                readyText="Correct Network"
-                pendingText="Wrong Network"
+                readyText={t("correctNetwork")}
+                pendingText={t("wrongNetwork")}
               />
             </div>
           </div>
@@ -157,19 +159,19 @@ export function ProtocolStatus() {
           <div className="rounded-xl border bg-muted/20 p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium">
               <Wallet className="size-4" />
-              Wallet
+              {t("wallet")}
             </div>
 
             <div className="space-y-2">
               <InfoItem
-                label="Connection"
-                value={wallet.isConnected ? "Connected" : "Not Connected"}
+                label={t("connection")}
+                value={wallet.isConnected ? t("connected") : t("notConnectedWallet")}
               />
-              <InfoItem label="Address" value={shortAddress(wallet.address)} />
+              <InfoItem label={tCommon("address")} value={shortAddress(wallet.address)} />
               <StatusBadge
                 ready={wallet.isConnected}
-                readyText="Wallet Connected"
-                pendingText="Connect Wallet"
+                readyText={t("walletConnected")}
+                pendingText={tCommon("connectWallet")}
               />
             </div>
           </div>
@@ -177,24 +179,24 @@ export function ProtocolStatus() {
           <div className="rounded-xl border bg-muted/20 p-4">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium">
               <Activity className="size-4" />
-              Readiness
+              {t("readiness")}
             </div>
 
             <div className="space-y-2">
               <StatusBadge
                 ready={addresses.contractAddressesReady}
-                readyText="Addresses Ready"
-                pendingText="Missing Addresses"
+                readyText={t("addressesReady")}
+                pendingText={t("missingAddresses")}
               />
               <StatusBadge
                 ready={status.protocolReadable}
-                readyText="Protocol Readable"
-                pendingText="Reading Protocol"
+                readyText={t("protocolReadable")}
+                pendingText={t("readingProtocol")}
               />
               <StatusBadge
                 ready={status.demoReady}
-                readyText="Ready"
-                pendingText="Not Ready"
+                readyText={t("ready")}
+                pendingText={t("notReady")}
               />
             </div>
           </div>
@@ -205,7 +207,7 @@ export function ProtocolStatus() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Link2 className="size-4" />
-            <h3 className="text-sm font-medium">Contract Addresses</h3>
+            <h3 className="text-sm font-medium">{t("contractAddresses")}</h3>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -227,7 +229,7 @@ export function ProtocolStatus() {
           </div>
 
           <MotionOracleBeam
-            fromLabel="Mock Price Feeds"
+            fromLabel={t("mockFeeds")}
             toLabel="DSCEngine"
             active={addresses.contractAddressesReady}
           />
@@ -238,16 +240,16 @@ export function ProtocolStatus() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Database className="size-4" />
-            <h3 className="text-sm font-medium">Protocol Data</h3>
+            <h3 className="text-sm font-medium">{t("protocolData")}</h3>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             <InfoItem
-              label="DSC Address From Engine"
+              label={t("dscFromEngine")}
               value={shortAddress(protocolData.dscFromEngine.data)}
             />
             <InfoItem
-              label="Minimum Health Factor"
+              label={t("minimumHealth")}
               value={
                 <MotionValueText
                   value={protocolData.minHealthFactor.data}
@@ -256,15 +258,15 @@ export function ProtocolStatus() {
               }
             />
             <InfoItem
-              label="DSC Name"
-              value={protocolData.dscName.data ?? "Loading..."}
+              label={t("dscName")}
+              value={protocolData.dscName.data ?? tCommon("loading")}
             />
             <InfoItem
-              label="DSC Symbol"
-              value={protocolData.dscSymbol.data ?? "Loading..."}
+              label={t("dscSymbol")}
+              value={protocolData.dscSymbol.data ?? tCommon("loading")}
             />
             <InfoItem
-              label="DSC Total Supply"
+              label={t("totalSupply")}
               value={
                 <MotionValueText
                   value={protocolData.totalSupply.data}
@@ -274,7 +276,7 @@ export function ProtocolStatus() {
               }
             />
             <InfoItem
-              label="DSC Owner"
+              label={t("dscOwner")}
               value={shortAddress(protocolData.dscOwner.data)}
             />
           </div>
@@ -282,14 +284,13 @@ export function ProtocolStatus() {
 
         <div className="flex flex-col gap-2 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <div>
-            This panel verifies whether the local DSC protocol demo is ready to
-            use.
+            {t("footer")}
           </div>
 
           <MotionPressable>
             <Button type="button" variant="outline" size="sm" asChild>
               <a href="#contract-addresses">
-                View Addresses
+                {t("viewAddresses")}
                 <ExternalLink className="ml-2 size-4" />
               </a>
             </Button>

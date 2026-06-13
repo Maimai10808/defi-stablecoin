@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   Wallet,
 } from "lucide-react";
+import {useTranslations} from "next-intl";
 
 import {
   Card,
@@ -20,55 +21,29 @@ import {
 } from "@/components/ui/card";
 import { MotionCard, MotionRevealList } from "@/components/motion";
 
-const features = [
-  {
-    title: "Protocol Status",
-    description: "Check network, wallet, contract address, and protocol readability.",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "My Position",
-    description: "Read collateral value, minted DSC, wallet balances, and allowance.",
-    icon: Wallet,
-  },
-  {
-    title: "Faucet",
-    description: "Mint local mock WETH or WBTC for demo testing.",
-    icon: Coins,
-  },
-  {
-    title: "Deposit & Mint",
-    description: "Deposit collateral and mint DSC through DSCEngine.",
-    icon: ListChecks,
-  },
-  {
-    title: "Repay & Redeem",
-    description: "Burn DSC debt and redeem deposited collateral.",
-    icon: Activity,
-  },
-  {
-    title: "Health Factor",
-    description: "Explain and visualize account liquidation risk.",
-    icon: Gauge,
-  },
-  {
-    title: "Liquidation Demo",
-    description: "Demonstrate how unsafe positions can be liquidated.",
-    icon: ShieldAlert,
-  },
-];
-
 export function FeatureMap() {
+  const t = useTranslations("FeatureMap");
+  const tShell = useTranslations("Shell");
+  const features = [
+    {key: "status", icon: LayoutDashboard},
+    {key: "position", icon: Wallet},
+    {key: "faucet", icon: Coins},
+    {key: "deposit", icon: ListChecks},
+    {key: "repay", icon: Activity},
+    {key: "health", icon: Gauge},
+    {key: "liquidation", icon: ShieldAlert},
+  ] as const;
+
   return (
     <MotionCard>
       <Card id="feature-map" className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Map className="size-5" />
-          Feature Map
+          {tShell("views.feature-map.title")}
         </CardTitle>
         <CardDescription>
-          A feature-level map of every module in this DSC dashboard.
+          {t("description")}
         </CardDescription>
       </CardHeader>
 
@@ -79,16 +54,16 @@ export function FeatureMap() {
 
             return (
               <div
-                key={feature.title}
+                key={feature.key}
                 className="rounded-xl border bg-muted/20 p-4"
               >
                 <div className="mb-3 flex items-center gap-2">
                   <Icon className="size-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">{feature.title}</p>
+                  <p className="text-sm font-medium">{t(`features.${feature.key}.title`)}</p>
                 </div>
 
                 <p className="text-sm leading-6 text-muted-foreground">
-                  {feature.description}
+                  {t(`features.${feature.key}.description`)}
                 </p>
               </div>
             );

@@ -10,6 +10,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useActivityLog } from "@/hooks/use-activity-log";
 import { shortAddress } from "@/lib/format";
 import type { ActivityLogItem, ActivityLogStatus } from "@/types/activity-log";
@@ -48,14 +49,6 @@ function getStatusIcon(status: ActivityLogStatus) {
   return <Clock3 className="size-3" />;
 }
 
-function getStatusLabel(status: ActivityLogStatus) {
-  if (status === "success") return "Success";
-
-  if (status === "failed") return "Failed";
-
-  return "Pending";
-}
-
 function getStatusVariant(status: ActivityLogStatus) {
   if (status === "success") return "default";
 
@@ -71,6 +64,8 @@ type ActivityLogRowProps = {
 };
 
 function ActivityLogRow({ item, onRemove }: ActivityLogRowProps) {
+  const t = useTranslations("ActivityLog");
+
   return (
     <MotionStreamRow className="p-4">
       <div className="flex items-start justify-between gap-3">
@@ -81,7 +76,7 @@ function ActivityLogRow({ item, onRemove }: ActivityLogRowProps) {
             <Badge variant={getStatusVariant(item.status)} className="gap-1">
               {getStatusIcon(item.status)}
 
-              {getStatusLabel(item.status)}
+              {t(item.status)}
             </Badge>
 
             <Badge variant="outline">{item.type}</Badge>
@@ -93,10 +88,10 @@ function ActivityLogRow({ item, onRemove }: ActivityLogRowProps) {
             <span>{formatTime(item.createdAt)}</span>
 
             {item.account ? (
-              <span>Account: {shortAddress(item.account)}</span>
+              <span>{t("account")}: {shortAddress(item.account)}</span>
             ) : null}
 
-            {item.txHash ? <span>Tx: {shortAddress(item.txHash)}</span> : null}
+            {item.txHash ? <span>{t("transaction")}: {shortAddress(item.txHash)}</span> : null}
           </div>
         </div>
 
@@ -118,13 +113,13 @@ function ActivityLogRow({ item, onRemove }: ActivityLogRowProps) {
           <MotionPressable>
             <Button type="button" variant="outline" size="sm" asChild>
               <a href={`#tx-${item.txHash}`}>
-                View Transaction
+                {t("viewTransaction")}
                 <ExternalLink className="ml-2 size-4" />
               </a>
             </Button>
           </MotionPressable>
 
-          <MotionCopyButton value={item.txHash} label="Copy Tx" />
+          <MotionCopyButton value={item.txHash} label={t("copyTransaction")} />
         </div>
       ) : null}
     </MotionStreamRow>
@@ -132,6 +127,7 @@ function ActivityLogRow({ item, onRemove }: ActivityLogRowProps) {
 }
 
 export function ActivityLog() {
+  const t = useTranslations("ActivityLog");
   const { logs, hasLogs, removeLog, clearLogs, addPendingLog } =
     useActivityLog();
 
@@ -139,10 +135,9 @@ export function ActivityLog() {
     addPendingLog({
       type: "system",
 
-      title: "Demo activity created",
+      title: t("demoTitle"),
 
-      description:
-        "This is a sample local activity record. Real contract actions can write logs here after transaction success.",
+      description: t("demoDescription"),
     });
   }
 
@@ -154,17 +149,17 @@ export function ActivityLog() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <ListChecks className="size-5" />
-              Activity Log
+              {t("title")}
             </CardTitle>
 
             <CardDescription>
-              Decentralized StableCoin local demo dashboard.
+              {t("description")}
             </CardDescription>
           </div>
 
           <Badge variant={hasLogs ? "default" : "secondary"} className="gap-1">
             <Database className="size-3" />
-            <MotionNumberText value={logs.length} decimals={0} /> Records
+            <MotionNumberText value={logs.length} decimals={0} /> {t("records")}
           </Badge>
         </div>
       </CardHeader>
@@ -172,8 +167,7 @@ export function ActivityLog() {
       <CardContent className="space-y-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            Track local demo actions such as faucet minting, approvals,
-            deposits, DSC minting, repayment, redemption, and liquidation.
+            {t("tracking")}
           </p>
 
           <div className="flex gap-2">
@@ -184,7 +178,7 @@ export function ActivityLog() {
                 size="sm"
                 onClick={addDemoLog}
               >
-                Add Demo Log
+                {t("addDemo")}
               </Button>
             </MotionPressable>
 
@@ -197,7 +191,7 @@ export function ActivityLog() {
                 disabled={!hasLogs}
               >
                 <Trash2 className="mr-2 size-4" />
-                Clear
+                {t("clear")}
               </Button>
             </MotionPressable>
           </div>
@@ -215,11 +209,10 @@ export function ActivityLog() {
           <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border bg-muted/20 p-6 text-center">
             <ListChecks className="mb-3 size-8 text-muted-foreground" />
 
-            <p className="font-medium">No activity yet</p>
+            <p className="font-medium">{t("empty")}</p>
 
             <p className="mt-1 max-w-md text-sm text-muted-foreground">
-              When you run faucet, deposit, mint, repay, redeem, or liquidation
-              actions, transaction records can be displayed here.
+              {t("emptyDescription")}
             </p>
           </div>
         )}
