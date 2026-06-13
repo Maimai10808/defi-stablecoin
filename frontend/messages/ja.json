@@ -1,0 +1,572 @@
+{
+  "Common": {
+    "loading": "読み込み中...",
+    "connectWallet": "ウォレットを接続",
+    "walletConnected": "ウォレット接続済み",
+    "walletAccess": "ウォレットアクセス",
+    "copy": "コピー",
+    "available": "利用可能",
+    "missing": "未設定",
+    "noWallet": "ウォレットなし",
+    "noDebt": "負債なし",
+    "search": "検索",
+    "searchPlaceholder": "ダッシュボードを検索...",
+    "switchToEnglish": "英語に切り替え",
+    "switchToChinese": "中国語に切り替え",
+    "safe": "安全",
+    "healthy": "健全",
+    "unknown": "不明",
+    "watch": "監視",
+    "risky": "リスクあり",
+    "liquidatable": "清算可能",
+    "step": "ステップ {number}"
+  },
+  "Shell": {
+    "views": {
+      "project-guide": {
+        "title": "プロジェクトガイド",
+        "description": "Decentralized StableCoin ローカルデモのガイド付き紹介。"
+      },
+      "protocol-flow": {
+        "title": "プロトコルフロー",
+        "description": "ステーブルコインのライフサイクルを、各操作ごとに確認できます。"
+      },
+      "how-it-works": {
+        "title": "仕組み",
+        "description": "ローカルチェーン、スマートコントラクト、生成フック、UI がどのように連携するかを理解します。"
+      },
+      "feature-map": {
+        "title": "機能マップ",
+        "description": "この DSC ダッシュボードに含まれる各モジュールの機能一覧。"
+      },
+      "protocol-status": {
+        "title": "プロトコル状態",
+        "description": "ローカルプロトコル、ウォレット、ネットワーク、デプロイ済みコントラクトの準備状況を確認します。"
+      },
+      "my-position": {
+        "title": "マイポジション",
+        "description": "担保、発行済み DSC、ウォレット残高、承認額、リスク状態を確認します。"
+      },
+      "protocol-3d-overview": {
+        "title": "3D 概要",
+        "description": "ウォレット担保から発行、清算リスクまでの DSC プロトコルフローを可視化します。"
+      },
+      "faucet": {
+        "title": "フォーセット",
+        "description": "入金・発行フローのテスト用に、ローカルのモック担保トークンを発行します。"
+      },
+      "deposit-mint": {
+        "title": "入金 & 発行",
+        "description": "担保を DSCEngine に入金し、自分のポジションに対して DSC を発行します。"
+      },
+      "repay-redeem": {
+        "title": "返済 & 償還",
+        "description": "DSC 負債を返済し、プロトコルから預け入れた担保を引き出します。"
+      },
+      "health-factor": {
+        "title": "ヘルスファクター",
+        "description": "プロトコルのヘルスファクターを通じて、アカウントの清算リスクを分析します。"
+      },
+      "liquidation-demo": {
+        "title": "清算デモ",
+        "description": "安全でないポジションがどのように清算されるかをシミュレーションして理解します。"
+      },
+      "activity-log": {
+        "title": "アクティビティログ",
+        "description": "最近のデモ操作、フロントエンド操作、トランザクション記録を確認します。"
+      },
+      "contract-addresses": {
+        "title": "アドレス & テストアカウント",
+        "description": "デプロイ済みコントラクト、価格フィード、ローカル Anvil テスト用認証情報を確認します。"
+      }
+    },
+    "openWallet": "接続済みウォレットを開く {address}",
+    "openProtocolStatus": "プロトコル状態を開く"
+  },
+  "Sidebar": {
+    "demoFlow": "デモフロー",
+    "supportingTools": "補助ツール",
+    "projectGuide": "プロジェクトガイド",
+    "protocolFlow": "プロトコルフロー",
+    "myPosition": "マイポジション",
+    "faucet": "フォーセット",
+    "protocolStatus": "プロトコル状態",
+    "healthFactor": "ヘルスファクター計算",
+    "activityLog": "アクティビティログ",
+    "addresses": "アドレス & テストアカウント",
+    "search": "検索"
+  },
+  "ProjectGuide": {
+    "badge": "DeFi ステーブルコインデモ",
+    "overviewTitle": "プロジェクト概要",
+    "overviewSubtitle": "このプロトコルが示そうとしていること",
+    "overview": "このデモでは、過剰担保型ステーブルコインプロトコルの主要なライフサイクルを示します。ユーザーは WETH または WBTC を担保として預け入れ、プロトコルは価格フィードを通じて USD 価値を計算し、その担保に対して DSC を発行します。ヘルスファクターによって、ポジションが安全か、リスクがあるか、清算可能かが判断されます。",
+    "concepts": {
+      "stablecoin": {
+        "title": "過剰担保型ステーブルコイン",
+        "description": "ユーザーは WETH や WBTC などの暗号資産を担保として預け入れ、その担保に対して DSC ステーブルコインを発行します。"
+      },
+      "health": {
+        "title": "ヘルスファクターによるリスク管理",
+        "description": "各ポジションにはヘルスファクターがあります。値が高いほどアカウントは安全で、低いほど清算される可能性があります。"
+      },
+      "liquidation": {
+        "title": "清算保護",
+        "description": "ユーザーの担保価値が大きく下落した場合、プロトコルは不良債権を防ぐために清算を許可します。"
+      }
+    },
+    "howToTitle": "このデモの使い方",
+    "howToSubtitle": "各操作を個別に完了することで、ポジションへの影響を明確に確認できます。",
+    "steps": {
+      "wallet": {
+        "title": "ローカルウォレットを接続",
+        "description": "プロトコルを操作する前に、ウォレットをローカル Anvil ネットワークに接続します。"
+      },
+      "tokens": {
+        "title": "モックトークンを取得",
+        "description": "フォーセットページで、ローカルテスト用の WETH または WBTC モックトークンを発行します。"
+      },
+      "flow": {
+        "title": "プロトコルフローに従う",
+        "description": "入金、発行、リスク監視、返済または償還、清算の確認をそれぞれ個別の操作として行います。"
+      }
+    },
+    "summaryLabel": "一文でまとめると：",
+    "summary": "担保入金 → DSC 発行 → ヘルスファクター監視 → 返済 / 償還 → 清算。"
+  },
+  "HowItWorks": {
+    "description": "ローカルチェーン、コントラクト、生成フック、UI がどのように連携するか。",
+    "items": {
+      "contracts": {
+        "title": "Foundry コントラクト",
+        "description": "Anvil 上に DSCEngine、DSC トークン、モック担保トークン、モック価格フィードをデプロイします。"
+      },
+      "sync": {
+        "title": "アドレスと ABI の同期",
+        "description": "デプロイ済みアドレスとコントラクト ABI をフロントエンドの constants と ABI フォルダへ同期します。"
+      },
+      "codegen": {
+        "title": "Wagmi コード生成",
+        "description": "ABI とコントラクトアドレスから、型付き React フックを生成し、フロントエンドの読み取り・書き込みに利用します。"
+      },
+      "dashboard": {
+        "title": "Next.js ダッシュボード",
+        "description": "生成されたフックを使って、ウォレット、プロトコル状態、ポジション、リスク、操作パネルを構築します。"
+      }
+    }
+  },
+  "FeatureMap": {
+    "description": "この DSC ダッシュボードに含まれる各モジュールの機能マップ。",
+    "features": {
+      "status": {
+        "title": "プロトコル状態",
+        "description": "ネットワーク、ウォレット、コントラクトアドレス、プロトコルの読み取り可否を確認します。"
+      },
+      "position": {
+        "title": "マイポジション",
+        "description": "担保価値、発行済み DSC、ウォレット残高、承認額を読み取ります。"
+      },
+      "faucet": {
+        "title": "フォーセット",
+        "description": "デモテスト用にローカルのモック WETH または WBTC を発行します。"
+      },
+      "deposit": {
+        "title": "入金 & 発行",
+        "description": "DSCEngine を通じて担保を入金し、DSC を発行します。"
+      },
+      "repay": {
+        "title": "返済 & 償還",
+        "description": "DSC 負債をバーンし、預け入れた担保を引き出します。"
+      },
+      "health": {
+        "title": "ヘルスファクター",
+        "description": "アカウントの清算リスクを説明し、可視化します。"
+      },
+      "liquidation": {
+        "title": "清算デモ",
+        "description": "安全でないポジションがどのように清算されるかを示します。"
+      }
+    }
+  },
+  "ProtocolFlow": {
+    "lifecycleTitle": "プロトコルライフサイクル",
+    "lifecycleDescription": "このデモでは、過剰担保型ステーブルコインプロトコルの主要なライフサイクルを示します。ユーザーは WETH または WBTC を担保として預け入れ、プロトコルは価格フィードを通じて USD 価値を計算し、その担保に対して DSC を発行します。ヘルスファクターによって、ポジションが安全か、リスクがあるか、清算可能かが判断されます。",
+    "tabs": {
+      "deposit": "入金",
+      "mint": "DSC 発行",
+      "repay": "DSC 返済",
+      "redeem": "償還",
+      "liquidation": "清算"
+    },
+    "steps": {
+      "deposit": "担保入金",
+      "mint": "DSC 発行",
+      "monitor": "ヘルスファクター監視",
+      "repay": "返済 / 償還",
+      "liquidation": "清算"
+    },
+    "snapshot": {
+      "title": "現在のアカウントスナップショット",
+      "description": "このプロトコルフローを操作するウォレットの主要なポジションデータ。",
+      "connect": "現在のアカウントスナップショットを表示するにはウォレットを接続してください。",
+      "collateral": "担保価値",
+      "debt": "DSC 負債",
+      "health": "ヘルスファクター",
+      "walletDsc": "ウォレット内 DSC",
+      "weth": "預け入れ WETH",
+      "wbtc": "預け入れ WBTC",
+      "readError": "一部のアカウントデータを DSCEngine から更新できませんでした。"
+    },
+    "deposit": {
+      "title": "担保を入金",
+      "description": "WETH または WBTC を DSCEngine にロックします。この操作では DSC は発行されません。",
+      "amount": "担保数量",
+      "selected": "選択中のトークン",
+      "estimatedUsd": "推定 USD 価値",
+      "alreadyDeposited": "すでに入金済み",
+      "connect": "担保を入金するにはウォレットを接続してください。",
+      "insufficient": "{token} 残高が不足しています。",
+      "guided": "ガイド付き操作では、まず承認をリクエストし、その後 {token} を入金します。ウォレットで両方のトランザクションを確認します。",
+      "approving": "{token} を承認中...",
+      "depositing": "担保を入金中...",
+      "approveDeposit": "{token} を承認して入金",
+      "submit": "担保を入金",
+      "signingPermit": "Permit に署名中...",
+      "permitSubmit": "署名して {token} を入金",
+      "permitExplanation": "Permit は最初にオフチェーン署名を要求し、その後 1 件のオンチェーントランザクションを送信します。署名自体に Gas はかかりません。",
+      "fallbackApprove": "通常の承認フローを使用"
+    },
+    "mint": {
+      "title": "DSC を発行",
+      "description": "DSCEngine にすでに預け入れた担保に対してステーブルコイン負債を発行します。",
+      "currentCollateral": "現在の担保",
+      "currentMinted": "現在の発行済み DSC",
+      "maxMintable": "推定最大発行可能額",
+      "healthBefore": "発行前のヘルスファクター",
+      "amount": "発行する DSC 数量",
+      "healthAfter": "発行後の推定ヘルスファクター：",
+      "depositFirst": "先に担保を入金してください。",
+      "unsafe": "警告：この数量は推定安全発行枠を超えています。送信は可能ですが、結果のヘルスファクターがプロトコルの最小値を下回る場合、DSCEngine はリバートします。",
+      "backed": "DSC は既存の担保余力から発行され、裏付けなしに作成されるものではありません。",
+      "submit": "DSC を発行"
+    },
+    "repay": {
+      "title": "DSC を返済",
+      "description": "ウォレット内の DSC をバーンして負債を減らし、ヘルスファクターを改善します。",
+      "currentDebt": "現在の DSC 負債",
+      "walletBalance": "ウォレット DSC 残高",
+      "healthBefore": "返済前のヘルスファクター",
+      "amount": "返済する DSC 数量",
+      "healthAfter": "返済後の推定ヘルスファクター：",
+      "noDebt": "返済する DSC 負債はありません。",
+      "insufficient": "DSC 残高が不足しています。",
+      "exceeds": "数量が現在の負債を超えています。",
+      "approval": "エンジンが DSC をバーンできるよう、事前に DSC を承認してください。",
+      "approve": "DSC を承認",
+      "submit": "DSC を返済",
+      "allowance": "現在のエンジン承認額：{amount} DSC",
+      "signingPermit": "Permit に署名中...",
+      "permitSubmit": "署名して DSC を返済",
+      "permitExplanation": "Permit は最初にオフチェーン署名を要求し、その後 1 件のオンチェーントランザクションを送信します。署名自体に Gas はかかりません。",
+      "fallbackSubmit": "承認済み DSC で返済"
+    },
+    "redeem": {
+      "title": "担保を償還",
+      "description": "同じ操作内で DSC を返済せず、預け入れた担保を引き出します。",
+      "deposited": "預け入れ数量",
+      "estimatedUsd": "償還予定 USD",
+      "healthBefore": "償還前のヘルスファクター",
+      "amount": "償還する担保数量",
+      "healthAfter": "償還後の推定ヘルスファクター：",
+      "none": "{token} の預け入れ担保はありません。",
+      "exceeds": "数量が預け入れ担保を超えています。",
+      "unsafe": "この数量を償還すると、ポジションが安全でなくなります。",
+      "warning": "DSC 負債が残っている状態で担保を償還すると、安全余力が低下します。",
+      "submit": "担保を償還"
+    }
+  },
+  "Oracle": {
+    "title": "ローカルモック価格オラクル",
+    "description": "WETH と WBTC の価格変動をシミュレーションし、担保価値、ヘルスファクター、清算リスクがどう変化するかを確認します。",
+    "live": "ライブ変動",
+    "paused": "価格停止中",
+    "risk": "担保価格が下落すると、担保価値が減少し、ヘルスファクターが低下する可能性があります。ヘルスファクターが低くなりすぎると、ポジションは清算される可能性があります。価格下落ボタンを繰り返しクリックすると、両資産は各ステップで 25% ずつ下落し、デモ用の下限 $1 まで下がります。",
+    "pause": "ライブ価格を一時停止",
+    "resume": "ライブ価格を再開",
+    "refresh": "価格を更新",
+    "drop": "価格下落をシミュレーション",
+    "reset": "価格をリセット",
+    "unavailable": "ローカルモックオラクルは利用できません。",
+    "dropSuccess": "担保価格を一段階下げました。続けて下落させるにはもう一度クリックしてください。",
+    "resetSuccess": "モックオラクル価格をリセットしました。"
+  },
+  "Faucet": {
+    "description": "DSC デモ用のローカルモック担保トークンを発行します。",
+    "connected": "ウォレット接続済み",
+    "connectHelp": "先にウォレットを接続してから、ローカルモック担保トークンを発行してください。",
+    "recipient": "受取ウォレット",
+    "ready": "発行準備完了",
+    "mintCollateral": "テスト担保を発行",
+    "mintAmount": "発行数量",
+    "mint": "発行",
+    "tokenAddress": "トークンアドレス",
+    "localOnly": "フォーセットは、これらのトークンがモック ERC20 コントラクトであるため、ローカル Anvil デモネットワーク上でのみ動作します。",
+    "goDeposit": "入金へ進む",
+    "wethDescription": "ローカル WETH テスト担保をウォレットに発行します。",
+    "wbtcDescription": "ローカル WBTC テスト担保をウォレットに発行します。",
+    "invalidAmount": "有効な発行数量を入力してください",
+    "minted": "{amount} {token} を発行しました",
+    "mintFailed": "{token} の発行に失敗しました"
+  },
+  "Toast": {
+    "connectFirst": "先にウォレットを接続してください",
+    "invalidCollateral": "有効な担保数量を入力してください",
+    "invalidDsc": "有効な DSC 数量を入力してください",
+    "addressUnavailable": "{token} アドレスは利用できません",
+    "approved": "{token} を承認しました",
+    "approveFailed": "{token} の承認に失敗しました",
+    "approveFirst": "先に担保を承認してください",
+    "insufficient": "{token} 残高が不足しています",
+    "depositSuccess": "担保を正常に入金しました",
+    "depositFailed": "担保の入金に失敗しました",
+    "mintSuccess": "DSC を正常に発行しました",
+    "mintFailed": "DSC の発行に失敗しました。ヘルスファクターを確認してください",
+    "depositMintSuccess": "担保を入金し、DSC を発行しました",
+    "depositMintFailed": "入金 & 発行に失敗しました",
+    "dscApproved": "DSC を承認しました",
+    "approveDscFailed": "DSC の承認に失敗しました",
+    "approveDscFirst": "先に DSC を承認してください",
+    "repayRedeemSuccess": "DSC を返済し、担保を償還しました",
+    "repayRedeemFailed": "返済 & 償還に失敗しました",
+    "insufficientDsc": "DSC 残高が不足しています",
+    "exceedsDebt": "数量が現在の負債を超えています",
+    "repaySuccess": "DSC を正常に返済しました",
+    "repayFailed": "DSC の返済に失敗しました",
+    "exceedsCollateral": "数量が預け入れ担保を超えています",
+    "redeemSuccess": "担保を正常に償還しました",
+    "redeemFailed": "担保の償還に失敗しました。ヘルスファクターを確認してください",
+    "liquidationApprovalNotReady": "承認の準備ができていません。負債額と清算者の DSC 残高を確認してください。",
+    "liquidationApprovalReady": "DSC を承認しました。清算の準備ができています。",
+    "switchLiquidator": "清算する前に、別のウォレットアカウントへ切り替えてください。",
+    "targetHealthy": "対象ポジションは健全で、清算できません。",
+    "targetDebtExceeded": "カバーする負債が対象ユーザーの負債を超えています。",
+    "liquidatorDscInsufficient": "この負債をカバーする DSC 残高が不足しています。",
+    "approveEnoughDsc": "清算前に十分な DSC を承認してください。",
+    "liquidatorUnsafe": "あなた自身のポジションが安全ではありません。先に DSC を返済するか、担保を追加してください。",
+    "completeLiquidation": "ウォレットを接続し、清算入力を完了してください。",
+    "liquidationSuccess": "清算を正常に実行しました。",
+    "permitSignature": "Permit に署名",
+    "signingPermit": "Permit に署名中...",
+    "permitRejected": "Permit 署名が拒否されたか利用できません。通常の承認フローを使用してください。",
+    "permitUnavailable": "このトークンでは Permit を利用できません。",
+    "permitDepositSuccess": "Permit を使用して担保を入金しました。",
+    "permitRepaySuccess": "Permit を使用して DSC を返済しました。",
+    "fallbackApprove": "通常の承認フローを使用してください。"
+  },
+  "ActivityLog": {
+    "title": "アクティビティログ",
+    "description": "Decentralized StableCoin ローカルデモダッシュボード。",
+    "records": "記録",
+    "tracking": "フォーセット発行、承認、入金、DSC 発行、返済、償還、清算などのローカルデモ操作を追跡します。",
+    "addDemo": "デモログを追加",
+    "clear": "クリア",
+    "empty": "まだアクティビティはありません",
+    "emptyDescription": "フォーセット、入金、発行、返済、償還、清算操作を行うと、トランザクション記録をここに表示できます。",
+    "demoTitle": "デモアクティビティを作成しました",
+    "demoDescription": "これはサンプルのローカルアクティビティ記録です。実際のコントラクト操作は、トランザクション成功後にここへログを書き込めます。",
+    "account": "アカウント",
+    "transaction": "Tx",
+    "viewTransaction": "トランザクションを表示",
+    "copyTransaction": "Tx をコピー",
+    "success": "成功",
+    "failed": "失敗",
+    "pending": "保留中",
+    "dscApprovedTitle": "清算用 DSC を承認しました",
+    "dscApprovedDescription": "{amount} DSC を DSCEngine に承認しました。",
+    "dscApprovalFailed": "DSC 承認に失敗しました",
+    "liquidationExecuted": "清算を実行しました",
+    "liquidationDescription": "{account} に対して {amount} DSC をカバーしました。",
+    "liquidationFailed": "清算に失敗しました"
+  },
+  "MyPosition": {
+    "title": "マイポジション",
+    "description": "アカウントの担保、負債、残高、清算リスクを読み取ります。",
+    "readError": "ポジションデータの読み取りに失敗しました。Anvil が実行中か、コントラクトがデプロイ済みか、ウォレットがローカルネットワークに接続されているかを確認してください。",
+    "localAccount": "ローカルデモアカウント",
+    "localAccountDescription": "読み取り専用で確認するデモアカウントのポジションを選択します。",
+    "connectedWallet": "接続済みウォレット",
+    "viewingAccount": "表示中のアカウント",
+    "signsTransactions": "すべてのトランザクションに署名して送信します。",
+    "readOnlyPosition": "{account} · 読み取り専用ポジションデータ。",
+    "connectBeforeTransactions": "トランザクションを送信する前に、ウォレットを接続または切り替えてください。",
+    "viewOnlyWarning": "このデモアカウントは表示のみです。トランザクションは引き続き接続済みウォレットによって署名されます。",
+    "viewMatches": "表示中のアカウントは接続済みウォレットと一致しています。",
+    "currentAccount": "読み取りとトランザクションに使用される現在のアカウント。",
+    "collateralValue": "担保価値",
+    "collateralValueDescription": "預け入れた担保の合計 USD 価値。",
+    "dscMinted": "発行済み DSC",
+    "dscMintedDescription": "このウォレットが発行した負債の合計。",
+    "walletDsc": "ウォレット DSC 残高",
+    "walletDscDescription": "ウォレット内に現在保有している DSC。",
+    "healthFactor": "ヘルスファクター",
+    "healthDescription": "最小安全値は 1.00 です。",
+    "riskOverview": "リスク概要",
+    "safetyBuffer": "担保安全余力",
+    "collateralTokens": "担保トークン",
+    "walletBalance": "ウォレット残高",
+    "depositedAmount": "預け入れ数量",
+    "engineAllowance": "エンジン承認額",
+    "tokenAddress": "トークンアドレス",
+    "footer": "このパネルは、選択したアカウントのポジションを DSCEngine とトークンコントラクトから直接読み取り、担保価値、発行済み DSC、ウォレット残高、承認額、清算リスクを表示します。",
+    "allAccounts": "ローカルデモアカウント概要",
+    "allAccountsDescription": "設定済み Anvil デモアカウントすべての読み取り専用ポジション概要。",
+    "accountCount": "{count} 個のデモアカウント",
+    "nativeBalance": "ネイティブ残高",
+    "dscDebt": "DSC 負債",
+    "depositedCollateral": "預け入れ担保",
+    "accountDataUnavailable": "一部のアカウントデータを利用できません。ローカル Anvil チェーンを確認してください。",
+    "accountPosition": "アカウントポジション",
+    "accountPositionDescription": "現在の担保、負債、清算安全性。",
+    "tokenDeposited": "{token} 預け入れ済み",
+    "states": {
+      "loading": "読み込み中",
+      "loadingDescription": "プロトコルからヘルスファクターを読み取っています。",
+      "healthy": "健全",
+      "healthyDescription": "このポジションは十分に担保化されています。",
+      "moderate": "中程度のリスク",
+      "moderateDescription": "このポジションは最小値を上回っていますが、リスクが高まりつつあります。",
+      "high": "高リスク",
+      "highDescription": "このポジションは清算に近づいています。",
+      "liquidatable": "清算可能",
+      "liquidatableDescription": "ヘルスファクターが安全しきい値を下回っています。"
+    }
+  },
+  "Addresses": {
+    "title": "アドレス & ローカルテストアカウント",
+    "description": "このローカルデモで使用されるデプロイアドレスと公開 Anvil 認証情報。",
+    "ready": "準備完了",
+    "chain": "チェーン",
+    "chainDescription": "現在生成されているデプロイ先チェーン ID。",
+    "contracts": "コントラクト",
+    "contractsDescription": "Foundry デプロイ出力から同期された利用可能なアドレス。",
+    "engine": "エンジン",
+    "engineDescription": "メインのプロトコル入口コントラクト。",
+    "missingWarning": "一部のコントラクトアドレスが未設定です。すべてのダッシュボード機能を使用する前に、再度デプロイとアドレス同期を実行してください。",
+    "synced": "同期済みコントラクトアドレス",
+    "available": "利用可能",
+    "missing": "未設定",
+    "core": "コア",
+    "token": "トークン",
+    "priceFeed": "価格フィード",
+    "copy": "コピー",
+    "address": "アドレス",
+    "notAvailable": "利用不可",
+    "accounts": "ローカル Anvil テストアカウント",
+    "accountCount": "{count} アカウント",
+    "localOnly": "ローカルのみ",
+    "privateKey": "秘密鍵",
+    "copyAddress": "アドレスをコピー",
+    "copyKey": "鍵をコピー",
+    "demoUser": "デモユーザー",
+    "credentialsWarning": "これらは Anvil によって生成された公開開発用認証情報です。chain 31337 でのみ使用してください。実ネットワークで資金を入れたりインポートしたりしないでください。",
+    "footer": "これらの値はローカルデプロイから生成され、次の場所に書き込まれています",
+    "viewActivity": "アクティビティログを表示",
+    "deploymentSync": "デプロイ同期",
+    "frontendConstants": "フロントエンド定数",
+    "engineContract": "担保、発行、償還、清算を扱うコアプロトコルコントラクト。",
+    "dscContract": "DSC エンジンによって発行・バーンされる ERC20 ステーブルコイントークン。",
+    "wethContract": "Anvil デモで使用されるローカルモック WETH 担保トークン。",
+    "wbtcContract": "Anvil デモで使用されるローカルモック WBTC 担保トークン。",
+    "ethFeed": "WETH 評価用のローカルモック Chainlink 価格フィード。",
+    "btcFeed": "WBTC 評価用のローカルモック Chainlink 価格フィード。"
+  },
+  "ProtocolStatus": {
+    "title": "プロトコル状態",
+    "description": "ローカルネットワーク、ウォレット、コントラクト、プロトコル読み取りを検証します。",
+    "demoReady": "デモ準備完了",
+    "setupRequired": "セットアップが必要",
+    "readError": "一部のプロトコルデータの読み取りに失敗しました。Anvil が実行中か、コントラクトがデプロイ済みか、ウォレットが正しいローカルネットワークに接続されているかを確認してください。",
+    "network": "ネットワーク",
+    "currentChain": "現在のチェーン ID",
+    "expectedChain": "期待されるチェーン ID",
+    "notConnected": "未接続",
+    "correctNetwork": "正しいネットワーク",
+    "wrongNetwork": "誤ったネットワーク",
+    "wallet": "ウォレット",
+    "connection": "接続",
+    "connected": "接続済み",
+    "notConnectedWallet": "ウォレット未接続",
+    "walletConnected": "ウォレット接続済み",
+    "readiness": "準備状況",
+    "addressesReady": "アドレス準備完了",
+    "missingAddresses": "アドレス未設定",
+    "protocolReadable": "プロトコル読み取り可能",
+    "readingProtocol": "プロトコル読み取り中",
+    "ready": "準備完了",
+    "notReady": "未準備",
+    "contractAddresses": "コントラクトアドレス",
+    "copy": "コピー",
+    "mockFeeds": "モック価格フィード",
+    "protocolData": "プロトコルデータ",
+    "dscFromEngine": "エンジン上の DSC アドレス",
+    "minimumHealth": "最小ヘルスファクター",
+    "dscName": "DSC 名",
+    "dscSymbol": "DSC シンボル",
+    "totalSupply": "DSC 総供給量",
+    "dscOwner": "DSC 所有者",
+    "footer": "このパネルは、ローカル DSC プロトコルデモが使用可能かどうかを検証します。",
+    "viewAddresses": "アドレスを表示"
+  },
+  "Liquidation": {
+    "title": "清算",
+    "description": "安全でないアカウントの DSC 負債を返済し、プロトコルの清算ボーナス付きで担保を受け取ります。",
+    "target": "対象",
+    "liquidatable": "清算可能",
+    "notLiquidatable": "清算不可",
+    "targetAccount": "対象アカウント",
+    "userToLiquidate": "清算対象ユーザー",
+    "targetHealth": "対象ヘルスファクター",
+    "targetDebt": "対象 DSC 負債",
+    "deposited": "{token} 預け入れ済み",
+    "riskStatus": "リスク状態",
+    "liquidator": "清算者",
+    "connectedWallet": "接続済みウォレット",
+    "liquidatorDsc": "清算者 DSC",
+    "liquidatorHealth": "清算者ヘルスファクター",
+    "allowance": "DSC 承認額",
+    "estimate": "清算見積もり",
+    "collateralToken": "受け取る担保トークン",
+    "debtToCover": "カバーする負債",
+    "withoutBonus": "ボーナスなし担保",
+    "bonus": "清算ボーナス",
+    "total": "受け取る担保合計",
+    "estimateExplanation": "清算者は対象アカウントのために {debt} DSC を返済し、10% の清算ボーナスを含めて合計約 {collateral} を受け取ります。",
+    "useDemoAmount": "デモ負債額を使用",
+    "refresh": "対象ポジションを更新",
+    "approving": "承認中...",
+    "approve": "DSC を承認",
+    "approved": "承認済み",
+    "submit": "ポジションを清算",
+    "recommended": "推奨ローカルデモ",
+    "step1": "アカウント A が 10 WETH を入金し、9000 DSC を発行します。",
+    "step2": "アカウント A が清算可能になるまで価格下落をシミュレーションします。",
+    "step3": "安全なポジションと十分な DSC を持つアカウント B に切り替えます。",
+    "step4": "DSC を承認し、1000 DSC でアカウント A を清算します。",
+    "statusUnavailable": "清算は利用できません",
+    "statusSwitchWallet": "ウォレット切り替えが必要",
+    "statusInsufficient": "DSC 不足",
+    "statusUnsafe": "清算者が安全ではありません",
+    "statusApproval": "承認が必要",
+    "statusReady": "清算準備完了",
+    "noticeConnect": "DSC 残高、承認額、清算準備状況を確認するには、清算者ウォレットを接続してください。",
+    "noticeAddress": "対象ポジションを確認するため、有効な EVM アドレスを入力してください。",
+    "noticeRead": "清算データを読み取れません。ローカルチェーンとコントラクト状態を確認し、対象ポジションを更新してください。",
+    "noticeSelf": "現在接続中のウォレット自身を清算することはできません。清算者として別のウォレットアカウントに切り替えてください。",
+    "noticeHealthy": "ポジションは健全で、清算できません。",
+    "noticeDebt": "カバーする負債が対象ユーザーの負債を超えています。",
+    "noticeBalance": "この負債をカバーする DSC 残高が不足しています。",
+    "noticeUnsafe": "あなた自身のポジションが安全ではありません。他者を清算する前に、DSC を返済するか担保を追加してください。",
+    "noticeApproval": "承認が必要です。対象負債をカバーするために使用する DSC を、DSCEngine が転送できるようにする必要があります。",
+    "noticeImprove": "ヘルスファクターが改善されないため清算に失敗する場合は、カバーする負債額を増やしてください。"
+  }
+}

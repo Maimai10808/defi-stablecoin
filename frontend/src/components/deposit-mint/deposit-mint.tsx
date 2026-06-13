@@ -369,7 +369,8 @@ export function DepositMint() {
                   !selectedToken?.isAvailable ||
                   status.isApproving ||
                   status.isDepositing ||
-                  status.needsApproval ||
+                  status.isSigningPermit ||
+                  !status.permitAvailable ||
                   isMintTooHigh
                 }
               >
@@ -380,15 +381,16 @@ export function DepositMint() {
                     !selectedToken?.isAvailable ||
                     status.isApproving ||
                     status.isDepositing ||
-                    status.needsApproval ||
+                    status.isSigningPermit ||
+                    !status.permitAvailable ||
                     isMintTooHigh
                   }
-                  onClick={actions.depositCollateralAndMintDsc}
+                  onClick={actions.depositCollateralAndMintDscWithPermit}
                 >
-                  {status.isDepositing ? (
+                  {status.isDepositing || status.isSigningPermit ? (
                     <Loader2 className="mr-2 size-4 animate-spin" />
                   ) : null}
-                  Deposit & Mint
+                  Sign & Deposit + Mint
                 </Button>
               </MotionPressable>
             </div>

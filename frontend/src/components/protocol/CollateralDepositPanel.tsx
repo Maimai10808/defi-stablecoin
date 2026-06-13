@@ -28,7 +28,6 @@ export function CollateralDepositPanel() {
     form,
     tokens,
     selectedToken,
-    selectedAllowance,
     preview,
     status,
     actions,
@@ -43,12 +42,12 @@ export function CollateralDepositPanel() {
   const isSubmitting =
     status.isApproving ||
     status.isDepositing ||
-    status.isGuidedDepositPending;
+    status.isGuidedDepositPending ||
+    status.isSigningPermit;
   const canSubmit =
     wallet.hasWallet &&
     amount > 0 &&
     !insufficientBalance &&
-    selectedAllowance !== undefined &&
     !isSubmitting;
 
   return (
@@ -115,32 +114,44 @@ export function CollateralDepositPanel() {
           <Notice destructive>
             {t("insufficient", {token: form.collateralToken})}
           </Notice>
-        ) : status.needsApproval ? (
+        ) : status.permitAvailable ? (
           <Notice>
-            {t("guided", {token: form.collateralToken})}
+            {t("permitExplanation")}
           </Notice>
         ) : null}
 
-        <MotionPressable disabled={!canSubmit}>
-          <Button
-            type="button"
-            disabled={!canSubmit}
-            onClick={() => actions.approveAndDepositSelectedCollateral()}
-          >
-            {isSubmitting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : status.needsApproval ? (
-              <LockKeyhole className="size-4" />
-            ) : null}
-            {status.isApproving
-              ? t("approving", {token: form.collateralToken})
-              : status.isDepositing
-                ? t("depositing")
-                : status.needsApproval
-                  ? t("approveDeposit", {token: form.collateralToken})
-                  : t("submit")}
-          </Button>
-        </MotionPressable>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <MotionPressable disabled={!canSubmit || !status.permitAvailable}>
+            <Button
+              type="button"
+              disabled={!canSubmit || !status.permitAvailable}
+              onClick={actions.depositSelectedCollateralWithPermit}
+            >
+              {status.isSigningPermit || status.isDepositing ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LockKeyhole className="size-4" />
+              )}
+              {status.isSigningPermit
+                ? t("signingPermit")
+                : t("permitSubmit", {token: form.collateralToken})}
+            </Button>
+          </MotionPressable>
+
+          <MotionPressable disabled={!canSubmit}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canSubmit}
+              onClick={() => actions.approveAndDepositSelectedCollateral()}
+            >
+              {status.isApproving || status.isGuidedDepositPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : null}
+              {t("fallbackApprove")}
+            </Button>
+          </MotionPressable>
+        </div>
       </CardContent>
     </Card>
   );

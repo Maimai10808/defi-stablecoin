@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { BlockMath, InlineMath } from "react-katex";
 import { formatEther } from "viem";
+import { useTranslations } from "next-intl";
 
 import { useHealthFactor } from "@/hooks/use-health-factor";
 import type { HealthFactorState } from "@/types/health-factor";
@@ -51,11 +52,11 @@ function getHealthFactorState(value?: bigint): HealthFactorState {
   if (value === undefined) {
     return {
       level: "loading",
-      label: "Loading",
-      description: "Reading your health factor from DSCEngine.",
+      label: "loading",
+      description: "loadingDescription",
       progress: 0,
       isSafe: false,
-      badgeText: "Loading",
+      badgeText: "loading",
     };
   }
 
@@ -64,47 +65,43 @@ function getHealthFactorState(value?: bigint): HealthFactorState {
   if (healthFactor >= 2) {
     return {
       level: "healthy",
-      label: "Healthy",
-      description:
-        "Your position is safely collateralized and far from liquidation.",
+      label: "healthy",
+      description: "healthyDescription",
       progress: 100,
       isSafe: true,
-      badgeText: "Safe",
+      badgeText: "safe",
     };
   }
 
   if (healthFactor >= 1.2) {
     return {
       level: "moderate",
-      label: "Moderate Risk",
-      description:
-        "Your position is still above the minimum, but risk is increasing.",
+      label: "moderate",
+      description: "moderateDescription",
       progress: 65,
       isSafe: true,
-      badgeText: "Watch",
+      badgeText: "watch",
     };
   }
 
   if (healthFactor >= 1) {
     return {
       level: "high-risk",
-      label: "High Risk",
-      description:
-        "Your position is close to liquidation. Consider repaying DSC or adding collateral.",
+      label: "highRisk",
+      description: "highRiskDescription",
       progress: 40,
       isSafe: false,
-      badgeText: "Risk",
+      badgeText: "risk",
     };
   }
 
   return {
     level: "liquidatable",
-    label: "Liquidatable",
-    description:
-      "Your health factor is below the safe threshold and the position may be liquidated.",
+    label: "liquidatable",
+    description: "liquidatableDescription",
     progress: 15,
     isSafe: false,
-    badgeText: "Danger",
+    badgeText: "danger",
   };
 }
 
@@ -169,6 +166,8 @@ function FlowStep({ step, title, formula, description }: FlowStepProps) {
 }
 
 export function HealthFactor() {
+  const t = useTranslations("HealthFactor");
+  const tCommon = useTranslations("Common");
   const { wallet, risk, status } = useHealthFactor();
 
   const healthFactorState = getHealthFactorState(risk.healthFactor);
@@ -181,10 +180,10 @@ export function HealthFactor() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Gauge className="size-5" />
-              Health Factor
+              {t("title")}
             </CardTitle>
             <CardDescription>
-              Decentralized StableCoin local demo dashboard.
+              {t("description")}
             </CardDescription>
           </div>
 
@@ -197,16 +196,14 @@ export function HealthFactor() {
             ) : (
               <ShieldAlert className="size-3" />
             )}
-            {healthFactorState.badgeText}
+            {t(`states.${healthFactorState.badgeText}`)}
           </Badge>
         </div>
 
         <MotionErrorShake trigger={status.hasReadError}>
           {status.hasReadError ? (
           <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            Failed to read health factor data. Please check whether Anvil is
-            running, contracts are deployed, and your wallet is connected to the
-            local network.
+            {t("readError")}
           </div>
           ) : null}
         </MotionErrorShake>
@@ -216,27 +213,27 @@ export function HealthFactor() {
         <div className="rounded-xl border bg-muted/20 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-medium">Connected Account</p>
+              <p className="text-sm font-medium">{t("connectedAccount")}</p>
               <p className="mt-1 font-mono text-sm text-muted-foreground">
                 {shortAddress(wallet.address)}
               </p>
             </div>
 
             <Badge variant="outline">
-              {wallet.hasWallet ? "Risk View Active" : "No Wallet"}
+              {wallet.hasWallet ? t("riskViewActive") : tCommon("noWallet")}
             </Badge>
           </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-3">
           <RiskMetric
-            label="Health Factor"
+            label={t("healthFactor")}
             value={<MotionHealthFactorText value={risk.healthFactor} />}
-            description="A value above 1.00 means the position is above the liquidation threshold."
+            description={t("healthMetricDescription")}
           />
 
           <RiskMetric
-            label="Collateral Value"
+            label={t("collateralValue")}
             value={
               <MotionValueText
                 value={risk.collateralValueInUsd}
@@ -244,11 +241,11 @@ export function HealthFactor() {
                 decimals={2}
               />
             }
-            description="Total deposited collateral value calculated by DSCEngine."
+            description={t("collateralDescription")}
           />
 
           <RiskMetric
-            label="Minted DSC Debt"
+            label={t("mintedDebt")}
             value={
               <MotionValueText
                 value={risk.totalDscMinted}
@@ -256,7 +253,7 @@ export function HealthFactor() {
                 decimals={2}
               />
             }
-            description="Total DSC minted by this wallet."
+            description={t("mintedDebtDescription")}
           />
         </div>
 
@@ -265,7 +262,7 @@ export function HealthFactor() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Calculator className="size-4" />
-            <h3 className="text-sm font-medium">Health Factor Model</h3>
+            <h3 className="text-sm font-medium">{t("model")}</h3>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[1fr_1.1fr]">
@@ -277,22 +274,15 @@ export function HealthFactor() {
 
                 <div className="space-y-3">
                   <p className="text-sm font-medium">
-                    Health Factor is the protocol&apos;s core solvency metric.
+                    {t("modelIntro")}
                   </p>
 
                   <p className="text-sm leading-6 text-muted-foreground">
-                    It measures whether a user&apos;s liquidation-adjusted
-                    collateral value is sufficient to cover their minted DSC
-                    debt. A higher value means the account has more safety
-                    margin. Once the value falls below{" "}
-                    <InlineMath math={"1.0"} />, the position becomes eligible
-                    for liquidation.
+                    {t("modelDescription")}
                   </p>
 
                   <div className="rounded-lg border bg-background/70 px-3 py-2 text-sm text-muted-foreground">
-                    In this demo, the liquidation threshold is{" "}
-                    <InlineMath math={"50\\%"} />, meaning only half of the
-                    collateral value is treated as safe borrowing capacity.
+                    {t("thresholdExplanation")}
                   </div>
                 </div>
               </div>
@@ -302,10 +292,10 @@ export function HealthFactor() {
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Formal Definition
+                    {t("formalDefinition")}
                   </p>
                   <p className="mt-1 text-sm font-medium">
-                    Liquidation-adjusted collateral ratio
+                    {t("adjustedRatio")}
                   </p>
                 </div>
 
@@ -324,19 +314,19 @@ export function HealthFactor() {
                 <div className="grid gap-3 text-sm text-muted-foreground">
                   <div className="flex items-center justify-between gap-3">
                     <span>
-                      <InlineMath math={"V_c(u)"} /> = collateral value of user{" "}
+                      <InlineMath math={"V_c(u)"} /> = {t("collateralVariable")}{" "}
                       <InlineMath math={"u"} />
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span>
-                      <InlineMath math={"\\lambda"} /> = liquidation threshold
+                      <InlineMath math={"\\lambda"} /> = {t("thresholdVariable")}
                     </span>
                     <Badge variant="secondary">50%</Badge>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span>
-                      <InlineMath math={"D_{dsc}(u)"} /> = total DSC debt
+                      <InlineMath math={"D_{dsc}(u)"} /> = {t("debtVariable")}
                     </span>
                   </div>
                 </div>
@@ -346,7 +336,7 @@ export function HealthFactor() {
 
           <div className="rounded-xl border bg-muted/20 p-5">
             <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Expanded Protocol Formula
+              {t("expandedFormula")}
             </p>
 
             <div className="rounded-xl border bg-background/80 px-4 py-6 shadow-sm">
@@ -362,8 +352,7 @@ export function HealthFactor() {
                     <InlineMath math={"q_i(u)"} />
                   </p>
                   <p className="mt-1">
-                    Amount of collateral token <InlineMath math={"i"} />{" "}
-                    deposited by the user.
+                    {t("quantityDescription")}
                   </p>
                 </div>
 
@@ -372,8 +361,7 @@ export function HealthFactor() {
                     <InlineMath math={"p_i"} />
                   </p>
                   <p className="mt-1">
-                    USD oracle price of collateral token{" "}
-                    <InlineMath math={"i"} />.
+                    {t("priceDescription")}
                   </p>
                 </div>
 
@@ -382,7 +370,7 @@ export function HealthFactor() {
                     <InlineMath math={"D_{dsc}(u)"} />
                   </p>
                   <p className="mt-1">
-                    Total DSC minted by the user and not yet repaid.
+                    {t("debtDescription")}
                   </p>
                 </div>
               </div>
@@ -395,29 +383,29 @@ export function HealthFactor() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Activity className="size-4" />
-            <h3 className="text-sm font-medium">Calculation Flow</h3>
+            <h3 className="text-sm font-medium">{t("calculationFlow")}</h3>
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
             <FlowStep
               step="1"
-              title="Collateral Valuation"
+              title={t("valuation")}
               formula={"V_c(u)=\\sum q_i(u)\\cdot p_i"}
-              description="DSCEngine converts deposited WETH and WBTC into USD value using price feeds."
+              description={t("valuationDescription")}
             />
 
             <FlowStep
               step="2"
-              title="Risk Adjustment"
+              title={t("riskAdjustment")}
               formula={"V_{adj}(u)=V_c(u)\\cdot \\lambda"}
-              description="The collateral value is multiplied by the liquidation threshold to obtain safe borrowing capacity."
+              description={t("riskAdjustmentDescription")}
             />
 
             <FlowStep
               step="3"
-              title="Debt Normalization"
+              title={t("debtNormalization")}
               formula={"\\mathrm{HF}(u)=V_{adj}(u)/D_{dsc}(u)"}
-              description="The adjusted collateral value is divided by minted DSC debt to produce the final health factor."
+              description={t("debtNormalizationDescription")}
             />
           </div>
 
@@ -425,7 +413,7 @@ export function HealthFactor() {
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-center">
               <div className="rounded-lg border bg-background px-4 py-3 text-center">
                 <p className="text-xs text-muted-foreground">
-                  Collateral Value
+                  {t("collateralValue")}
                 </p>
                 <p className="mt-1 font-semibold">
                   {formatUsdValue(risk.collateralValueInUsd)}
@@ -436,7 +424,7 @@ export function HealthFactor() {
 
               <div className="rounded-lg border bg-background px-4 py-3 text-center">
                 <p className="text-xs text-muted-foreground">
-                  Liquidation Threshold
+                  {t("liquidationThreshold")}
                 </p>
                 <p className="mt-1 font-semibold">
                   <InlineMath math={"\\times\\ 50\\%"} />
@@ -446,7 +434,7 @@ export function HealthFactor() {
               <ArrowRight className="hidden size-4 text-muted-foreground md:block" />
 
               <div className="rounded-lg border bg-background px-4 py-3 text-center">
-                <p className="text-xs text-muted-foreground">DSC Debt</p>
+                <p className="text-xs text-muted-foreground">{t("dscDebt")}</p>
                 <p className="mt-1 font-semibold">
                   {formatDscSupply(risk.totalDscMinted)}
                 </p>
@@ -455,7 +443,7 @@ export function HealthFactor() {
               <ArrowRight className="hidden size-4 text-muted-foreground md:block" />
 
               <div className="rounded-lg border bg-background px-4 py-3 text-center">
-                <p className="text-xs text-muted-foreground">Health Factor</p>
+                <p className="text-xs text-muted-foreground">{t("healthFactor")}</p>
                 <p className="mt-1 font-semibold">
                   {formatHealthFactor(risk.healthFactor)}
                 </p>
@@ -473,7 +461,7 @@ export function HealthFactor() {
             ) : (
               <CircleAlert className="size-4" />
             )}
-            <h3 className="text-sm font-medium">Risk Level</h3>
+            <h3 className="text-sm font-medium">{t("riskLevel")}</h3>
           </div>
 
           <MotionHealthFactor
@@ -487,15 +475,15 @@ export function HealthFactor() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-lg font-semibold">
-                  {healthFactorState.label}
+                  {t(`states.${healthFactorState.label}`)}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {healthFactorState.description}
+                  {t(`states.${healthFactorState.description}`)}
                 </p>
               </div>
 
               <div className="rounded-lg border bg-background/60 px-3 py-2 text-right">
-                <p className="text-xs text-muted-foreground">Current HF</p>
+                <p className="text-xs text-muted-foreground">{t("currentHf")}</p>
                 <div className="text-lg font-semibold">
                   <MotionHealthFactorText value={risk.healthFactor} />
                 </div>
@@ -505,15 +493,15 @@ export function HealthFactor() {
             <Progress value={healthFactorState.progress} className="mt-4" />
             <MotionLiquidProgress
               value={healthFactorState.progress}
-              label="Liquidation Distance"
+              label={t("liquidationDistance")}
               className="mt-4"
             />
 
             <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-              <span>Liquidatable &lt; 1.00</span>
-              <span>High Risk 1.00+</span>
-              <span>Moderate 1.20+</span>
-              <span>Healthy 2.00+</span>
+              <span>{t("liquidatableRange")}</span>
+              <span>{t("highRiskRange")}</span>
+              <span>{t("moderateRange")}</span>
+              <span>{t("healthyRange")}</span>
             </div>
             </div>
           </MotionHealthFactor>
@@ -525,27 +513,27 @@ export function HealthFactor() {
           <div className="flex items-center gap-2">
             <Database className="size-4" />
             <h3 className="text-sm font-medium">
-              How to Improve Health Factor
+              {t("improve")}
             </h3>
           </div>
 
           <MotionRevealList className="grid gap-3 md:grid-cols-3">
             <RiskRule
               icon={<TrendingDown className="size-4" />}
-              title="Repay DSC"
-              description="Burning part of your DSC debt reduces the denominator of the risk calculation."
+              title={t("repay")}
+              description={t("repayDescription")}
             />
 
             <RiskRule
               icon={<Wallet className="size-4" />}
-              title="Add Collateral"
-              description="Depositing more WETH or WBTC increases your collateral value."
+              title={t("addCollateral")}
+              description={t("addCollateralDescription")}
             />
 
             <RiskRule
               icon={<Activity className="size-4" />}
-              title="Watch Price Changes"
-              description="If collateral prices fall, your health factor can drop even without new actions."
+              title={t("watchPrices")}
+              description={t("watchPricesDescription")}
             />
           </MotionRevealList>
         </div>
@@ -553,9 +541,7 @@ export function HealthFactor() {
         <div className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm text-muted-foreground">
           <Info className="mt-0.5 size-4 shrink-0" />
           <p>
-            This panel reads risk data directly from DSCEngine. In this demo, a
-            health factor below <InlineMath math={"1.0"} /> means the account
-            can be used in the liquidation flow.
+            {t("footer")}
           </p>
         </div>
       </CardContent>

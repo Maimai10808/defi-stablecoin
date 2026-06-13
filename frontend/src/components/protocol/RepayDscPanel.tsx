@@ -45,9 +45,9 @@ export function RepayDscPanel() {
     !noDebt &&
     !exceedsBalance &&
     !exceedsDebt &&
-    !status.needsApproval &&
     !status.isRepaying &&
-    !status.isApproving;
+    !status.isApproving &&
+    !status.isSigningPermit;
 
   return (
     <Card className="w-full min-w-0">
@@ -103,11 +103,25 @@ export function RepayDscPanel() {
           <Notice destructive>{t("insufficient")}</Notice>
         ) : exceedsDebt ? (
           <Notice destructive>{t("exceeds")}</Notice>
-        ) : status.needsApproval ? (
-          <Notice>{t("approval")}</Notice>
+        ) : status.permitAvailable ? (
+          <Notice>{t("permitExplanation")}</Notice>
         ) : null}
 
         <div className="flex flex-col gap-2 sm:flex-row">
+          <MotionPressable disabled={!canRepay || !status.permitAvailable}>
+            <Button
+              type="button"
+              disabled={!canRepay || !status.permitAvailable}
+              onClick={actions.repayDscUsingPermit}
+            >
+              {status.isSigningPermit || status.isRepaying ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <LockKeyhole className="size-4" />
+              )}
+              {status.isSigningPermit ? t("signingPermit") : t("permitSubmit")}
+            </Button>
+          </MotionPressable>
           <MotionPressable disabled={!status.needsApproval || status.isApproving}>
             <Button
               type="button"
@@ -119,10 +133,15 @@ export function RepayDscPanel() {
               {t("approve")}
             </Button>
           </MotionPressable>
-          <MotionPressable disabled={!canRepay}>
-            <Button type="button" disabled={!canRepay} onClick={actions.repayDsc}>
+          <MotionPressable disabled={!canRepay || status.needsApproval}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!canRepay || status.needsApproval}
+              onClick={actions.repayDsc}
+            >
               {status.isRepaying ? <Loader2 className="size-4 animate-spin" /> : null}
-              {t("submit")}
+              {t("fallbackSubmit")}
             </Button>
           </MotionPressable>
         </div>

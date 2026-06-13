@@ -50,6 +50,16 @@ interface IDecentralizedStableCoin {
         uint256 dscAmountToMint
     ) external;
 
+    function depositCollateralAndMintDscWithPermit(
+        address collateralToken,
+        uint256 collateralAmount,
+        uint256 dscAmountToMint,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
+
     /**
      * @notice 向协议单独存入抵押资产
      * @dev 该方法只增加用户抵押品余额，不会铸造 DSC。
@@ -59,6 +69,15 @@ interface IDecentralizedStableCoin {
     function depositCollateral(
         address collateralToken,
         uint256 collateralAmount
+    ) external;
+
+    function depositCollateralWithPermit(
+        address collateralToken,
+        uint256 collateralAmount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external;
 
     /**
@@ -100,6 +119,14 @@ interface IDecentralizedStableCoin {
      * @param dscAmountToBurn 需要销毁的 DSC 数量
      */
     function burnDsc(uint256 dscAmountToBurn) external;
+
+    function repayDscWithPermit(
+        uint256 dscAmountToBurn,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 
     /**
      * @notice 清算健康因子不足的用户仓位

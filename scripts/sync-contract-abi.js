@@ -29,15 +29,15 @@ const contracts = [
     to: path.join(abiOutputDir, "DecentralizedStableCoin.json"),
   },
   {
-    name: "ERC20Mock",
+    name: "MockERC20Permit",
     from: path.join(
       ROOT_DIR,
       "foundry",
       "out",
-      "ERC20Mock.sol",
-      "ERC20Mock.json",
+      "MockERC20Permit.sol",
+      "MockERC20Permit.json",
     ),
-    to: path.join(abiOutputDir, "ERC20Mock.json"),
+    to: path.join(abiOutputDir, "MockERC20Permit.json"),
   },
 ];
 

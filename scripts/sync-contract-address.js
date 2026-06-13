@@ -38,14 +38,14 @@ function findContractAddress(contractName) {
 const dscEngineAddress = findContractAddress("DSCEngine");
 const dscAddress = findContractAddress("DecentralizedStableCoin");
 
-// HelperConfig 在本地链会部署两个 ERC20Mock：
+// HelperConfig 在本地链会部署两个支持 EIP-2612 的 MockERC20Permit：
 // 第一个通常是 WETH，第二个通常是 WBTC。
-const erc20Mocks = transactions.filter(
-  (item) => item.contractName === "ERC20Mock",
+const permitMocks = transactions.filter(
+  (item) => item.contractName === "MockERC20Permit",
 );
 
-const wethAddress = erc20Mocks[0]?.contractAddress || null;
-const wbtcAddress = erc20Mocks[1]?.contractAddress || null;
+const wethAddress = permitMocks[0]?.contractAddress || null;
+const wbtcAddress = permitMocks[1]?.contractAddress || null;
 
 // HelperConfig 在本地链会部署两个 MockV3Aggregator：
 // 第一个通常是 ETH/USD Price Feed，第二个通常是 BTC/USD Price Feed。
@@ -60,8 +60,8 @@ const missingContracts = [];
 
 if (!dscEngineAddress) missingContracts.push("DSCEngine");
 if (!dscAddress) missingContracts.push("DecentralizedStableCoin");
-if (!wethAddress) missingContracts.push("WETH ERC20Mock");
-if (!wbtcAddress) missingContracts.push("WBTC ERC20Mock");
+if (!wethAddress) missingContracts.push("WETH MockERC20Permit");
+if (!wbtcAddress) missingContracts.push("WBTC MockERC20Permit");
 if (!ethUsdPriceFeedAddress) missingContracts.push("ETH/USD MockV3Aggregator");
 if (!btcUsdPriceFeedAddress) missingContracts.push("BTC/USD MockV3Aggregator");
 

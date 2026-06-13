@@ -26,8 +26,20 @@ const locales = [
     label: "中文",
     shortLabel: "中",
     description: "使用中文界面"
+  },
+  {
+    value: "ja",
+    label: "日本語",
+    shortLabel: "日",
+    description: "日本語インターフェースを使用"
   }
 ] as const;
+
+type LocaleValue = (typeof locales)[number]["value"];
+
+function isSupportedLocale(value: string): value is LocaleValue {
+  return locales.some((item) => item.value === value);
+}
 
 export function LocaleSwitcher() {
   const locale = useLocale();
@@ -35,10 +47,10 @@ export function LocaleSwitcher() {
   const pathname = usePathname();
   const router = useRouter();
 
-  function switchLocale(nextLocale: string) {
+  function switchLocale(nextLocale: LocaleValue) {
     const segments = pathname.split("/");
 
-    if (segments[1] === "en" || segments[1] === "zh") {
+    if (isSupportedLocale(segments[1])) {
       segments[1] = nextLocale;
     } else {
       segments.splice(1, 0, nextLocale);
@@ -48,7 +60,6 @@ export function LocaleSwitcher() {
   }
 
   const currentLocale = locales.find((item) => item.value === locale);
-  const nextLocale = locale === "zh" ? "en" : "zh";
 
   return (
     <Sheet>
@@ -58,11 +69,7 @@ export function LocaleSwitcher() {
           size="sm"
           variant="outline"
           className="h-10 gap-2 rounded-full px-4 shadow-sm"
-          aria-label={
-            nextLocale === "zh"
-              ? t("switchToChinese")
-              : t("switchToEnglish")
-          }
+          aria-label={t("language")}
         >
           <Languages className="size-4" />
           <span className="text-sm font-medium">
@@ -71,15 +78,13 @@ export function LocaleSwitcher() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent side="right" className="w-[320px] sm:w-95">
+      <SheetContent side="right" className="w-[320px] sm:w-[380px]">
         <SheetHeader className="space-y-2">
           <SheetTitle className="flex items-center gap-2">
             <Languages className="size-5" />
             {t("language")}
           </SheetTitle>
-          <SheetDescription>
-            {t("languageDescription")}
-          </SheetDescription>
+          <SheetDescription>{t("languageDescription")}</SheetDescription>
         </SheetHeader>
 
         <div className="mt-8 space-y-3">
@@ -112,18 +117,14 @@ export function LocaleSwitcher() {
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium">
-                      {item.label}
-                    </div>
+                    <div className="text-sm font-medium">{item.label}</div>
                     <div className="mt-1 text-xs text-muted-foreground">
                       {item.description}
                     </div>
                   </div>
                 </div>
 
-                {isActive ? (
-                  <Check className="size-4 text-primary" />
-                ) : null}
+                {isActive ? <Check className="size-4 text-primary" /> : null}
               </button>
             );
           })}

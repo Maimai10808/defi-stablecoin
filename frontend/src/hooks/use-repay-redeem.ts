@@ -3,13 +3,15 @@
 import * as React from "react";
 import type { Address } from "viem";
 import { parseEther } from "viem";
-import { useAccount } from "wagmi";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { useAccount, useChainId, usePublicClient, useSignTypedData } from "wagmi";
 
 import {
   useReadDecentralizedStableCoinAllowance,
   useReadDecentralizedStableCoinBalanceOf,
+  useReadDecentralizedStableCoinName,
+  useReadDecentralizedStableCoinNonces,
   useReadDscEngineGetCollateralBalanceOfUser,
   useReadDscEngineGetDscMintedAmount,
   useReadDscEngineGetUsdValue,
@@ -19,15 +21,18 @@ import {
   useWriteDscEngineBurnDsc,
   useWriteDscEngineRedeemCollateral,
   useWriteDscEngineRedeemCollateralForDsc,
+  useWriteDscEngineRepayDscWithPermit,
 } from "@/generated/wagmi";
 
 import {
   DSC_ENGINE_ADDRESS,
+  DECENTRALIZED_STABLE_COIN_ADDRESS,
   WBTC_ADDRESS,
   WETH_ADDRESS,
 } from "@/constants/contracts";
 
 import { isAvailableAddress, toSafeAddress } from "@/lib/format";
+import { getPermitDeadline, signErc20Permit } from "@/lib/permit";
 
 import type {
   RepayRedeemFormState,
@@ -43,6 +48,9 @@ const DEFAULT_FORM: RepayRedeemFormState = {
 export function useRepayRedeem() {
   const t = useTranslations("Toast");
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const publicClient = usePublicClient();
+  const signTypedData = useSignTypedData();
 
   const [form, setForm] = React.useState<RepayRedeemFormState>(DEFAULT_FORM);
 
@@ -74,6 +82,11 @@ export function useRepayRedeem() {
     query: {
       enabled: hasWallet,
     },
+  });
+  const dscName = useReadDecentralizedStableCoinName();
+  const dscNonce = useReadDecentralizedStableCoinNonces({
+    args: [userAddress],
+    query: { enabled: hasWallet },
   });
 
   const wethWalletBalance = useReadWethMockBalanceOf({
@@ -108,6 +121,7 @@ export function useRepayRedeem() {
   const burnDsc = useWriteDscEngineBurnDsc();
   const redeemCollateral = useWriteDscEngineRedeemCollateral();
   const redeemCollateralForDsc = useWriteDscEngineRedeemCollateralForDsc();
+  const repayDscWithPermit = useWriteDscEngineRepayDscWithPermit();
 
   const tokens: RepayRedeemTokenItem[] = [
     {
@@ -281,6 +295,75 @@ export function useRepayRedeem() {
     }
   }
 
+  async function repayDscUsingPermit() {
+    if (!hasWallet || !address) {
+      toast.error(t("connectFirst"));
+      return;
+    }
+    if (!dscName.data || dscNonce.data === undefined) {
+      toast.error(t("permitUnavailable"));
+      return;
+    }
+    if (dscAmountToBurnBigInt <= BigInt(0)) {
+      toast.error(t("invalidDsc"));
+      return;
+    }
+    if (
+      dscWalletBalance.data !== undefined &&
+      dscAmountToBurnBigInt > dscWalletBalance.data
+    ) {
+      toast.error(t("insufficientDsc"));
+      return;
+    }
+    if (
+      dscMintedAmount.data !== undefined &&
+      dscAmountToBurnBigInt > dscMintedAmount.data
+    ) {
+      toast.error(t("exceedsDebt"));
+      return;
+    }
+
+    const deadline = getPermitDeadline();
+    let permit: Awaited<ReturnType<typeof signErc20Permit>>;
+    try {
+      permit = await signErc20Permit(
+        {
+          tokenName: dscName.data,
+          chainId,
+          tokenAddress: toSafeAddress(DECENTRALIZED_STABLE_COIN_ADDRESS),
+          owner: address,
+          spender: engineAddress,
+          value: dscAmountToBurnBigInt,
+          nonce: dscNonce.data,
+          deadline,
+        },
+        signTypedData.signTypedDataAsync,
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error(t("permitRejected"));
+      return;
+    }
+
+    try {
+      const hash = await repayDscWithPermit.writeContractAsync({
+        args: [
+          dscAmountToBurnBigInt,
+          permit.deadline,
+          permit.v,
+          permit.r,
+          permit.s,
+        ],
+      });
+      await publicClient?.waitForTransactionReceipt({ hash });
+      await Promise.all([dscWalletBalance.refetch(), dscMintedAmount.refetch()]);
+      toast.success(t("permitRepaySuccess"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("repayFailed"));
+    }
+  }
+
   async function redeemSelectedCollateral() {
     if (!hasWallet) {
       toast.error(t("connectFirst"));
@@ -334,7 +417,7 @@ export function useRepayRedeem() {
     selectedCollateralUsdValue.isError;
 
   const isApproving = approveDsc.isPending;
-  const isRepaying = burnDsc.isPending;
+  const isRepaying = burnDsc.isPending || repayDscWithPermit.isPending;
   const isRedeeming =
     redeemCollateralForDsc.isPending || redeemCollateral.isPending;
 
@@ -359,6 +442,8 @@ export function useRepayRedeem() {
       isApproving,
       isRepaying,
       isRedeeming,
+      isSigningPermit: signTypedData.isPending,
+      permitAvailable: Boolean(dscName.data) && dscNonce.data !== undefined,
       hasWeth,
       hasWbtc,
     },
@@ -366,6 +451,7 @@ export function useRepayRedeem() {
       updateField,
       approveDscForEngine,
       repayDsc,
+      repayDscUsingPermit,
       redeemSelectedCollateral,
       repayAndRedeem,
     },

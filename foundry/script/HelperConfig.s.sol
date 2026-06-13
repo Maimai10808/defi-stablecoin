@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 
 import {MockV3Aggregator} from "../test/mocks/MockV3Aggregator.sol";
 import {Script} from "forge-std/Script.sol";
-import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {MockERC20Permit} from "../test/mocks/MockERC20Permit.sol";
 
 contract HelperConfig is Script {
     error HelperConfig__ChainIdNotSupported();
@@ -50,13 +50,19 @@ contract HelperConfig is Script {
             DECIMALS_8,
             ETH_USD_PRICE_2000e8
         );
-        ERC20Mock wethMock = new ERC20Mock();
+        MockERC20Permit wethMock = new MockERC20Permit(
+            "Wrapped Ether Mock",
+            "WETH"
+        );
 
         MockV3Aggregator btcUsdPriceFeed = new MockV3Aggregator(
             DECIMALS_8,
             BTC_USD_PRICE_45000e8
         );
-        ERC20Mock wbtcMock = new ERC20Mock();
+        MockERC20Permit wbtcMock = new MockERC20Permit(
+            "Wrapped Bitcoin Mock",
+            "WBTC"
+        );
 
         vm.stopBroadcast();
 

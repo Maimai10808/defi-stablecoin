@@ -5,6 +5,7 @@ import {IDecentralizedStableCoin} from "./interface/IDecentralizedStableCoin.sol
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import {DSCEngineViews} from "./engine/DSCEngineViews.sol";
 
@@ -134,12 +135,46 @@ contract DSCEngine is
         onlyAllowedToken(collateralToken)
         nonReentrant
     {
-        s_collateralDeposited[msg.sender][collateralToken] += collateralAmount;
+        _depositCollateral(collateralToken, collateralAmount, msg.sender);
+    }
 
-        emit CollateralDeposited(msg.sender, collateralToken, collateralAmount);
+    function depositCollateralWithPermit(
+        address collateralToken,
+        uint256 collateralAmount,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        external
+        override
+        onlyAmountMoreThanZero(collateralAmount)
+        onlyAllowedToken(collateralToken)
+        nonReentrant
+    {
+        IERC20Permit(collateralToken).permit(
+            msg.sender,
+            address(this),
+            collateralAmount,
+            deadline,
+            v,
+            r,
+            s
+        );
+        _depositCollateral(collateralToken, collateralAmount, msg.sender);
+    }
+
+    function _depositCollateral(
+        address collateralToken,
+        uint256 collateralAmount,
+        address account
+    ) internal {
+        s_collateralDeposited[account][collateralToken] += collateralAmount;
+
+        emit CollateralDeposited(account, collateralToken, collateralAmount);
 
         bool success = IERC20(collateralToken).transferFrom(
-            msg.sender,
+            account,
             address(this),
             collateralAmount
         );
@@ -162,9 +197,43 @@ contract DSCEngine is
         address collateralToken,
         uint256 collateralAmount,
         uint256 dscAmountToMint
-    ) public override {
-        depositCollateral(collateralToken, collateralAmount);
-        mintDsc(dscAmountToMint);
+    )
+        public
+        override
+        onlyAmountMoreThanZero(collateralAmount)
+        onlyAllowedToken(collateralToken)
+        nonReentrant
+    {
+        _depositCollateral(collateralToken, collateralAmount, msg.sender);
+        _mintDsc(dscAmountToMint, msg.sender);
+    }
+
+    function depositCollateralAndMintDscWithPermit(
+        address collateralToken,
+        uint256 collateralAmount,
+        uint256 dscAmountToMint,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        external
+        override
+        onlyAmountMoreThanZero(collateralAmount)
+        onlyAllowedToken(collateralToken)
+        nonReentrant
+    {
+        IERC20Permit(collateralToken).permit(
+            msg.sender,
+            address(this),
+            collateralAmount,
+            deadline,
+            v,
+            r,
+            s
+        );
+        _depositCollateral(collateralToken, collateralAmount, msg.sender);
+        _mintDsc(dscAmountToMint, msg.sender);
     }
 
     /**
@@ -177,11 +246,15 @@ contract DSCEngine is
      * 用户不能铸造超过其抵押物价值所支持的 DSC。
      */
     function mintDsc(uint256 dscAmountToMint) public override {
-        s_dscMinted[msg.sender] += dscAmountToMint;
+        _mintDsc(dscAmountToMint, msg.sender);
+    }
 
-        _revertIfHealthFactorIsBroken(msg.sender);
+    function _mintDsc(uint256 dscAmountToMint, address account) internal {
+        s_dscMinted[account] += dscAmountToMint;
 
-        bool success = i_dsc.mint(msg.sender, dscAmountToMint);
+        _revertIfHealthFactorIsBroken(account);
+
+        bool success = i_dsc.mint(account, dscAmountToMint);
 
         if (!success) {
             revert DSCEngine__MintFailed();
@@ -197,6 +270,31 @@ contract DSCEngine is
     function burnDsc(
         uint256 dscAmountToBurn
     ) public override onlyAmountMoreThanZero(dscAmountToBurn) {
+        _burnDsc(dscAmountToBurn, msg.sender, msg.sender);
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
+
+    function repayDscWithPermit(
+        uint256 dscAmountToBurn,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        external
+        override
+        onlyAmountMoreThanZero(dscAmountToBurn)
+        nonReentrant
+    {
+        i_dsc.permit(
+            msg.sender,
+            address(this),
+            dscAmountToBurn,
+            deadline,
+            v,
+            r,
+            s
+        );
         _burnDsc(dscAmountToBurn, msg.sender, msg.sender);
         _revertIfHealthFactorIsBroken(msg.sender);
     }

@@ -62,6 +62,35 @@ export const dscEngineAbi = [
   },
   {
     type: 'function',
+    inputs: [
+      { name: 'collateralToken', internalType: 'address', type: 'address' },
+      { name: 'collateralAmount', internalType: 'uint256', type: 'uint256' },
+      { name: 'dscAmountToMint', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' },
+    ],
+    name: 'depositCollateralAndMintDscWithPermit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'collateralToken', internalType: 'address', type: 'address' },
+      { name: 'collateralAmount', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' },
+    ],
+    name: 'depositCollateralWithPermit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'dsc',
     outputs: [{ name: 'dscAddress', internalType: 'address', type: 'address' }],
@@ -213,6 +242,19 @@ export const dscEngineAbi = [
     stateMutability: 'nonpayable',
   },
   {
+    type: 'function',
+    inputs: [
+      { name: 'dscAmountToBurn', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' },
+    ],
+    name: 'repayDscWithPermit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
     type: 'event',
     anonymous: false,
     inputs: [
@@ -312,6 +354,13 @@ export const decentralizedStableCoinAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: 'owner', internalType: 'address', type: 'address' },
       { name: 'spender', internalType: 'address', type: 'address' },
@@ -365,6 +414,21 @@ export const decentralizedStableCoinAbi = [
   },
   {
     type: 'function',
+    inputs: [],
+    name: 'eip712Domain',
+    outputs: [
+      { name: 'fields', internalType: 'bytes1', type: 'bytes1' },
+      { name: 'name', internalType: 'string', type: 'string' },
+      { name: 'version', internalType: 'string', type: 'string' },
+      { name: 'chainId', internalType: 'uint256', type: 'uint256' },
+      { name: 'verifyingContract', internalType: 'address', type: 'address' },
+      { name: 'salt', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'extensions', internalType: 'uint256[]', type: 'uint256[]' },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [
       { name: 'recipient', internalType: 'address', type: 'address' },
       { name: 'dscAmountToMint', internalType: 'uint256', type: 'uint256' },
@@ -382,10 +446,32 @@ export const decentralizedStableCoinAbi = [
   },
   {
     type: 'function',
+    inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     inputs: [],
     name: 'owner',
     outputs: [{ name: '', internalType: 'address', type: 'address' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' },
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -461,6 +547,7 @@ export const decentralizedStableCoinAbi = [
     ],
     name: 'Approval',
   },
+  { type: 'event', anonymous: false, inputs: [], name: 'EIP712DomainChanged' },
   {
     type: 'event',
     anonymous: false,
@@ -510,6 +597,17 @@ export const decentralizedStableCoinAbi = [
     inputs: [],
     name: 'DecentralizedStableCoin__NotZeroAddress',
   },
+  { type: 'error', inputs: [], name: 'ECDSAInvalidSignature' },
+  {
+    type: 'error',
+    inputs: [{ name: 'length', internalType: 'uint256', type: 'uint256' }],
+    name: 'ECDSAInvalidSignatureLength',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 's', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'ECDSAInvalidSignatureS',
+  },
   {
     type: 'error',
     inputs: [
@@ -550,6 +648,28 @@ export const decentralizedStableCoinAbi = [
   },
   {
     type: 'error',
+    inputs: [{ name: 'deadline', internalType: 'uint256', type: 'uint256' }],
+    name: 'ERC2612ExpiredSignature',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'signer', internalType: 'address', type: 'address' },
+      { name: 'owner', internalType: 'address', type: 'address' },
+    ],
+    name: 'ERC2612InvalidSigner',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'currentNonce', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'InvalidAccountNonce',
+  },
+  { type: 'error', inputs: [], name: 'InvalidShortString' },
+  {
+    type: 'error',
     inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
     name: 'OwnableInvalidOwner',
   },
@@ -557,6 +677,11 @@ export const decentralizedStableCoinAbi = [
     type: 'error',
     inputs: [{ name: 'account', internalType: 'address', type: 'address' }],
     name: 'OwnableUnauthorizedAccount',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'str', internalType: 'string', type: 'string' }],
+    name: 'StringTooLong',
   },
 ] as const
 
@@ -583,7 +708,21 @@ export const decentralizedStableCoinConfig = {
  *
  */
 export const wbtcMockAbi = [
-  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'constructor',
+    inputs: [
+      { name: 'tokenName', internalType: 'string', type: 'string' },
+      { name: 'tokenSymbol', internalType: 'string', type: 'string' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
   {
     type: 'function',
     inputs: [
@@ -613,19 +752,24 @@ export const wbtcMockAbi = [
   },
   {
     type: 'function',
-    inputs: [
-      { name: 'account', internalType: 'address', type: 'address' },
-      { name: 'amount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'burn',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    name: 'eip712Domain',
+    outputs: [
+      { name: 'fields', internalType: 'bytes1', type: 'bytes1' },
+      { name: 'name', internalType: 'string', type: 'string' },
+      { name: 'version', internalType: 'string', type: 'string' },
+      { name: 'chainId', internalType: 'uint256', type: 'uint256' },
+      { name: 'verifyingContract', internalType: 'address', type: 'address' },
+      { name: 'salt', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'extensions', internalType: 'uint256[]', type: 'uint256[]' },
+    ],
     stateMutability: 'view',
   },
   {
@@ -644,6 +788,28 @@ export const wbtcMockAbi = [
     name: 'name',
     outputs: [{ name: '', internalType: 'string', type: 'string' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' },
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -705,6 +871,7 @@ export const wbtcMockAbi = [
     ],
     name: 'Approval',
   },
+  { type: 'event', anonymous: false, inputs: [], name: 'EIP712DomainChanged' },
   {
     type: 'event',
     anonymous: false,
@@ -719,6 +886,17 @@ export const wbtcMockAbi = [
       },
     ],
     name: 'Transfer',
+  },
+  { type: 'error', inputs: [], name: 'ECDSAInvalidSignature' },
+  {
+    type: 'error',
+    inputs: [{ name: 'length', internalType: 'uint256', type: 'uint256' }],
+    name: 'ECDSAInvalidSignatureLength',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 's', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'ECDSAInvalidSignatureS',
   },
   {
     type: 'error',
@@ -757,6 +935,33 @@ export const wbtcMockAbi = [
     type: 'error',
     inputs: [{ name: 'spender', internalType: 'address', type: 'address' }],
     name: 'ERC20InvalidSpender',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'deadline', internalType: 'uint256', type: 'uint256' }],
+    name: 'ERC2612ExpiredSignature',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'signer', internalType: 'address', type: 'address' },
+      { name: 'owner', internalType: 'address', type: 'address' },
+    ],
+    name: 'ERC2612InvalidSigner',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'currentNonce', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'InvalidAccountNonce',
+  },
+  { type: 'error', inputs: [], name: 'InvalidShortString' },
+  {
+    type: 'error',
+    inputs: [{ name: 'str', internalType: 'string', type: 'string' }],
+    name: 'StringTooLong',
   },
 ] as const
 
@@ -783,7 +988,21 @@ export const wbtcMockConfig = {
  *
  */
 export const wethMockAbi = [
-  { type: 'constructor', inputs: [], stateMutability: 'nonpayable' },
+  {
+    type: 'constructor',
+    inputs: [
+      { name: 'tokenName', internalType: 'string', type: 'string' },
+      { name: 'tokenSymbol', internalType: 'string', type: 'string' },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    inputs: [],
+    name: 'DOMAIN_SEPARATOR',
+    outputs: [{ name: '', internalType: 'bytes32', type: 'bytes32' }],
+    stateMutability: 'view',
+  },
   {
     type: 'function',
     inputs: [
@@ -813,19 +1032,24 @@ export const wethMockAbi = [
   },
   {
     type: 'function',
-    inputs: [
-      { name: 'account', internalType: 'address', type: 'address' },
-      { name: 'amount', internalType: 'uint256', type: 'uint256' },
-    ],
-    name: 'burn',
-    outputs: [],
-    stateMutability: 'nonpayable',
+    inputs: [],
+    name: 'decimals',
+    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    stateMutability: 'view',
   },
   {
     type: 'function',
     inputs: [],
-    name: 'decimals',
-    outputs: [{ name: '', internalType: 'uint8', type: 'uint8' }],
+    name: 'eip712Domain',
+    outputs: [
+      { name: 'fields', internalType: 'bytes1', type: 'bytes1' },
+      { name: 'name', internalType: 'string', type: 'string' },
+      { name: 'version', internalType: 'string', type: 'string' },
+      { name: 'chainId', internalType: 'uint256', type: 'uint256' },
+      { name: 'verifyingContract', internalType: 'address', type: 'address' },
+      { name: 'salt', internalType: 'bytes32', type: 'bytes32' },
+      { name: 'extensions', internalType: 'uint256[]', type: 'uint256[]' },
+    ],
     stateMutability: 'view',
   },
   {
@@ -844,6 +1068,28 @@ export const wethMockAbi = [
     name: 'name',
     outputs: [{ name: '', internalType: 'string', type: 'string' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [{ name: 'owner', internalType: 'address', type: 'address' }],
+    name: 'nonces',
+    outputs: [{ name: '', internalType: 'uint256', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    inputs: [
+      { name: 'owner', internalType: 'address', type: 'address' },
+      { name: 'spender', internalType: 'address', type: 'address' },
+      { name: 'value', internalType: 'uint256', type: 'uint256' },
+      { name: 'deadline', internalType: 'uint256', type: 'uint256' },
+      { name: 'v', internalType: 'uint8', type: 'uint8' },
+      { name: 'r', internalType: 'bytes32', type: 'bytes32' },
+      { name: 's', internalType: 'bytes32', type: 'bytes32' },
+    ],
+    name: 'permit',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -905,6 +1151,7 @@ export const wethMockAbi = [
     ],
     name: 'Approval',
   },
+  { type: 'event', anonymous: false, inputs: [], name: 'EIP712DomainChanged' },
   {
     type: 'event',
     anonymous: false,
@@ -919,6 +1166,17 @@ export const wethMockAbi = [
       },
     ],
     name: 'Transfer',
+  },
+  { type: 'error', inputs: [], name: 'ECDSAInvalidSignature' },
+  {
+    type: 'error',
+    inputs: [{ name: 'length', internalType: 'uint256', type: 'uint256' }],
+    name: 'ECDSAInvalidSignatureLength',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 's', internalType: 'bytes32', type: 'bytes32' }],
+    name: 'ECDSAInvalidSignatureS',
   },
   {
     type: 'error',
@@ -957,6 +1215,33 @@ export const wethMockAbi = [
     type: 'error',
     inputs: [{ name: 'spender', internalType: 'address', type: 'address' }],
     name: 'ERC20InvalidSpender',
+  },
+  {
+    type: 'error',
+    inputs: [{ name: 'deadline', internalType: 'uint256', type: 'uint256' }],
+    name: 'ERC2612ExpiredSignature',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'signer', internalType: 'address', type: 'address' },
+      { name: 'owner', internalType: 'address', type: 'address' },
+    ],
+    name: 'ERC2612InvalidSigner',
+  },
+  {
+    type: 'error',
+    inputs: [
+      { name: 'account', internalType: 'address', type: 'address' },
+      { name: 'currentNonce', internalType: 'uint256', type: 'uint256' },
+    ],
+    name: 'InvalidAccountNonce',
+  },
+  { type: 'error', inputs: [], name: 'InvalidShortString' },
+  {
+    type: 'error',
+    inputs: [{ name: 'str', internalType: 'string', type: 'string' }],
+    name: 'StringTooLong',
   },
 ] as const
 
@@ -1164,6 +1449,30 @@ export const useWriteDscEngineDepositCollateralAndMintDsc =
   })
 
 /**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link dscEngineAbi}__ and `functionName` set to `"depositCollateralAndMintDscWithPermit"`
+ *
+ *
+ */
+export const useWriteDscEngineDepositCollateralAndMintDscWithPermit =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: dscEngineAbi,
+    address: dscEngineAddress,
+    functionName: 'depositCollateralAndMintDscWithPermit',
+  })
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link dscEngineAbi}__ and `functionName` set to `"depositCollateralWithPermit"`
+ *
+ *
+ */
+export const useWriteDscEngineDepositCollateralWithPermit =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: dscEngineAbi,
+    address: dscEngineAddress,
+    functionName: 'depositCollateralWithPermit',
+  })
+
+/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link dscEngineAbi}__ and `functionName` set to `"liquidate"`
  *
  *
@@ -1210,6 +1519,18 @@ export const useWriteDscEngineRedeemCollateralForDsc =
   })
 
 /**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link dscEngineAbi}__ and `functionName` set to `"repayDscWithPermit"`
+ *
+ *
+ */
+export const useWriteDscEngineRepayDscWithPermit =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: dscEngineAbi,
+    address: dscEngineAddress,
+    functionName: 'repayDscWithPermit',
+  })
+
+/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link dscEngineAbi}__
  *
  *
@@ -1253,6 +1574,30 @@ export const useSimulateDscEngineDepositCollateralAndMintDsc =
     abi: dscEngineAbi,
     address: dscEngineAddress,
     functionName: 'depositCollateralAndMintDsc',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link dscEngineAbi}__ and `functionName` set to `"depositCollateralAndMintDscWithPermit"`
+ *
+ *
+ */
+export const useSimulateDscEngineDepositCollateralAndMintDscWithPermit =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: dscEngineAbi,
+    address: dscEngineAddress,
+    functionName: 'depositCollateralAndMintDscWithPermit',
+  })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link dscEngineAbi}__ and `functionName` set to `"depositCollateralWithPermit"`
+ *
+ *
+ */
+export const useSimulateDscEngineDepositCollateralWithPermit =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: dscEngineAbi,
+    address: dscEngineAddress,
+    functionName: 'depositCollateralWithPermit',
   })
 
 /**
@@ -1304,6 +1649,18 @@ export const useSimulateDscEngineRedeemCollateralForDsc =
   })
 
 /**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link dscEngineAbi}__ and `functionName` set to `"repayDscWithPermit"`
+ *
+ *
+ */
+export const useSimulateDscEngineRepayDscWithPermit =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: dscEngineAbi,
+    address: dscEngineAddress,
+    functionName: 'repayDscWithPermit',
+  })
+
+/**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link dscEngineAbi}__
  *
  *
@@ -1348,6 +1705,18 @@ export const useReadDecentralizedStableCoin =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ *
+ */
+export const useReadDecentralizedStableCoinDomainSeparator =
+  /*#__PURE__*/ createUseReadContract({
+    abi: decentralizedStableCoinAbi,
+    address: decentralizedStableCoinAddress,
+    functionName: 'DOMAIN_SEPARATOR',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"allowance"`
  *
  *
@@ -1384,6 +1753,18 @@ export const useReadDecentralizedStableCoinDecimals =
   })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"eip712Domain"`
+ *
+ *
+ */
+export const useReadDecentralizedStableCoinEip712Domain =
+  /*#__PURE__*/ createUseReadContract({
+    abi: decentralizedStableCoinAbi,
+    address: decentralizedStableCoinAddress,
+    functionName: 'eip712Domain',
+  })
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"name"`
  *
  *
@@ -1393,6 +1774,18 @@ export const useReadDecentralizedStableCoinName =
     abi: decentralizedStableCoinAbi,
     address: decentralizedStableCoinAddress,
     functionName: 'name',
+  })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"nonces"`
+ *
+ *
+ */
+export const useReadDecentralizedStableCoinNonces =
+  /*#__PURE__*/ createUseReadContract({
+    abi: decentralizedStableCoinAbi,
+    address: decentralizedStableCoinAddress,
+    functionName: 'nonces',
   })
 
 /**
@@ -1488,6 +1881,18 @@ export const useWriteDecentralizedStableCoinMint =
     abi: decentralizedStableCoinAbi,
     address: decentralizedStableCoinAddress,
     functionName: 'mint',
+  })
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"permit"`
+ *
+ *
+ */
+export const useWriteDecentralizedStableCoinPermit =
+  /*#__PURE__*/ createUseWriteContract({
+    abi: decentralizedStableCoinAbi,
+    address: decentralizedStableCoinAddress,
+    functionName: 'permit',
   })
 
 /**
@@ -1598,6 +2003,18 @@ export const useSimulateDecentralizedStableCoinMint =
   })
 
 /**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"permit"`
+ *
+ *
+ */
+export const useSimulateDecentralizedStableCoinPermit =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: decentralizedStableCoinAbi,
+    address: decentralizedStableCoinAddress,
+    functionName: 'permit',
+  })
+
+/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `functionName` set to `"renounceOwnership"`
  *
  *
@@ -1669,6 +2086,18 @@ export const useWatchDecentralizedStableCoinApprovalEvent =
   })
 
 /**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `eventName` set to `"EIP712DomainChanged"`
+ *
+ *
+ */
+export const useWatchDecentralizedStableCoinEip712DomainChangedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: decentralizedStableCoinAbi,
+    address: decentralizedStableCoinAddress,
+    eventName: 'EIP712DomainChanged',
+  })
+
+/**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link decentralizedStableCoinAbi}__ and `eventName` set to `"OwnershipTransferred"`
  *
  *
@@ -1701,6 +2130,18 @@ export const useReadWbtcMock = /*#__PURE__*/ createUseReadContract({
   abi: wbtcMockAbi,
   address: wbtcMockAddress,
 })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ *
+ */
+export const useReadWbtcMockDomainSeparator =
+  /*#__PURE__*/ createUseReadContract({
+    abi: wbtcMockAbi,
+    address: wbtcMockAddress,
+    functionName: 'DOMAIN_SEPARATOR',
+  })
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"allowance"`
@@ -1736,6 +2177,17 @@ export const useReadWbtcMockDecimals = /*#__PURE__*/ createUseReadContract({
 })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"eip712Domain"`
+ *
+ *
+ */
+export const useReadWbtcMockEip712Domain = /*#__PURE__*/ createUseReadContract({
+  abi: wbtcMockAbi,
+  address: wbtcMockAddress,
+  functionName: 'eip712Domain',
+})
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"name"`
  *
  *
@@ -1744,6 +2196,17 @@ export const useReadWbtcMockName = /*#__PURE__*/ createUseReadContract({
   abi: wbtcMockAbi,
   address: wbtcMockAddress,
   functionName: 'name',
+})
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"nonces"`
+ *
+ *
+ */
+export const useReadWbtcMockNonces = /*#__PURE__*/ createUseReadContract({
+  abi: wbtcMockAbi,
+  address: wbtcMockAddress,
+  functionName: 'nonces',
 })
 
 /**
@@ -1790,17 +2253,6 @@ export const useWriteWbtcMockApprove = /*#__PURE__*/ createUseWriteContract({
 })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"burn"`
- *
- *
- */
-export const useWriteWbtcMockBurn = /*#__PURE__*/ createUseWriteContract({
-  abi: wbtcMockAbi,
-  address: wbtcMockAddress,
-  functionName: 'burn',
-})
-
-/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"mint"`
  *
  *
@@ -1809,6 +2261,17 @@ export const useWriteWbtcMockMint = /*#__PURE__*/ createUseWriteContract({
   abi: wbtcMockAbi,
   address: wbtcMockAddress,
   functionName: 'mint',
+})
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"permit"`
+ *
+ *
+ */
+export const useWriteWbtcMockPermit = /*#__PURE__*/ createUseWriteContract({
+  abi: wbtcMockAbi,
+  address: wbtcMockAddress,
+  functionName: 'permit',
 })
 
 /**
@@ -1857,17 +2320,6 @@ export const useSimulateWbtcMockApprove =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"burn"`
- *
- *
- */
-export const useSimulateWbtcMockBurn = /*#__PURE__*/ createUseSimulateContract({
-  abi: wbtcMockAbi,
-  address: wbtcMockAddress,
-  functionName: 'burn',
-})
-
-/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"mint"`
  *
  *
@@ -1877,6 +2329,18 @@ export const useSimulateWbtcMockMint = /*#__PURE__*/ createUseSimulateContract({
   address: wbtcMockAddress,
   functionName: 'mint',
 })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"permit"`
+ *
+ *
+ */
+export const useSimulateWbtcMockPermit =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: wbtcMockAbi,
+    address: wbtcMockAddress,
+    functionName: 'permit',
+  })
 
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wbtcMockAbi}__ and `functionName` set to `"transfer"`
@@ -1925,6 +2389,18 @@ export const useWatchWbtcMockApprovalEvent =
   })
 
 /**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link wbtcMockAbi}__ and `eventName` set to `"EIP712DomainChanged"`
+ *
+ *
+ */
+export const useWatchWbtcMockEip712DomainChangedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: wbtcMockAbi,
+    address: wbtcMockAddress,
+    eventName: 'EIP712DomainChanged',
+  })
+
+/**
  * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link wbtcMockAbi}__ and `eventName` set to `"Transfer"`
  *
  *
@@ -1945,6 +2421,18 @@ export const useReadWethMock = /*#__PURE__*/ createUseReadContract({
   abi: wethMockAbi,
   address: wethMockAddress,
 })
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"DOMAIN_SEPARATOR"`
+ *
+ *
+ */
+export const useReadWethMockDomainSeparator =
+  /*#__PURE__*/ createUseReadContract({
+    abi: wethMockAbi,
+    address: wethMockAddress,
+    functionName: 'DOMAIN_SEPARATOR',
+  })
 
 /**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"allowance"`
@@ -1980,6 +2468,17 @@ export const useReadWethMockDecimals = /*#__PURE__*/ createUseReadContract({
 })
 
 /**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"eip712Domain"`
+ *
+ *
+ */
+export const useReadWethMockEip712Domain = /*#__PURE__*/ createUseReadContract({
+  abi: wethMockAbi,
+  address: wethMockAddress,
+  functionName: 'eip712Domain',
+})
+
+/**
  * Wraps __{@link useReadContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"name"`
  *
  *
@@ -1988,6 +2487,17 @@ export const useReadWethMockName = /*#__PURE__*/ createUseReadContract({
   abi: wethMockAbi,
   address: wethMockAddress,
   functionName: 'name',
+})
+
+/**
+ * Wraps __{@link useReadContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"nonces"`
+ *
+ *
+ */
+export const useReadWethMockNonces = /*#__PURE__*/ createUseReadContract({
+  abi: wethMockAbi,
+  address: wethMockAddress,
+  functionName: 'nonces',
 })
 
 /**
@@ -2034,17 +2544,6 @@ export const useWriteWethMockApprove = /*#__PURE__*/ createUseWriteContract({
 })
 
 /**
- * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"burn"`
- *
- *
- */
-export const useWriteWethMockBurn = /*#__PURE__*/ createUseWriteContract({
-  abi: wethMockAbi,
-  address: wethMockAddress,
-  functionName: 'burn',
-})
-
-/**
  * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"mint"`
  *
  *
@@ -2053,6 +2552,17 @@ export const useWriteWethMockMint = /*#__PURE__*/ createUseWriteContract({
   abi: wethMockAbi,
   address: wethMockAddress,
   functionName: 'mint',
+})
+
+/**
+ * Wraps __{@link useWriteContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"permit"`
+ *
+ *
+ */
+export const useWriteWethMockPermit = /*#__PURE__*/ createUseWriteContract({
+  abi: wethMockAbi,
+  address: wethMockAddress,
+  functionName: 'permit',
 })
 
 /**
@@ -2101,17 +2611,6 @@ export const useSimulateWethMockApprove =
   })
 
 /**
- * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"burn"`
- *
- *
- */
-export const useSimulateWethMockBurn = /*#__PURE__*/ createUseSimulateContract({
-  abi: wethMockAbi,
-  address: wethMockAddress,
-  functionName: 'burn',
-})
-
-/**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"mint"`
  *
  *
@@ -2121,6 +2620,18 @@ export const useSimulateWethMockMint = /*#__PURE__*/ createUseSimulateContract({
   address: wethMockAddress,
   functionName: 'mint',
 })
+
+/**
+ * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"permit"`
+ *
+ *
+ */
+export const useSimulateWethMockPermit =
+  /*#__PURE__*/ createUseSimulateContract({
+    abi: wethMockAbi,
+    address: wethMockAddress,
+    functionName: 'permit',
+  })
 
 /**
  * Wraps __{@link useSimulateContract}__ with `abi` set to __{@link wethMockAbi}__ and `functionName` set to `"transfer"`
@@ -2166,6 +2677,18 @@ export const useWatchWethMockApprovalEvent =
     abi: wethMockAbi,
     address: wethMockAddress,
     eventName: 'Approval',
+  })
+
+/**
+ * Wraps __{@link useWatchContractEvent}__ with `abi` set to __{@link wethMockAbi}__ and `eventName` set to `"EIP712DomainChanged"`
+ *
+ *
+ */
+export const useWatchWethMockEip712DomainChangedEvent =
+  /*#__PURE__*/ createUseWatchContractEvent({
+    abi: wethMockAbi,
+    address: wethMockAddress,
+    eventName: 'EIP712DomainChanged',
   })
 
 /**

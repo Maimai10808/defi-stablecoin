@@ -72,6 +72,10 @@ const navMain = [
         value: "protocol-status",
       },
       {
+        titleKey: "healthFactor",
+        value: "health-factor",
+      },
+      {
         titleKey: "activityLog",
         value: "activity-log",
       },

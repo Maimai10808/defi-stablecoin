@@ -5,7 +5,7 @@ import type { Address } from "viem";
 import { parseEther } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import {useTranslations} from "next-intl";
-import { useAccount, usePublicClient } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useSignTypedData } from "wagmi";
 import { toast } from "sonner";
 
 import {
@@ -13,10 +13,16 @@ import {
   useReadDscEngineGetUsdValue,
   useReadWbtcMockAllowance,
   useReadWbtcMockBalanceOf,
+  useReadWbtcMockName,
+  useReadWbtcMockNonces,
   useReadWethMockAllowance,
   useReadWethMockBalanceOf,
+  useReadWethMockName,
+  useReadWethMockNonces,
   useWriteDscEngineDepositCollateralAndMintDsc,
+  useWriteDscEngineDepositCollateralAndMintDscWithPermit,
   useWriteDscEngineDepositCollateral,
+  useWriteDscEngineDepositCollateralWithPermit,
   useWriteDscEngineMintDsc,
   useWriteWbtcMockApprove,
   useWriteWethMockApprove,
@@ -29,6 +35,7 @@ import {
 } from "@/constants/contracts";
 
 import { isAvailableAddress, toSafeAddress } from "@/lib/format";
+import { getPermitDeadline, signErc20Permit } from "@/lib/permit";
 
 import type {
   DepositMintFormState,
@@ -44,6 +51,8 @@ const DEFAULT_FORM: DepositMintFormState = {
 export function useDepositMint() {
   const t = useTranslations("Toast");
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+  const signTypedData = useSignTypedData();
   const publicClient = usePublicClient();
   const queryClient = useQueryClient();
 
@@ -101,11 +110,25 @@ export function useDepositMint() {
       enabled: hasWallet && hasWbtc,
     },
   });
+  const wethName = useReadWethMockName({ query: { enabled: hasWeth } });
+  const wbtcName = useReadWbtcMockName({ query: { enabled: hasWbtc } });
+  const wethNonce = useReadWethMockNonces({
+    args: [userAddress],
+    query: { enabled: hasWallet && hasWeth },
+  });
+  const wbtcNonce = useReadWbtcMockNonces({
+    args: [userAddress],
+    query: { enabled: hasWallet && hasWbtc },
+  });
 
   const wethApprove = useWriteWethMockApprove();
   const wbtcApprove = useWriteWbtcMockApprove();
   const depositAndMint = useWriteDscEngineDepositCollateralAndMintDsc();
+  const depositAndMintWithPermit =
+    useWriteDscEngineDepositCollateralAndMintDscWithPermit();
   const depositCollateral = useWriteDscEngineDepositCollateral();
+  const depositCollateralWithPermit =
+    useWriteDscEngineDepositCollateralWithPermit();
   const mintDsc = useWriteDscEngineMintDsc();
 
   const tokens: DepositMintTokenItem[] = [
@@ -138,6 +161,10 @@ export function useDepositMint() {
 
   const selectedAllowance =
     form.collateralToken === "WETH" ? wethAllowance.data : wbtcAllowance.data;
+  const selectedTokenName =
+    form.collateralToken === "WETH" ? wethName.data : wbtcName.data;
+  const selectedTokenNonce =
+    form.collateralToken === "WETH" ? wethNonce.data : wbtcNonce.data;
 
   const collateralAmountBigInt =
     form.collateralAmount && Number(form.collateralAmount) > 0
@@ -303,6 +330,102 @@ export function useDepositMint() {
     }
   }
 
+  async function createSelectedTokenPermit() {
+    if (
+      !address ||
+      !selectedToken?.isAvailable ||
+      !selectedTokenName ||
+      selectedTokenNonce === undefined ||
+      collateralAmountBigInt <= BigInt(0)
+    ) {
+      toast.error(t("permitUnavailable"));
+      return;
+    }
+
+    if (
+      selectedToken.walletBalance !== undefined &&
+      collateralAmountBigInt > selectedToken.walletBalance
+    ) {
+      toast.error(t("insufficient", { token: form.collateralToken }));
+      return;
+    }
+
+    const deadline = getPermitDeadline();
+
+    try {
+      return await signErc20Permit(
+        {
+          tokenName: selectedTokenName,
+          chainId,
+          tokenAddress: selectedTokenAddress,
+          owner: address,
+          spender: engineAddress,
+          value: collateralAmountBigInt,
+          nonce: selectedTokenNonce,
+          deadline,
+        },
+        signTypedData.signTypedDataAsync,
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error(t("permitRejected"));
+    }
+  }
+
+  async function depositSelectedCollateralWithPermit() {
+    const permit = await createSelectedTokenPermit();
+    if (!permit) return;
+
+    try {
+      const hash = await depositCollateralWithPermit.writeContractAsync({
+        args: [
+          selectedTokenAddress,
+          collateralAmountBigInt,
+          permit.deadline,
+          permit.v,
+          permit.r,
+          permit.s,
+        ],
+      });
+      await publicClient?.waitForTransactionReceipt({ hash });
+      await queryClient.invalidateQueries();
+      toast.success(t("permitDepositSuccess"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("depositFailed"));
+    }
+  }
+
+  async function depositCollateralAndMintDscWithPermit() {
+    if (dscAmountToMintBigInt <= BigInt(0)) {
+      toast.error(t("invalidDsc"));
+      return;
+    }
+
+    const permit = await createSelectedTokenPermit();
+    if (!permit) return;
+
+    try {
+      const hash = await depositAndMintWithPermit.writeContractAsync({
+        args: [
+          selectedTokenAddress,
+          collateralAmountBigInt,
+          dscAmountToMintBigInt,
+          permit.deadline,
+          permit.v,
+          permit.r,
+          permit.s,
+        ],
+      });
+      await publicClient?.waitForTransactionReceipt({ hash });
+      await queryClient.invalidateQueries();
+      toast.success(t("depositMintSuccess"));
+    } catch (error) {
+      console.error(error);
+      toast.error(t("depositMintFailed"));
+    }
+  }
+
   async function approveAndDepositSelectedCollateral() {
     setIsGuidedDepositPending(true);
 
@@ -355,7 +478,11 @@ export function useDepositMint() {
 
   const isApproving = wethApprove.isPending || wbtcApprove.isPending;
   const isDepositing =
-    depositAndMint.isPending || depositCollateral.isPending;
+    depositAndMint.isPending ||
+    depositAndMintWithPermit.isPending ||
+    depositCollateral.isPending ||
+    depositCollateralWithPermit.isPending;
+  const isSigningPermit = signTypedData.isPending;
   const isMinting = mintDsc.isPending;
 
   return {
@@ -379,6 +506,9 @@ export function useDepositMint() {
       isDepositing,
       isGuidedDepositPending,
       isMinting,
+      isSigningPermit,
+      permitAvailable:
+        Boolean(selectedTokenName) && selectedTokenNonce !== undefined,
       needsApproval,
       hasWeth,
       hasWbtc,
@@ -388,8 +518,10 @@ export function useDepositMint() {
       approveSelectedToken,
       approveAndDepositSelectedCollateral,
       depositSelectedCollateral,
+      depositSelectedCollateralWithPermit,
       mintOnlyDsc,
       depositCollateralAndMintDsc,
+      depositCollateralAndMintDscWithPermit,
     },
   };
 }

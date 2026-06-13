@@ -15,7 +15,9 @@ import {DSCEngineErrors} from "../../src/engine/DSCEngineErrors.sol";
 
 // Mock 合约与外部�"赖
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
+import {MockERC20Permit} from "../mocks/MockERC20Permit.sol";
 import {MockFailedMintDSC} from "../mocks/MockFailedMintDSC.sol";
 import {MockV3Aggregator} from "../mocks/MockV3Aggregator.sol";
 
@@ -33,6 +35,8 @@ contract DSCEngineTest is Test {
     // ========== 测试账户与基�"参数 ==========
     uint256 public deployerKey;
     address public user = makeAddr("user");
+    uint256 private constant PERMIT_USER_KEY = 0xA11CE;
+    address public permitUser = vm.addr(PERMIT_USER_KEY);
     address public liquidator = makeAddr("liquidator");
     uint256 public constant STARTING_BALANCE_100ether = 100 ether;
     uint256 public constant AMOUNT_COLLATERAL_10ether = 10 ether;
@@ -126,6 +130,7 @@ contract DSCEngineTest is Test {
         ERC20Mock(wbtc).mint(user, STARTING_BALANCE_100ether);
         ERC20Mock(weth).mint(liquidator, STARTING_BALANCE_100ether);
         ERC20Mock(wbtc).mint(liquidator, STARTING_BALANCE_100ether);
+        MockERC20Permit(weth).mint(permitUser, STARTING_BALANCE_100ether);
     }
 
     // ========== Constructor 测试 ==========
@@ -187,6 +192,191 @@ contract DSCEngineTest is Test {
     }
 
     // ========== 抵押品存入测试 ==========
+    function testDepositCollateralWithPermit() public {
+        uint256 nonceBefore = IERC20Permit(weth).nonces(permitUser);
+        uint256 deadline = block.timestamp + 20 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
+            weth,
+            PERMIT_USER_KEY,
+            permitUser,
+            AMOUNT_COLLATERAL_10ether,
+            deadline
+        );
+
+        vm.prank(permitUser);
+        dscEngine.depositCollateralWithPermit(
+            weth,
+            AMOUNT_COLLATERAL_10ether,
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        assertEq(
+            dscEngine.getCollateralBalanceOfUser(permitUser, weth),
+            AMOUNT_COLLATERAL_10ether
+        );
+        assertEq(
+            MockERC20Permit(weth).balanceOf(address(dscEngine)),
+            AMOUNT_COLLATERAL_10ether
+        );
+        assertEq(MockERC20Permit(weth).allowance(permitUser, address(dscEngine)), 0);
+        assertEq(IERC20Permit(weth).nonces(permitUser), nonceBefore + 1);
+    }
+
+    function testDepositCollateralAndMintDscWithPermit() public {
+        uint256 dscToMint = 100 ether;
+        uint256 deadline = block.timestamp + 20 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
+            weth,
+            PERMIT_USER_KEY,
+            permitUser,
+            AMOUNT_COLLATERAL_10ether,
+            deadline
+        );
+
+        vm.prank(permitUser);
+        dscEngine.depositCollateralAndMintDscWithPermit(
+            weth,
+            AMOUNT_COLLATERAL_10ether,
+            dscToMint,
+            deadline,
+            v,
+            r,
+            s
+        );
+
+        assertEq(
+            dscEngine.getCollateralBalanceOfUser(permitUser, weth),
+            AMOUNT_COLLATERAL_10ether
+        );
+        assertEq(dscEngine.getDscMintedAmount(permitUser), dscToMint);
+        assertEq(dsc.balanceOf(permitUser), dscToMint);
+    }
+
+    function testRepayDscWithPermit() public {
+        uint256 dscToMint = 100 ether;
+        uint256 dscToRepay = 40 ether;
+        _depositAndMintWithPermit(AMOUNT_COLLATERAL_10ether, dscToMint);
+        uint256 nonceBefore = dsc.nonces(permitUser);
+        uint256 deadline = block.timestamp + 20 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
+            address(dsc),
+            PERMIT_USER_KEY,
+            permitUser,
+            dscToRepay,
+            deadline
+        );
+
+        vm.prank(permitUser);
+        dscEngine.repayDscWithPermit(dscToRepay, deadline, v, r, s);
+
+        assertEq(dscEngine.getDscMintedAmount(permitUser), dscToMint - dscToRepay);
+        assertEq(dsc.balanceOf(permitUser), dscToMint - dscToRepay);
+        assertEq(dsc.nonces(permitUser), nonceBefore + 1);
+        assertEq(dsc.allowance(permitUser, address(dscEngine)), 0);
+    }
+
+    function testDepositCollateralWithPermitRevertsWhenDeadlineExpired() public {
+        uint256 deadline = block.timestamp - 1;
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
+            weth,
+            PERMIT_USER_KEY,
+            permitUser,
+            AMOUNT_COLLATERAL_10ether,
+            deadline
+        );
+
+        vm.prank(permitUser);
+        vm.expectRevert();
+        dscEngine.depositCollateralWithPermit(
+            weth,
+            AMOUNT_COLLATERAL_10ether,
+            deadline,
+            v,
+            r,
+            s
+        );
+    }
+
+    function testDepositCollateralWithPermitRevertsWhenSignatureInvalid() public {
+        uint256 deadline = block.timestamp + 20 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
+            weth,
+            PERMIT_USER_KEY,
+            permitUser,
+            AMOUNT_COLLATERAL_10ether + 1,
+            deadline
+        );
+
+        vm.prank(permitUser);
+        vm.expectRevert();
+        dscEngine.depositCollateralWithPermit(
+            weth,
+            AMOUNT_COLLATERAL_10ether,
+            deadline,
+            v,
+            r,
+            s
+        );
+    }
+
+    function testDepositCollateralWithPermitRevertsWhenSignerDiffersFromSender()
+        public
+    {
+        uint256 deadline = block.timestamp + 20 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
+            weth,
+            PERMIT_USER_KEY,
+            permitUser,
+            AMOUNT_COLLATERAL_10ether,
+            deadline
+        );
+
+        vm.prank(user);
+        vm.expectRevert();
+        dscEngine.depositCollateralWithPermit(
+            weth,
+            AMOUNT_COLLATERAL_10ether,
+            deadline,
+            v,
+            r,
+            s
+        );
+    }
+
+    function testDepositCollateralWithPermitRevertsWhenTokenUnsupported()
+        public
+    {
+        MockERC20Permit unsupported = new MockERC20Permit("Unsupported", "NOPE");
+        vm.prank(permitUser);
+        vm.expectRevert(DSCEngineErrors.DSCEngine__NotTheAllowedToken.selector);
+        dscEngine.depositCollateralWithPermit(
+            address(unsupported),
+            AMOUNT_COLLATERAL_10ether,
+            block.timestamp + 20 minutes,
+            0,
+            bytes32(0),
+            bytes32(0)
+        );
+    }
+
+    function testDepositCollateralWithPermitRevertsWhenAmountZero() public {
+        vm.prank(permitUser);
+        vm.expectRevert(
+            DSCEngineErrors.DSCEngine__AmountMustBeMoreThanZero.selector
+        );
+        dscEngine.depositCollateralWithPermit(
+            weth,
+            0,
+            block.timestamp + 20 minutes,
+            0,
+            bytes32(0),
+            bytes32(0)
+        );
+    }
+
     function testDepositCollateral_ShouldReverts_WhenAmountLessThanZero()
         public
     {
@@ -577,5 +767,59 @@ contract DSCEngineTest is Test {
         dscEngine.depositCollateral(weth, uint256(amount));
         vm.stopPrank();
         assertEq(dscEngine.getCollateralBalanceOfUser(user, weth), amount);
+    }
+
+    function _signPermit(
+        address token,
+        uint256 signerKey,
+        address owner,
+        uint256 value,
+        uint256 deadline
+    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
+        bytes32 permitTypehash = keccak256(
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+        );
+        bytes32 structHash = keccak256(
+            abi.encode(
+                permitTypehash,
+                owner,
+                address(dscEngine),
+                value,
+                IERC20Permit(token).nonces(owner),
+                deadline
+            )
+        );
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                IERC20Permit(token).DOMAIN_SEPARATOR(),
+                structHash
+            )
+        );
+        return vm.sign(signerKey, digest);
+    }
+
+    function _depositAndMintWithPermit(
+        uint256 collateralAmount,
+        uint256 dscToMint
+    ) internal {
+        uint256 deadline = block.timestamp + 20 minutes;
+        (uint8 v, bytes32 r, bytes32 s) = _signPermit(
+            weth,
+            PERMIT_USER_KEY,
+            permitUser,
+            collateralAmount,
+            deadline
+        );
+        vm.prank(permitUser);
+        dscEngine.depositCollateralAndMintDscWithPermit(
+            weth,
+            collateralAmount,
+            dscToMint,
+            deadline,
+            v,
+            r,
+            s
+        );
     }
 }
